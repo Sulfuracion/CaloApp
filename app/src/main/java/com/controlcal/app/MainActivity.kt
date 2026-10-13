@@ -34,6 +34,7 @@ import com.controlcal.app.data.off.OffProduct
 import com.controlcal.app.ui.about.AboutScreen
 import com.controlcal.app.ui.confirm.ProductConfirmationRoute
 import com.controlcal.app.ui.confirm.ProductConfirmationViewModel
+import com.controlcal.app.ui.debug.DebugFeatures
 import com.controlcal.app.ui.scanner.ScannerRoute
 import com.controlcal.app.ui.scanner.ScannerViewModel
 import com.controlcal.app.ui.theme.ControlCalTheme
@@ -43,7 +44,8 @@ enum class MainDestination {
     SCANNER,
     PRODUCT_CONFIRMATION,
     ABOUT,
-    MANUAL_ENTRY
+    MANUAL_ENTRY,
+    DEBUG_OCR_COLLECTOR
 }
 
 @AndroidEntryPoint
@@ -76,6 +78,9 @@ class MainActivity : ComponentActivity() {
                             onNavigateToManualEntry = { barcode ->
                                 manualEntryBarcode = barcode
                                 currentDestination = MainDestination.MANUAL_ENTRY
+                            },
+                            onNavigateToDebugOcr = {
+                                currentDestination = MainDestination.DEBUG_OCR_COLLECTOR
                             }
                         )
                     }
@@ -115,6 +120,12 @@ class MainActivity : ComponentActivity() {
                                 manualEntryBarcode = null
                                 currentDestination = MainDestination.SCANNER
                             }
+                        )
+                    }
+
+                    MainDestination.DEBUG_OCR_COLLECTOR -> {
+                        DebugFeatures.DebugOcrCollectorRoute(
+                            onBack = { currentDestination = MainDestination.SCANNER }
                         )
                     }
                 }

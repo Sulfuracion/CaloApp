@@ -81,4 +81,25 @@
     <string name="about_off_web_action">Visitar Open Food Facts</string>
     <string name="about_odbl_license_action">Ver licencia ODbL</string>
     <string name="about_off_attribution_note">Agradecemos profundamente a la comunidad y a los contribuidores de Open Food Facts su esfuerzo para hacer accesible la información sobre los alimentos.</string>
+
+    <!-- Recolector de etiquetas (Debug) -->
+    <string name="debug_ocr_action">Depurar OCR</string>
+    <string name="debug_ocr_title">Recolector de etiquetas</string>
+    <string name="debug_ocr_capture_button">Hacer foto</string>
+    <string name="debug_ocr_capturing">Capturando y analizando…</string>
+    <string name="debug_ocr_saved_count">Etiquetas guardadas: %1$d</string>
+    <string name="debug_ocr_success_title">Etiqueta guardada</string>
+    <string name="debug_ocr_success_message">Guardados %1$s y %2$s (%3$d líneas detectadas).</string>
+    <string name="debug_ocr_folder_title">Carpeta en el dispositivo</string>
+    <string name="debug_ocr_adb_hint">Copia a tu PC con:\nadb pull %1$s ./ocr_labels/</string>
+    <string name="debug_ocr_next_button">Capturar siguiente</string>
+    <string name="debug_ocr_delete_last_button">Descartar captura</string>
+    <string name="debug_ocr_confirm_delete_title">¿Descartar última captura?</string>
+    <string name="debug_ocr_confirm_delete_message">Se eliminarán los archivos %1$s y %2$s.</string>
+    <string name="debug_ocr_delete_confirm_action">Eliminar</string>
+    <string name="debug_ocr_cancel_action">Cancelar</string>
+    <string name="debug_ocr_viewfinder_hint">Encuadra la tabla nutricional en el recuadro</string>
+    <string name="debug_ocr_error_capture">Error al capturar o analizar: %1$s</string>
+    <string name="debug_ocr_copy_adb_action">Copiar comando ADB</string>
+    <string name="debug_ocr_adb_copied">Comando ADB copiado</string>
 </resources>

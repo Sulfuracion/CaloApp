@@ -66,6 +66,7 @@ import com.controlcal.app.camera.BarcodeAnalyzer
 import com.controlcal.app.camera.CameraPreview
 import com.controlcal.app.camera.VibrationHelper
 import com.controlcal.app.data.off.OffProduct
+import com.controlcal.app.ui.debug.DebugFeatures
 import com.controlcal.core.model.Meal
 import com.controlcal.core.model.Product
 import com.controlcal.core.nutrition.MealClassifier
@@ -79,6 +80,7 @@ fun ScannerRoute(
     onNavigateToConfirmation: (OffProduct) -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToManualEntry: (String?) -> Unit,
+    onNavigateToDebugOcr: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -154,6 +156,7 @@ fun ScannerRoute(
         onBack = onBack,
         onNavigateToAbout = onNavigateToAbout,
         onNavigateToManualEntry = onNavigateToManualEntry,
+        onNavigateToDebugOcr = onNavigateToDebugOcr,
         modifier = modifier
     )
 }
@@ -174,6 +177,7 @@ fun ScannerScreen(
     onBack: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToManualEntry: (String?) -> Unit,
+    onNavigateToDebugOcr: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (uiState.showRationaleDialog) {
@@ -226,6 +230,7 @@ fun ScannerScreen(
                 onBack = onBack,
                 onNavigateToAbout = onNavigateToAbout,
                 onNavigateToManualEntry = onNavigateToManualEntry,
+                onNavigateToDebugOcr = onNavigateToDebugOcr,
                 onToggleTorch = onToggleTorch,
                 onTorchAvailabilityChanged = onTorchAvailabilityChanged,
                 onScanAgain = onScanAgain,
@@ -244,6 +249,7 @@ private fun ScannerCameraContent(
     onBack: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToManualEntry: (String?) -> Unit,
+    onNavigateToDebugOcr: () -> Unit,
     onToggleTorch: () -> Unit,
     onTorchAvailabilityChanged: (Boolean) -> Unit,
     onScanAgain: () -> Unit,
@@ -320,6 +326,16 @@ private fun ScannerCameraContent(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (DebugFeatures.isDebugOcrAvailable) {
+                    IconButton(onClick = onNavigateToDebugOcr) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_document_scanner),
+                            contentDescription = stringResource(R.string.debug_ocr_action),
+                            tint = Color.White
+                        )
+                    }
+                }
+
                 IconButton(onClick = onNavigateToAbout) {
                     Icon(
                         painter = painterResource(R.drawable.ic_info),

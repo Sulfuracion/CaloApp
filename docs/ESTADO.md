@@ -2,7 +2,7 @@
 
 Última actualización: 2026-10-13
 
-Fase actual: 2 (completada; pendiente de validación de 10 productos en móvil)
+Fase actual: 3 (tarea 3.1 completada; pendiente de recolectar 25 etiquetas en móvil)
 
 ## Tareas
 
@@ -23,7 +23,7 @@ Fase actual: 2 (completada; pendiente de validación de 10 productos en móvil)
 - [x] 2.3 OffClient, mapeo y campos nulos
 - [x] 2.4 Flujo local, luego red, luego no encontrado
 - [x] 2.5 Confirmación, guardado y atribución
-- [ ] 3.1 Pantalla de depuración de OCR
+- [x] 3.1 Pantalla de depuración de OCR
 - [ ] 3.2 Fixtures de OCR
 - [ ] 3.3 Parser y validaciones
 - [ ] 3.4 Captura y confirmación
@@ -62,16 +62,20 @@ Fase actual: 2 (completada; pendiente de validación de 10 productos en móvil)
 - 2026-10-13: tarea 2.3 (OffClient, mapeo y campos nulos) completada. Se integraron OkHttp 4.12.0 y kotlinx-serialization-json 1.11.0 con plugin serialization. Se concedió permiso INTERNET en Manifest (REVISION HUMANA aprobada). Se implementó OffClientImpl con 5 s de timeout, HTTPS obligatorio y User-Agent «ControlCal/1.0 (cambiar@gmail.com)». Se implementó OffMapper con deserialización flexible ante strings, comas y nulos, conversión kJ a kcal (división entre 4,184) y detección de macros obligatorios ausentes mediante hasMissingMandatoryFields y toProductOrNull(). Módulo NetworkModule de Hilt proveyendo cliente y dependencias. Tests unitarios OffClientMappingTest en verde contra fixtures guardados y simulando respuestas de red.
 - 2026-10-13: tareas 2.4 (flujo local -> red -> no encontrado) y 2.5 (confirmación, guardado con source=OFF y atribución ODbL) completadas. Se implementó en `ScannerViewModel` el orden de búsqueda estricto: 1) local en Room (respuesta instantánea en modo avión), 2) Open Food Facts vía `OffClient`, 3) gestión de estados de error/offline y no encontrado con acceso directo a alta manual. Se implementó `ProductConfirmationScreen` y `ProductConfirmationViewModel` con todos los campos editables, campos obligatorios faltantes vacíos y resaltados en rojo, guardado condicionado a confirmación explícita con `source = OFF`, y opción de añadir la ración al diario en el mismo paso (con preselección de comida por hora mediante `MealClassifier` y cálculo de macros proporcionales en `:core`). Se creó la pantalla `AboutScreen` («Acerca de») con la atribución obligatoria a Open Food Facts y su licencia ODbL / DbCL y enlaces externos. Formateo y parseo decimal con coma según regla 7 (`NumberFormatHelper`). Tests unitarios en `:core` y `:app` en verde.
 - 2026-10-13: Repositorio Git inicializado y subido a GitHub (`https://github.com/Sulfuracion/CaloApp.git`) en rama `main`. Auditoría de seguridad completada con `.gitignore` exhaustivo (bloqueando secretos, claves, bases de datos locales, logs, temporales y carpetas de build/IDE). `README.md` profesional creado con aviso de desarrollo activo (WIP), documentación de arquitectura, stack técnico y guía de ejecución local.
+- 2026-10-13: tarea 3.1 (recolector de etiquetas de OCR en debug) completada. Se integró `com.google.mlkit:text-recognition:16.0.1` (modelo latino bundled offline). Pantalla `OcrCollectorScreen` aislada en el source set `app/src/debug` (con stub no-op en `app/src/release`), respetando la arquitectura de un solo Activity. Utiliza CameraX con `ImageCapture` para tomas en alta resolución y procesa el texto con ML Kit para extraer bloques y líneas con sus cajas delimitadoras (`Rect`). Los pares de archivos (`label_XX.jpg` y `label_XX.json`) se guardan secuencialmente en `getExternalFilesDir("ocr_labels")` (`/sdcard/Android/data/com.controlcal.app/files/ocr_labels/`). La interfaz incluye conmutador de linterna, recuadro de encuadre, contador de etiquetas, previsualización tras captura con opción de descartar/repetir y diálogo para copiar el comando de descarga mediante ADB (`adb pull`). Tests unitarios en `:app` en verde.
 
+
+- 2026-10-13: compatibilización de AGP con Android Studio. Se ajustó AGP a 9.2.1 en `libs.versions.toml` y se añadió `android.suppressUnsupportedCompileSdk=37.2` en `gradle.properties` para permitir la sincronización y ejecución directa desde el IDE.
 
 ## Versiones fijadas
 
 - Gradle (wrapper): 9.8.0 (comprobado 2026-10-06 en gradle.org/releases)
-- AGP: 9.4.1 (comprobado 2026-10-06 en Google Maven; 9.5.0 aún en alpha)
+- AGP: 9.2.1 (comprobado 2026-10-06 en Google Maven; compatible con Android Studio del humano)
 - Kotlin + plugin Compose: 2.4.20 (comprobado 2026-10-06 en kotlinlang.org/docs/releases)
 - Compose BOM: 2026.09.00 (comprobado 2026-10-06 en Google Maven)
 - CameraX: 1.6.2 (comprobado 2026-10-06 en Google Maven)
 - ML Kit Barcode Scanning (bundled): 17.3.0 (comprobado 2026-10-06 en Google Maven)
+- ML Kit Text Recognition (bundled latino): 16.0.1 (comprobado 2026-10-13 en Google Maven)
 - OkHttp: 4.12.0 (comprobado 2026-10-06 en Maven Central)
 - kotlinx.serialization: 1.11.0 (comprobado 2026-10-06 en Maven Central)
 - core-ktx: 1.19.1, lifecycle-runtime-ktx: 2.11.0, activity-compose: 1.13.0 (comprobado 2026-10-06 en Google Maven)
