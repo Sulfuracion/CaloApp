@@ -1,0 +1,17 @@
+{
+  "code": "8410000000003",
+  "status": 1,
+  "status_verbose": "product found",
+  "product": {
+    "product_name": "Bebida de almendras",
+    "brands": "BioDrink",
+    "quantity": "1 L",
+    "serving_size": "200 ml",
+    "nutriments": {
+      "energy_100g": 1046.0,
+      "proteins_100g": 1.0,
+      "carbohydrates_100g": 3.0,
+      "fat_100g": 2.0
+    }
+  }
+}

@@ -1,0 +1,68 @@
+# Built artifacts and caches
+build/
+**/build/
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+out/
+.gradle/
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio and IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Visual Studio Code
+.vscode/
+
+# Editor temp files
+*.swp
+*~
+
+# Local configuration and environment
+local.properties
+.env
+.env.*
+*.env
+
+# Keystores, certificates and secrets
+*.jks
+*.keystore
+*.key
+*.pem
+*.p12
+*.p8
+*.pk8
+google-services.json
+
+# Local databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Logs and profiling
+*.log
+*.hprof
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Package managers and temporary dependency folders
+node_modules/
+target/
+__pycache__/
+*.pyc
