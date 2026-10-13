@@ -1,129 +1,129 @@
 # CaloApp (ControlCal)
 
 > [!WARNING]
-> ### ⚠️ PROYECTO EN DESARROLLO (Work in Progress / WIP)
-> Este proyecto se encuentra actualmente en **fase activa de desarrollo**. Muchas de las funcionalidades están siendo implementadas o refinadas, por lo que el código y la arquitectura pueden sufrir modificaciones frecuentes.
+> ### ⚠️ WORK IN PROGRESS (WIP)
+> This project is currently under **active development**. Many features are still being implemented or refined, and both code and architecture are subject to frequent changes.
 
 ---
 
-## 📱 Descripción general
+## 📱 Overview
 
-**CaloApp** (nombre interno de paquete: *ControlCal*) es una aplicación móvil para Android de registro nutricional y seguimiento calórico diseñada bajo el paradigma **local-first** y con un enfoque riguroso en la **privacidad del usuario**.
+**CaloApp** (internal package name: *ControlCal*) is an Android nutrition and calorie tracking application built with a **local-first** approach and a strict focus on **user privacy**.
 
-A diferencia de la mayoría de aplicaciones comerciales de nutrición, CaloApp garantiza que los datos personales (comidas, peso, hábitos) nunca se compartan con servidores de terceros ni plataformas de analítica. Toda la información sensible se almacena de forma local con cifrado de grado militar.
-
----
-
-## ✨ Características principales
-
-- **🛡️ Privacidad total y cifrado local:** Base de datos Room cifrada mediante **SQLCipher** con claves protegidas por el **Android Keystore**. Sin analíticas, sin telemetría ni SDKs de rastreo.
-- **📷 Escaneo de códigos de barras rápido y offline:** Integración con **CameraX** y **ML Kit Barcode Scanning** empaquetado (soporte EAN-13, EAN-8, UPC-A, UPC-E) con filtro de confirmación consecutiva.
-- **🌐 Integración con Open Food Facts:** Consulta de información nutricional mediante llamadas HTTPS seguras con deserialización tolerante y fallback inmediato al registro manual.
-- **⚖️ Registro inteligente y modo tara:** Ajuste preciso de porciones en gramos, conversión automática de unidades y descuento de sobras sin romper el historial de macros.
-- **🧩 Macro Tetris y Solver nutricional:** Algoritmo de optimización cuadrática en Kotlin puro para cuadrar macros diarios restantes con alimentos de la despensa *(en desarrollo)*.
-- **🔍 OCR de tablas nutricionales en dispositivo:** Extracción de macros directamente desde fotos de etiquetas de producto sin depender de servicios en la nube *(en desarrollo)*.
-- **📈 Estimación de TDEE y tendencia de peso:** Algoritmos matemáticos en `:core` para estimar el gasto energético y proponer metas semanales *(en desarrollo)*.
-- **❤️ Integración con Health Connect:** Exportación de registros de nutrición e hidratación *(en desarrollo)*.
+Unlike most commercial nutrition apps, CaloApp ensures that personal user data (meals, weight, habits) is never shared with third-party servers, advertising networks, or analytics platforms. All sensitive data is stored locally with military-grade encryption.
 
 ---
 
-## 🏛️ Arquitectura del proyecto
+## ✨ Key Features
 
-El proyecto sigue una arquitectura multimódulo limpia con separación estricta de responsabilidades:
+- **🛡️ Total Privacy & Local Encryption:** Local Room database encrypted using **SQLCipher**, with keys secured via the **Android Keystore**. Zero analytics, zero crash reporting SDKs, and zero third-party tracking.
+- **📷 Fast, Offline Barcode Scanning:** Powered by **CameraX** and bundled **ML Kit Barcode Scanning** (supporting EAN-13, EAN-8, UPC-A, UPC-E) with consecutive-frame confirmation to prevent false reads.
+- **🌐 Open Food Facts Integration:** Nutritional data lookup over secure HTTPS with resilient deserialization and seamless fallback to manual entry when offline or unlisted.
+- **⚖️ Smart Logging & Tare Mode:** Precise portion tracking in grams or serving units, with a tare mode ("subtract leftovers") that records negative entries without distorting historical macro records.
+- **🧩 Macro Tetris Solver *(In Development)*:** Quadratic optimization algorithm implemented in pure Kotlin to balance remaining daily macros with available pantry foods.
+- **🔍 On-Device Nutrition Label OCR *(In Development)*:** Automated macro extraction directly from photos of food labels without relying on cloud AI services.
+- **📈 TDEE & Weight Trend Estimation *(In Development)*:** Mathematical models in `:core` to calculate exponential moving averages of weight and suggest weekly calorie target adjustments.
+- **❤️ Health Connect Integration *(In Development)*:** Background synchronization of nutrition and hydration records to Android Health Connect.
+
+---
+
+## 🏛️ Project Architecture
+
+The project follows a clean multi-module architecture with strict separation of concerns:
 
 ```
 CaloApp/
-├── :core                 # Módulo Kotlin puro (JVM)
-│   ├── model/            # Modelos de dominio inmutables (Product, MealEntry, DayTotals...)
-│   ├── nutrition/        # Reglas de cálculo nutricional y proporciones
-│   ├── ocr/              # Algoritmos de extracción y validación de etiquetas OCR
-│   ├── solver/           # Solver de optimización para Macro Tetris
-│   ├── tdee/             # Estimadores de gasto energético y tendencia de peso
-│   └── repo/             # Interfaces de repositorios (sin dependencias de Android)
+├── :core                 # Pure Kotlin JVM module (No Android dependencies)
+│   ├── model/            # Immutable domain models (Product, MealEntry, DayTotals...)
+│   ├── nutrition/        # Nutrition calculations, meal classification, and conversions
+│   ├── ocr/              # Label parsing and validation algorithms
+│   ├── solver/           # Macro Tetris optimization solver
+│   ├── tdee/             # TDEE estimation and weight trend logic
+│   └── repo/             # Pure repository interfaces
 │
-└── :app                  # Módulo Android (UI, persistencia y hardware)
-    ├── data/db/          # Entidades Room, DAOs, migraciones y cifrado SQLCipher
-    ├── data/off/         # Cliente HTTPS para la API de Open Food Facts
-    ├── camera/           # Flujos de CameraX y analizadores ML Kit
-    ├── ui/               # Pantallas en Jetpack Compose, ViewModels y StateFlow
-    └── di/               # Inyección de dependencias con Dagger Hilt
+└── :app                  # Android application module (UI, persistence, hardware)
+    ├── data/db/          # Room entities, DAOs, migrations, and SQLCipher integration
+    ├── data/off/         # HTTPS client for the Open Food Facts API
+    ├── camera/           # CameraX lifecycle bindings and ML Kit analyzers
+    ├── ui/               # Jetpack Compose screens, ViewModels, and StateFlow
+    └── di/               # Dependency injection with Dagger Hilt
 ```
 
-- **Lógica pura en `:core`:** Sin referencias a `android.*` ni `androidx.*`, lo que permite pruebas unitarias ultrarrápidas y portables en la JVM.
-- **Unidireccional (UDF / MVI-MVVM):** La interfaz lee estados inmutables expuestos como `StateFlow<UiState>` y despacha eventos al ViewModel.
+- **Pure Logic in `:core`:** Does not import any `android.*` or `androidx.*` packages, ensuring domain logic is portable, modular, and testable via fast JVM unit tests.
+- **Unidirectional Data Flow (UDF / MVI-MVVM):** The UI observes immutable `StateFlow<UiState>` streams and dispatches user actions to ViewModels.
 
 ---
 
-## 🛠️ Stack tecnológico
+## 🛠️ Tech Stack
 
-| Componente | Tecnología | Versión |
+| Component | Technology | Version |
 | :--- | :--- | :--- |
-| **Lenguaje** | Kotlin | `2.4.20` (JVM 11) |
-| **UI** | Jetpack Compose + Material 3 (Single Activity) | Compose BOM `2026.09.00` |
-| **Arquitectura** | ViewModel + StateFlow + Coroutines | Lifecycle `2.11.0` |
-| **Inyección de dependencias** | Dagger Hilt | `2.60.1` |
-| **Base de datos local** | Room + SQLCipher | Room `2.8.5` / SQLCipher `4.19.1` |
-| **Ajustes y claves** | Jetpack DataStore Preferences + Android Keystore | `1.2.1` |
-| **Cámara y escaneo** | CameraX + ML Kit Barcode Scanning (bundled) | CameraX `1.6.2` / ML Kit `17.3.0` |
-| **Red y serialización** | OkHttp + kotlinx.serialization | OkHttp `4.12.0` / Serialization `1.11.0` |
-| **Build & Herramientas** | Gradle Wrapper + Android Gradle Plugin + Version Catalog | Gradle `9.8.0` / AGP `9.4.1` |
-| **SDK Android** | `compileSdk: 37.2` · `minSdk: 28` · `targetSdk: 36` | Android 17 / API 37 |
+| **Language** | Kotlin | `2.4.20` (JVM 11 target) |
+| **UI Framework** | Jetpack Compose + Material 3 (Single Activity) | Compose BOM `2026.09.00` |
+| **Architecture** | ViewModel + StateFlow + Coroutines | Lifecycle `2.11.0` |
+| **Dependency Injection** | Dagger Hilt | `2.60.1` |
+| **Local Database** | Room + SQLCipher | Room `2.8.5` / SQLCipher `4.19.1` |
+| **Settings & Key Store** | Jetpack DataStore Preferences + Android Keystore | `1.2.1` |
+| **Camera & Scanning** | CameraX + ML Kit Barcode Scanning (bundled) | CameraX `1.6.2` / ML Kit `17.3.0` |
+| **Networking & Serialization** | OkHttp + kotlinx.serialization | OkHttp `4.12.0` / Serialization `1.11.0` |
+| **Build & Tooling** | Gradle Wrapper + Android Gradle Plugin + Version Catalog | Gradle `9.8.0` / AGP `9.4.1` |
+| **Android SDK** | `compileSdk: 37.2` · `minSdk: 28` · `targetSdk: 36` | Android 17 / API 37 |
 
 ---
 
-## 📋 Requisitos previos
+## 📋 Prerequisites
 
-Para clonar y compilar este proyecto localmente, necesitas:
+To clone and build this project locally, ensure you have:
 
-1. **Java Development Kit (JDK):** JDK 17 o JDK 21 configurado en tu entorno (`JAVA_HOME`).
+1. **Java Development Kit (JDK):** JDK 17 or JDK 21 installed and configured in your `JAVA_HOME`.
 2. **Android SDK:**
    - Android SDK Platform `37.2` (API 37).
-   - Android SDK Build-Tools compatibles.
-3. **Android Studio:** Android Studio Meerkat / Ladybug (2024.2+) o superior recomendado.
-4. **Dispositivo de pruebas:** Dispositivo físico o emulador con Android 9.0 (API 28) o superior. *Nota: las funciones de cámara y escáner requieren dispositivo físico para pruebas completas.*
+   - Compatible Android SDK Build-Tools.
+3. **Android Studio:** Android Studio Meerkat / Ladybug (2024.2+) or later recommended.
+4. **Test Device:** A physical device or emulator running Android 9.0 (API 28) or higher. *Note: Camera and barcode scanning require a physical device for full functionality.*
 
 ---
 
-## 🚀 Ejecución y compilación local
+## 🚀 Building & Running Locally
 
-### 1. Clonar el repositorio
+### 1. Clone the repository
 ```bash
 git clone https://github.com/Sulfuracion/CaloApp.git
 cd CaloApp
 ```
 
-### 2. Configuración de variables locales
-Crea un archivo `local.properties` en la raíz del proyecto indicando la ruta a tu Android SDK (si utilizas Android Studio, se genera automáticamente al abrir el proyecto):
+### 2. Configure local SDK path
+Create a `local.properties` file in the project root pointing to your Android SDK location (Android Studio will create this automatically upon opening):
 ```properties
-sdk.dir=C\:\\Users\\<tu-usuario>\\AppData\\Local\\Android\\Sdk  # En Windows
-# sdk.dir=/Users/<tu-usuario>/Library/Android/sdk              # En macOS
-# sdk.dir=/home/<tu-usuario>/Android/Sdk                      # En Linux
+sdk.dir=C\:\\Users\\<your-username>\\AppData\\Local\\Android\\Sdk  # Windows
+# sdk.dir=/Users/<your-username>/Library/Android/sdk              # macOS
+# sdk.dir=/home/<your-username>/Android/Sdk                      # Linux
 ```
 
-### 3. Ejecutar pruebas unitarias
+### 3. Run unit tests
 ```bash
-# Pruebas de lógica pura en el módulo core
+# Pure logic tests in the :core module
 ./gradlew :core:test
 
-# Pruebas unitarias del módulo de aplicación (incluyendo Robolectric)
+# Application module unit tests (including Robolectric)
 ./gradlew testDebugUnitTest
 ```
 
-### 4. Compilar el APK de depuración
+### 4. Build debug APK
 ```bash
 ./gradlew assembleDebug
 ```
 
-El APK resultante se generará en:
+The compiled APK will be located at:
 `app/build/outputs/apk/debug/app-debug.apk`
 
-### 5. Instalar y ejecutar en un dispositivo conectado
+### 5. Install to a connected device
 ```bash
 ./gradlew installDebug
 ```
 
 ---
 
-## 📜 Atribuciones y licencias
+## 📜 Attributions & Licenses
 
-- Datos nutricionales suministrados opcionalmente por [Open Food Facts](https://world.openfoodfacts.org/) bajo licencia [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1.0/).
+- Nutritional data is optionally queried from [Open Food Facts](https://world.openfoodfacts.org/) under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/1.0/).
