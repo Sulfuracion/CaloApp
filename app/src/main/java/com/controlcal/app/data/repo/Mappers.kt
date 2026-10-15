@@ -4,10 +4,12 @@ import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
 import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
+import com.controlcal.app.data.db.entity.WeightEntryEntity
 import com.controlcal.core.model.DailyLog
 import com.controlcal.core.model.GoalProfile
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
+import com.controlcal.core.model.WeightEntry
 
 fun ProductEntity.toDomain(): Product =
     Product(
@@ -132,3 +134,16 @@ fun GoalProfile.toEntity(): GoalProfileEntity =
         validFrom = validFrom,
         origin = origin,
     )
+
+fun WeightEntryEntity.toDomain(): WeightEntry =
+    WeightEntry(
+        date = date,
+        weightKg = weightKg,
+    )
+
+fun WeightEntry.toEntity(): WeightEntryEntity =
+    WeightEntryEntity(
+        date = date,
+        weightKg = weightKg,
+    )
+

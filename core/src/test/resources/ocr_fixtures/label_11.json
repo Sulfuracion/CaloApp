@@ -1,0 +1,710 @@
+{
+    "imageFileName": "label_11.jpg",
+    "timestamp": "2026-10-14T10:32:17.007194Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "Emp",
+            "box": {
+                "left": 18,
+                "top": 0,
+                "right": 496,
+                "bottom": 302
+            }
+        },
+        {
+            "text": "Oanadilhas de Atúm",
+            "box": {
+                "left": -15,
+                "top": 80,
+                "right": 2284,
+                "bottom": 699
+            }
+        },
+        {
+            "text": "APANADILLAS DE ATÙN P EMPANADILHAS DE ATUM",
+            "box": {
+                "left": 334,
+                "top": 1032,
+                "right": 1434,
+                "bottom": 1101
+            }
+        },
+        {
+            "text": "ANGREDIENTES",
+            "box": {
+                "left": 228,
+                "top": 1135,
+                "right": 531,
+                "bottom": 1198
+            }
+        },
+        {
+            "text": "omate, atun en aceite (pescado) 9%* (atún,",
+            "box": {
+                "left": 180,
+                "top": 1227,
+                "right": 1003,
+                "bottom": 1287
+            }
+        },
+        {
+            "text": "Jde girasol, sal), huevo, cebolla (cebolla, aceite",
+            "box": {
+                "left": 90,
+                "top": 1298,
+                "right": 1004,
+                "bottom": 1356
+            }
+        },
+        {
+            "text": "rgen, sal), aceite refinado de girasol, harina de trigo Energia",
+            "box": {
+                "left": 16,
+                "top": 1365,
+                "right": 1269,
+                "bottom": 1426
+            }
+        },
+        {
+            "text": "zicar, pimiento, pan rallado [harina de trigo (gluten),Grasas/",
+            "box": {
+                "left": 17,
+                "top": 1434,
+                "right": 1246,
+                "bottom": 1497
+            }
+        },
+        {
+            "text": "levadura], sal, agua, vinagre de vino, espesante (E-461),Lipidos",
+            "box": {
+                "left": 0,
+                "top": 1504,
+                "right": 1237,
+                "bottom": 1561
+            }
+        },
+        {
+            "text": "n dulcey laurel molido. Oblea (50%): Harina de trigo",
+            "box": {
+                "left": 5,
+                "top": 1562,
+                "right": 997,
+                "bottom": 1634
+            }
+        },
+        {
+            "text": "agua, manteca de cerdo, aceite refinado de girasol,",
+            "box": {
+                "left": 1,
+                "top": 1634,
+                "right": 1003,
+                "bottom": 1705
+            }
+        },
+        {
+            "text": "sal.*9% de atún respecto a la empanadillayun 18%",
+            "box": {
+                "left": 20,
+                "top": 1700,
+                "right": 1003,
+                "bottom": 1772
+            }
+        },
+        {
+            "text": "eno. Puede contener trazas de soja y mostaza.",
+            "box": {
+                "left": -2,
+                "top": 1766,
+                "right": 881,
+                "bottom": 1837
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1065,
+                "top": 1227,
+                "right": 1172,
+                "bottom": 1287
+            }
+        },
+        {
+            "text": "Energético/",
+            "box": {
+                "left": 1067,
+                "top": 1289,
+                "right": 1389,
+                "bottom": 1357
+            }
+        },
+        {
+            "text": "de las cuales/",
+            "box": {
+                "left": 1076,
+                "top": 1572,
+                "right": 1344,
+                "bottom": 1625
+            }
+        },
+        {
+            "text": "dos quais:",
+            "box": {
+                "left": 1076,
+                "top": 1626,
+                "right": 1280,
+                "bottom": 1678
+            }
+        },
+        {
+            "text": "- Saturadas/",
+            "box": {
+                "left": 1124,
+                "top": 1691,
+                "right": 1367,
+                "bottom": 1738
+            }
+        },
+        {
+            "text": "Saturados",
+            "box": {
+                "left": 1153,
+                "top": 1749,
+                "right": 1355,
+                "bottom": 1798
+            }
+        },
+        {
+            "text": "Hidratos de",
+            "box": {
+                "left": 1076,
+                "top": 1822,
+                "right": 1314,
+                "bottom": 1872
+            }
+        },
+        {
+            "text": "io (506);: Tomate, atum em óleo (peixe) 9%* (atum,Carbono",
+            "box": {
+                "left": -1,
+                "top": 1855,
+                "right": 1258,
+                "bottom": 1940
+            }
+        },
+        {
+            "text": "girassol refinado, sal), ovo, cebola (cebola, azeite",
+            "box": {
+                "left": 1,
+                "top": 1922,
+                "right": 1004,
+                "bottom": 2002
+            }
+        },
+        {
+            "text": "al), óleo de girasol refinado, farinha de trigo (glúten),",
+            "box": {
+                "left": 0,
+                "top": 1989,
+                "right": 1004,
+                "bottom": 2064
+            }
+        },
+        {
+            "text": "imenta, pāo ralado ffarinha de trigo (glúten), água,",
+            "box": {
+                "left": 0,
+                "top": 2053,
+                "right": 1005,
+                "bottom": 2136
+            }
+        },
+        {
+            "text": "ura), sal, água, vinagre de vinho, espessante (E-461),",
+            "box": {
+                "left": 1,
+                "top": 2120,
+                "right": 1004,
+                "bottom": 2199
+            }
+        },
+        {
+            "text": "o doce e louro moído. Massa (50%): Farinha de trigo",
+            "box": {
+                "left": 6,
+                "top": 2183,
+                "right": 1004,
+                "bottom": 2265
+            }
+        },
+        {
+            "text": ",água, banha de porco, óleo de girassol refinado,",
+            "box": {
+                "left": -3,
+                "top": 2250,
+                "right": 1005,
+                "bottom": 2329
+            }
+        },
+        {
+            "text": "ee sal. 9% de atúm respeito as empadas e 18% no",
+            "box": {
+                "left": -6,
+                "top": 2312,
+                "right": 1005,
+                "bottom": 2389
+            }
+        },
+        {
+            "text": "Pode conter vestígios de soja e mostarda.",
+            "box": {
+                "left": 1,
+                "top": 2375,
+                "right": 790,
+                "bottom": 2451
+            }
+        },
+        {
+            "text": "de los cuales/",
+            "box": {
+                "left": 1076,
+                "top": 1954,
+                "right": 1347,
+                "bottom": 2005
+            }
+        },
+        {
+            "text": "dos quais:",
+            "box": {
+                "left": 1075,
+                "top": 2010,
+                "right": 1277,
+                "bottom": 2069
+            }
+        },
+        {
+            "text": "-Azúcares/",
+            "box": {
+                "left": 1124,
+                "top": 2070,
+                "right": 1349,
+                "bottom": 2120
+            }
+        },
+        {
+            "text": "Açúcares",
+            "box": {
+                "left": 1151,
+                "top": 2124,
+                "right": 1327,
+                "bottom": 2179
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1078,
+                "top": 2197,
+                "right": 1271,
+                "bottom": 2241
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1045,
+                "top": 2277,
+                "right": 1139,
+                "bottom": 2332
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1485,
+                "top": 1159,
+                "right": 1584,
+                "bottom": 1217
+            }
+        },
+        {
+            "text": "1070 kJ",
+            "box": {
+                "left": 1496,
+                "top": 1305,
+                "right": 1644,
+                "bottom": 1353
+            }
+        },
+        {
+            "text": "255 kcal",
+            "box": {
+                "left": 1421,
+                "top": 1359,
+                "right": 1643,
+                "bottom": 1418
+            }
+        },
+        {
+            "text": "14g",
+            "box": {
+                "left": 1550,
+                "top": 1448,
+                "right": 1630,
+                "bottom": 1502
+            }
+        },
+        {
+            "text": "39",
+            "box": {
+                "left": 1558,
+                "top": 1698,
+                "right": 1624,
+                "bottom": 1755
+            }
+        },
+        {
+            "text": "28 g",
+            "box": {
+                "left": 1533,
+                "top": 1835,
+                "right": 1620,
+                "bottom": 1888
+            }
+        },
+        {
+            "text": "47g",
+            "box": {
+                "left": 1522,
+                "top": 2071,
+                "right": 1617,
+                "bottom": 2131
+            }
+        },
+        {
+            "text": "5,6 g",
+            "box": {
+                "left": 1514,
+                "top": 2205,
+                "right": 1612,
+                "bottom": 2258
+            }
+        },
+        {
+            "text": "0,6 g",
+            "box": {
+                "left": 1512,
+                "top": 2287,
+                "right": 1609,
+                "bottom": 2336
+            }
+        },
+        {
+            "text": "30 g",
+            "box": {
+                "left": 1830,
+                "top": 1159,
+                "right": 1918,
+                "bottom": 1227
+            }
+        },
+        {
+            "text": "321 kJ",
+            "box": {
+                "left": 1793,
+                "top": 1312,
+                "right": 1908,
+                "bottom": 1358
+            }
+        },
+        {
+            "text": "77 kcal",
+            "box": {
+                "left": 1725,
+                "top": 1365,
+                "right": 1909,
+                "bottom": 1422
+            }
+        },
+        {
+            "text": "4,1g",
+            "box": {
+                "left": 1806,
+                "top": 1453,
+                "right": 1898,
+                "bottom": 1507
+            }
+        },
+        {
+            "text": "0,9g",
+            "box": {
+                "left": 1791,
+                "top": 1705,
+                "right": 1888,
+                "bottom": 1759
+            }
+        },
+        {
+            "text": "8,4 g",
+            "box": {
+                "left": 1782,
+                "top": 1840,
+                "right": 1884,
+                "bottom": 1893
+            }
+        },
+        {
+            "text": "1,4g",
+            "box": {
+                "left": 1788,
+                "top": 2083,
+                "right": 1874,
+                "bottom": 2137
+            }
+        },
+        {
+            "text": "1,7g",
+            "box": {
+                "left": 1787,
+                "top": 2215,
+                "right": 1871,
+                "bottom": 2266
+            }
+        },
+        {
+            "text": "0,2g",
+            "box": {
+                "left": 1769,
+                "top": 2294,
+                "right": 1868,
+                "bottom": 2345
+            }
+        },
+        {
+            "text": "Contiene 14-17 unidades de aprox. 30 g./",
+            "box": {
+                "left": 1054,
+                "top": 2377,
+                "right": 1854,
+                "bottom": 2448
+            }
+        },
+        {
+            "text": "Contem 14-17 unidades de aprox. 30 g.",
+            "box": {
+                "left": 1055,
+                "top": 2433,
+                "right": 1807,
+                "bottom": 2504
+            }
+        },
+        {
+            "text": "OO0O",
+            "box": {
+                "left": 2118,
+                "top": 1724,
+                "right": 2250,
+                "bottom": 1753
+            }
+        },
+        {
+            "text": "E No descongelar.",
+            "box": {
+                "left": 1981,
+                "top": 1987,
+                "right": 2345,
+                "bottom": 2049
+            }
+        },
+        {
+            "text": "PNão descongelar.",
+            "box": {
+                "left": 1977,
+                "top": 2047,
+                "right": 2364,
+                "bottom": 2117
+            }
+        },
+        {
+            "text": "No descongelar.",
+            "box": {
+                "left": 2034,
+                "top": 2500,
+                "right": 2305,
+                "bottom": 2561
+            }
+        },
+        {
+            "text": "Não descongela.",
+            "box": {
+                "left": 2010,
+                "top": 2557,
+                "right": 2321,
+                "bottom": 2622
+            }
+        },
+        {
+            "text": "1",
+            "box": {
+                "left": 2448,
+                "top": 1186,
+                "right": 2465,
+                "bottom": 1229
+            }
+        },
+        {
+            "text": "1.",
+            "box": {
+                "left": 2433,
+                "top": 1649,
+                "right": 2454,
+                "bottom": 1692
+            }
+        },
+        {
+            "text": "180 °C",
+            "box": {
+                "left": 2492,
+                "top": 1494,
+                "right": 2632,
+                "bottom": 1539
+            }
+        },
+        {
+            "text": "210C",
+            "box": {
+                "left": 2461,
+                "top": 2027,
+                "right": 2597,
+                "bottom": 2075
+            }
+        },
+        {
+            "text": "o",
+            "box": {
+                "left": 2671,
+                "top": 1384,
+                "right": 2681,
+                "bottom": 1420
+            }
+        },
+        {
+            "text": "PREPARACIÓN/PR:",
+            "box": {
+                "left": 2683,
+                "top": 1075,
+                "right": 3072,
+                "bottom": 1152
+            }
+        },
+        {
+            "text": "2.",
+            "box": {
+                "left": 2724,
+                "top": 1195,
+                "right": 2756,
+                "bottom": 1238
+            }
+        },
+        {
+            "text": "2",
+            "box": {
+                "left": 2718,
+                "top": 1657,
+                "right": 2731,
+                "bottom": 1701
+            }
+        },
+        {
+            "text": "Colocar separadas.",
+            "box": {
+                "left": 2387,
+                "top": 2507,
+                "right": 2741,
+                "bottom": 2567
+            }
+        },
+        {
+            "text": "O3-4 min.",
+            "box": {
+                "left": 2869,
+                "top": 1382,
+                "right": 3063,
+                "bottom": 1455
+            }
+        },
+        {
+            "text": "Hasta dora",
+            "box": {
+                "left": 2872,
+                "top": 1463,
+                "right": 3078,
+                "bottom": 1526
+            }
+        },
+        {
+            "text": "PAté douram",
+            "box": {
+                "left": 2798,
+                "top": 1527,
+                "right": 3074,
+                "bottom": 1592
+            }
+        },
+        {
+            "text": "EPintar con hue",
+            "box": {
+                "left": 2714,
+                "top": 1905,
+                "right": 3057,
+                "bottom": 1965
+            }
+        },
+        {
+            "text": "batido por encim",
+            "box": {
+                "left": 2713,
+                "top": 1965,
+                "right": 3058,
+                "bottom": 2026
+            }
+        },
+        {
+            "text": "P Pintar com ovc",
+            "box": {
+                "left": 2708,
+                "top": 2019,
+                "right": 3072,
+                "bottom": 2081
+            }
+        },
+        {
+            "text": "batido por cima.",
+            "box": {
+                "left": 2704,
+                "top": 2076,
+                "right": 3034,
+                "bottom": 2135
+            }
+        },
+        {
+            "text": "2",
+            "box": {
+                "left": 2836,
+                "top": 2203,
+                "right": 2864,
+                "bottom": 2239
+            }
+        },
+        {
+            "text": "Importante respetar las instrucciones de cocinado/lmportam",
+            "box": {
+                "left": 1920,
+                "top": 2650,
+                "right": 3076,
+                "bottom": 2724
+            }
+        }
+    ]
+}

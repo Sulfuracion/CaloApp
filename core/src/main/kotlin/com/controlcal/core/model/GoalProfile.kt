@@ -13,3 +13,11 @@ data class GoalProfile(
     val validFrom: String,
     val origin: GoalOrigin = GoalOrigin.MANUAL,
 )
+
+fun GoalProfile.toMacroTargets(): MacroTargets =
+    MacroTargets(
+        kcal = kcal,
+        protein = proteinG,
+        carbs = carbsG,
+        fat = fatG,
+    )

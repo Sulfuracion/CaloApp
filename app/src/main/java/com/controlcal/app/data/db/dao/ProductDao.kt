@@ -34,4 +34,23 @@ interface ProductDao {
 
     @Query("SELECT * FROM products WHERE archived = 0 ORDER BY name")
     suspend fun activeProducts(): List<ProductEntity>
+
+    @Query("SELECT * FROM products WHERE archived = 0 AND in_pantry = 1 ORDER BY name")
+    suspend fun pantryProducts(): List<ProductEntity>
+
+    @Query("UPDATE products SET in_pantry = :inPantry, updated_at = :updatedAt WHERE id = :id")
+    suspend fun setInPantry(id: Long, inPantry: Boolean, updatedAt: Long = System.currentTimeMillis())
+
+    @Query(
+        "UPDATE products SET in_pantry = :inPantry, min_g = :minG, max_g = :maxG, unit_name = :unitName, unit_g = :unitG, updated_at = :updatedAt WHERE id = :id"
+    )
+    suspend fun updatePantryConfig(
+        id: Long,
+        inPantry: Boolean,
+        minG: Double?,
+        maxG: Double?,
+        unitName: String?,
+        unitG: Double?,
+        updatedAt: Long = System.currentTimeMillis(),
+    )
 }

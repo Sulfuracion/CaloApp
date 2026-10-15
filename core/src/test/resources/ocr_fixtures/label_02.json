@@ -1,0 +1,548 @@
+{
+    "imageFileName": "label_02.jpg",
+    "timestamp": "2026-10-13T21:52:13.894723Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "SNATADA",
+            "box": {
+                "left": 537,
+                "top": 667,
+                "right": 1598,
+                "bottom": 905
+            }
+        },
+        {
+            "text": "LECHE DESNATADA",
+            "box": {
+                "left": 322,
+                "top": 1259,
+                "right": 868,
+                "bottom": 1323
+            }
+        },
+        {
+            "text": "UHT DE VACA",
+            "box": {
+                "left": 407,
+                "top": 1338,
+                "right": 787,
+                "bottom": 1398
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 374,
+                "top": 1458,
+                "right": 815,
+                "bottom": 1531
+            }
+        },
+        {
+            "text": "Leche desnatada de vaca.",
+            "box": {
+                "left": 213,
+                "top": 1554,
+                "right": 947,
+                "bottom": 1626
+            }
+        },
+        {
+            "text": "Origen de la leche: España.",
+            "box": {
+                "left": 220,
+                "top": 1666,
+                "right": 939,
+                "bottom": 1752
+            }
+        },
+        {
+            "text": "CONSERVACIÓN",
+            "box": {
+                "left": 383,
+                "top": 1968,
+                "right": 843,
+                "bottom": 2031
+            }
+        },
+        {
+            "text": "Mantener en lugar fresco y",
+            "box": {
+                "left": 238,
+                "top": 2075,
+                "right": 994,
+                "bottom": 2144
+            }
+        },
+        {
+            "text": "seco. Una vez abierto el",
+            "box": {
+                "left": 241,
+                "top": 2151,
+                "right": 991,
+                "bottom": 2206
+            }
+        },
+        {
+            "text": "envase, conservar en el",
+            "box": {
+                "left": 246,
+                "top": 2227,
+                "right": 990,
+                "bottom": 2282
+            }
+        },
+        {
+            "text": "frigorífico y consumir antes",
+            "box": {
+                "left": 247,
+                "top": 2294,
+                "right": 995,
+                "bottom": 2361
+            }
+        },
+        {
+            "text": "de 3 días.",
+            "box": {
+                "left": 252,
+                "top": 2366,
+                "right": 503,
+                "bottom": 2421
+            }
+        },
+        {
+            "text": "MERCADONA",
+            "box": {
+                "left": 489,
+                "top": 2909,
+                "right": 924,
+                "bottom": 2960
+            }
+        },
+        {
+            "text": "800 500 220",
+            "box": {
+                "left": 532,
+                "top": 2957,
+                "right": 949,
+                "bottom": 3039
+            }
+        },
+        {
+            "text": "1L",
+            "box": {
+                "left": 560,
+                "top": 3164,
+                "right": 740,
+                "bottom": 3297
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1107,
+                "top": 1396,
+                "right": 1203,
+                "bottom": 1445
+            }
+        },
+        {
+            "text": "Grasas",
+            "box": {
+                "left": 1117,
+                "top": 1552,
+                "right": 1287,
+                "bottom": 1606
+            }
+        },
+        {
+            "text": "Energético 35 kcal",
+            "box": {
+                "left": 1109,
+                "top": 1451,
+                "right": 1673,
+                "bottom": 1534
+            }
+        },
+        {
+            "text": "de las cuales:",
+            "box": {
+                "left": 1116,
+                "top": 1632,
+                "right": 1365,
+                "bottom": 1687
+            }
+        },
+        {
+            "text": "Saturadas",
+            "box": {
+                "left": 1174,
+                "top": 1688,
+                "right": 1414,
+                "bottom": 1746
+            }
+        },
+        {
+            "text": "Hidratos de",
+            "box": {
+                "left": 1108,
+                "top": 1771,
+                "right": 1398,
+                "bottom": 1836
+            }
+        },
+        {
+            "text": "Carbono",
+            "box": {
+                "left": 1108,
+                "top": 1836,
+                "right": 1322,
+                "bottom": 1898
+            }
+        },
+        {
+            "text": "de los cuales:",
+            "box": {
+                "left": 1118,
+                "top": 1915,
+                "right": 1356,
+                "bottom": 1973
+            }
+        },
+        {
+            "text": "- Azúcares",
+            "box": {
+                "left": 1151,
+                "top": 1972,
+                "right": 1396,
+                "bottom": 2026
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1108,
+                "top": 2037,
+                "right": 1354,
+                "bottom": 2113
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1119,
+                "top": 2143,
+                "right": 1193,
+                "bottom": 2195
+            }
+        },
+        {
+            "text": "100 ml",
+            "box": {
+                "left": 1483,
+                "top": 1285,
+                "right": 1642,
+                "bottom": 1361
+            }
+        },
+        {
+            "text": "Minerales",
+            "box": {
+                "left": 1109,
+                "top": 2233,
+                "right": 1359,
+                "bottom": 2300
+            }
+        },
+        {
+            "text": "Calcio",
+            "box": {
+                "left": 1120,
+                "top": 2325,
+                "right": 1231,
+                "bottom": 2371
+            }
+        },
+        {
+            "text": "149 kJ",
+            "box": {
+                "left": 1559,
+                "top": 1403,
+                "right": 1683,
+                "bottom": 1453
+            }
+        },
+        {
+            "text": "0,3 9",
+            "box": {
+                "left": 1545,
+                "top": 1555,
+                "right": 1678,
+                "bottom": 1634
+            }
+        },
+        {
+            "text": "0,2 g",
+            "box": {
+                "left": 1553,
+                "top": 1698,
+                "right": 1663,
+                "bottom": 1763
+            }
+        },
+        {
+            "text": "4,9 g",
+            "box": {
+                "left": 1545,
+                "top": 1783,
+                "right": 1664,
+                "bottom": 1847
+            }
+        },
+        {
+            "text": "4,9 9",
+            "box": {
+                "left": 1563,
+                "top": 1973,
+                "right": 1659,
+                "bottom": 2048
+            }
+        },
+        {
+            "text": "3,2g",
+            "box": {
+                "left": 1540,
+                "top": 2058,
+                "right": 1659,
+                "bottom": 2121
+            }
+        },
+        {
+            "text": "0,13 g",
+            "box": {
+                "left": 1507,
+                "top": 2149,
+                "right": 1656,
+                "bottom": 2212
+            }
+        },
+        {
+            "text": "COVAP",
+            "box": {
+                "left": 1327,
+                "top": 2592,
+                "right": 1722,
+                "bottom": 2685
+            }
+        },
+        {
+            "text": "Fabricado por.",
+            "box": {
+                "left": 1361,
+                "top": 2694,
+                "right": 1687,
+                "bottom": 2768
+            }
+        },
+        {
+            "text": "COVAP",
+            "box": {
+                "left": 1445,
+                "top": 2772,
+                "right": 1599,
+                "bottom": 2824
+            }
+        },
+        {
+            "text": "CE",
+            "box": {
+                "left": 1490,
+                "top": 3295,
+                "right": 1533,
+                "bottom": 3326
+            }
+        },
+        {
+            "text": "250 ml",
+            "box": {
+                "left": 1827,
+                "top": 1292,
+                "right": 1974,
+                "bottom": 1368
+            }
+        },
+        {
+            "text": "C/ Mayor, 56",
+            "box": {
+                "left": 1378,
+                "top": 2983,
+                "right": 1665,
+                "bottom": 3042
+            }
+        },
+        {
+            "text": "372 kJ",
+            "box": {
+                "left": 1854,
+                "top": 1407,
+                "right": 1977,
+                "bottom": 1457
+            }
+        },
+        {
+            "text": "88 kcal",
+            "box": {
+                "left": 1762,
+                "top": 1457,
+                "right": 1972,
+                "bottom": 1536
+            }
+        },
+        {
+            "text": "España",
+            "box": {
+                "left": 1438,
+                "top": 3117,
+                "right": 1602,
+                "bottom": 3174
+            }
+        },
+        {
+            "text": "ES",
+            "box": {
+                "left": 1489,
+                "top": 3214,
+                "right": 1541,
+                "bottom": 3257
+            }
+        },
+        {
+            "text": "15.00122/co)",
+            "box": {
+                "left": 1399,
+                "top": 3248,
+                "right": 1646,
+                "bottom": 3297
+            }
+        },
+        {
+            "text": "0,8 9",
+            "box": {
+                "left": 1843,
+                "top": 1561,
+                "right": 1966,
+                "bottom": 1631
+            }
+        },
+        {
+            "text": "110 mg (14%) |275 mg (34%)",
+            "box": {
+                "left": 1421,
+                "top": 2321,
+                "right": 1928,
+                "bottom": 2392
+            }
+        },
+        {
+            "text": "0,5 g",
+            "box": {
+                "left": 1847,
+                "top": 1701,
+                "right": 1960,
+                "bottom": 1765
+            }
+        },
+        {
+            "text": "*VRN: Valor de referencia de Nutrientes.",
+            "box": {
+                "left": 1092,
+                "top": 2419,
+                "right": 1886,
+                "bottom": 2483
+            }
+        },
+        {
+            "text": "Este envase contiene 4 raciones de 250 ml.",
+            "box": {
+                "left": 1092,
+                "top": 2485,
+                "right": 1956,
+                "bottom": 2534
+            }
+        },
+        {
+            "text": "14400 Pozoblanco, Córdoba",
+            "box": {
+                "left": 1201,
+                "top": 3049,
+                "right": 1842,
+                "bottom": 3103
+            }
+        },
+        {
+            "text": "12 g",
+            "box": {
+                "left": 1856,
+                "top": 1779,
+                "right": 1960,
+                "bottom": 1852
+            }
+        },
+        {
+            "text": "12 g",
+            "box": {
+                "left": 1847,
+                "top": 1981,
+                "right": 1947,
+                "bottom": 2046
+            }
+        },
+        {
+            "text": "8,0 g",
+            "box": {
+                "left": 1845,
+                "top": 2059,
+                "right": 1947,
+                "bottom": 2129
+            }
+        },
+        {
+            "text": "0,33 g",
+            "box": {
+                "left": 1818,
+                "top": 2146,
+                "right": 1947,
+                "bottom": 2227
+            }
+        },
+        {
+            "text": "Sociedad Cooperativa Andaluza",
+            "box": {
+                "left": 1159,
+                "top": 2842,
+                "right": 1885,
+                "bottom": 2901
+            }
+        },
+        {
+            "text": "(VRN)",
+            "box": {
+                "left": 1819,
+                "top": 2254,
+                "right": 1940,
+                "bottom": 2309
+            }
+        },
+        {
+            "text": "Ganadera del Valle de los Pedroches",
+            "box": {
+                "left": 1106,
+                "top": 2904,
+                "right": 1936,
+                "bottom": 2964
+            }
+        }
+    ]
+}

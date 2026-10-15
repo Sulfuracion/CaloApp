@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.controlcal.app.data.off.OffClient
 import com.controlcal.app.data.off.OffSearchResult
-import com.controlcal.core.model.Meal
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
 import com.controlcal.core.nutrition.NutritionCalculator
@@ -13,10 +12,15 @@ import com.controlcal.core.repo.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import com.controlcal.core.model.DefaultMealIds
+import com.controlcal.core.nutrition.MealClassifier
+import com.controlcal.core.repo.MealConfigRepository
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -24,10 +28,41 @@ class ScannerViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val offClient: OffClient,
     private val mealEntryRepository: MealEntryRepository,
+    private val mealConfigRepository: MealConfigRepository,
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
+
+    private var targetDate: LocalDate? = null
+
+    init {
+        loadMealConfig()
+    }
+
+    fun setContext(date: LocalDate, mealId: String?) {
+        targetDate = date
+        if (mealId != null) {
+            _uiState.update { it.copy(preselectedMeal = mealId) }
+        }
+    }
+
+    private fun loadMealConfig() {
+        viewModelScope.launch {
+            val meals = mealConfigRepository.getMealConfigs()
+            val active = meals.filter { it.isActive }.sortedBy { it.startTime }
+            val suggested = MealClassifier.suggestMeal(active, LocalTime.now(clock))?.id
+                ?: active.firstOrNull()?.id
+                ?: DefaultMealIds.BREAKFAST
+            _uiState.update { current ->
+                current.copy(
+                    availableMeals = active,
+                    preselectedMeal = suggested,
+                )
+            }
+        }
+    }
 
     fun onPermissionChecked(isGranted: Boolean) {
         _uiState.update { current ->
@@ -157,12 +192,23 @@ class ScannerViewModel @Inject constructor(
         }
     }
 
-    fun onAddLocalProductToDiary(product: Product, meal: Meal, grams: Double) {
+    fun onAddLocalProductToDiary(product: Product, meal: String, grams: Double) {
         viewModelScope.launch {
             val portion = NutritionCalculator.calculatePortionMacros(product, grams)
+            val effectiveDate = targetDate ?: LocalDate.now(clock)
+            val entryDate = effectiveDate.toString()
+            val existingEntries = mealEntryRepository.getByDateAndMeal(entryDate, meal)
+            val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == meal }?.startTime
+            val loggedAt = com.controlcal.core.nutrition.MealTimeCalculator.calculateLoggedAt(
+                date = effectiveDate,
+                existingEntries = existingEntries,
+                configuredStartTime = configuredStartTime,
+                zoneId = clock.zone,
+                clock = clock,
+            )
             val entry = MealEntry(
                 id = 0L,
-                date = LocalDate.now().toString(),
+                date = entryDate,
                 meal = meal,
                 productId = product.id,
                 productName = product.name,
@@ -171,7 +217,7 @@ class ScannerViewModel @Inject constructor(
                 protein = portion.protein,
                 carbs = portion.carbs,
                 fat = portion.fat,
-                loggedAt = System.currentTimeMillis()
+                loggedAt = loggedAt,
             )
             mealEntryRepository.insert(entry)
             onScanAgain()

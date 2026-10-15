@@ -5,12 +5,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.controlcal.core.model.Meal
 
 /**
  * A food entry logged on a day. Macros are copied here when the entry is
  * saved so that editing a product later does not change history
  * (section 4 of docs/PLAN.md). [grams] may be negative in tare mode.
+ * [meal] is the stable string identifier of a configured meal.
  */
 @Entity(
     tableName = "meal_entries",
@@ -35,9 +35,9 @@ data class MealEntryEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val date: String,
-    val meal: Meal,
+    val meal: String,
     @ColumnInfo(name = "product_id")
-    val productId: Long,
+    val productId: Long? = null,
     @ColumnInfo(name = "product_name")
     val productName: String,
     val grams: Double,

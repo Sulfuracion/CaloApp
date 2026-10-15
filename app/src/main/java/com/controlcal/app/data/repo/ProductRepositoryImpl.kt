@@ -25,6 +25,21 @@ class ProductRepositoryImpl @Inject constructor(
     override suspend fun getActiveProducts(): List<Product> =
         productDao.activeProducts().map { it.toDomain() }
 
+    override suspend fun getPantryProducts(): List<Product> =
+        productDao.pantryProducts().map { it.toDomain() }
+
+    override suspend fun setInPantry(id: Long, inPantry: Boolean) =
+        productDao.setInPantry(id, inPantry)
+
+    override suspend fun updatePantryConfig(
+        id: Long,
+        inPantry: Boolean,
+        minG: Double?,
+        maxG: Double?,
+        unitName: String?,
+        unitG: Double?,
+    ) = productDao.updatePantryConfig(id, inPantry, minG, maxG, unitName, unitG)
+
     override suspend fun insert(product: Product): Long =
         productDao.insert(product.toEntity())
 

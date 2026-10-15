@@ -103,7 +103,7 @@ class ProductDaoTest : DaoTestBase() {
         )
         entryDao.insert(
             TestData.mealEntry(
-                meal = com.controlcal.core.model.Meal.SNACK,
+                meal = com.controlcal.core.model.DefaultMealIds.SNACK,
                 productId = productId,
                 productName = "Yogur natural",
                 grams = 125.0,
@@ -136,5 +136,56 @@ class ProductDaoTest : DaoTestBase() {
         assertNotNull(found)
         assertEquals("Dos", found!!.name)
         assertNull(productDao.getByBarcode("999"))
+    }
+
+    @Test
+    fun pantryProductsReturnsOnlyActivePantryItems() = runTest {
+        productDao.insert(TestData.product(barcode = null, name = "Huevos", inPantry = true))
+        productDao.insert(TestData.product(barcode = null, name = "Arroz", inPantry = false))
+        productDao.insert(TestData.product(barcode = null, name = "Avena", inPantry = true))
+        val pArchived = productDao.insert(TestData.product(barcode = null, name = "Pan", inPantry = true))
+        productDao.archive(pArchived)
+
+        val inPantry = productDao.pantryProducts()
+        assertEquals(listOf("Avena", "Huevos"), inPantry.map { it.name })
+    }
+
+    @Test
+    fun setInPantryTogglesState() = runTest {
+        val id = productDao.insert(TestData.product(name = "Leche", inPantry = false))
+        assertEquals(false, productDao.getById(id)!!.inPantry)
+
+        productDao.setInPantry(id, true, updatedAt = 500L)
+        val updated = productDao.getById(id)!!
+        assertTrue(updated.inPantry)
+        assertEquals(500L, updated.updatedAt)
+
+        productDao.setInPantry(id, false, updatedAt = 600L)
+        val toggledOff = productDao.getById(id)!!
+        assertEquals(false, toggledOff.inPantry)
+        assertEquals(600L, toggledOff.updatedAt)
+    }
+
+    @Test
+    fun updatePantryConfigUpdatesLimitsAndUnit() = runTest {
+        val id = productDao.insert(TestData.product(name = "Huevo", inPantry = false))
+
+        productDao.updatePantryConfig(
+            id = id,
+            inPantry = true,
+            minG = 50.0,
+            maxG = 150.0,
+            unitName = "huevo",
+            unitG = 55.0,
+            updatedAt = 1000L,
+        )
+
+        val updated = productDao.getById(id)!!
+        assertTrue(updated.inPantry)
+        assertEquals(50.0, updated.minG!!, 0.001)
+        assertEquals(150.0, updated.maxG!!, 0.001)
+        assertEquals("huevo", updated.unitName)
+        assertEquals(55.0, updated.unitG!!, 0.001)
+        assertEquals(1000L, updated.updatedAt)
     }
 }

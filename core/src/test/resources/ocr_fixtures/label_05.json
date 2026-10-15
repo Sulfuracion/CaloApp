@@ -1,0 +1,359 @@
+{
+    "imageFileName": "label_05.jpg",
+    "timestamp": "2026-10-13T21:52:45.535462Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "ALTO %:",
+            "box": {
+                "left": 1033,
+                "top": 49,
+                "right": 1434,
+                "bottom": 225
+            }
+        },
+        {
+            "text": "EN PROTEINAS",
+            "box": {
+                "left": 992,
+                "top": 209,
+                "right": 1372,
+                "bottom": 308
+            }
+        },
+        {
+            "text": "INFORMACIÓN NUTRICIONAL",
+            "box": {
+                "left": 1046,
+                "top": 1340,
+                "right": 1666,
+                "bottom": 1413
+            }
+        },
+        {
+            "text": "SIN GLUTEN",
+            "box": {
+                "left": 1463,
+                "top": 320,
+                "right": 1750,
+                "bottom": 388
+            }
+        },
+        {
+            "text": "VALORES MEDIOS",
+            "box": {
+                "left": 1036,
+                "top": 1442,
+                "right": 1408,
+                "bottom": 1493
+            }
+        },
+        {
+            "text": "POR 100 G DE PRODUCTO",
+            "box": {
+                "left": 1350,
+                "top": 1442,
+                "right": 1941,
+                "bottom": 1493
+            }
+        },
+        {
+            "text": "Valor energético",
+            "box": {
+                "left": 1087,
+                "top": 1593,
+                "right": 1553,
+                "bottom": 1660
+            }
+        },
+        {
+            "text": "Grasas",
+            "box": {
+                "left": 1059,
+                "top": 1745,
+                "right": 1267,
+                "bottom": 1800
+            }
+        },
+        {
+            "text": "BAJO",
+            "box": {
+                "left": 1978,
+                "top": 224,
+                "right": 2105,
+                "bottom": 295
+            }
+        },
+        {
+            "text": "EN GRASA",
+            "box": {
+                "left": 1919,
+                "top": 320,
+                "right": 2169,
+                "bottom": 386
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1078,
+                "top": 2225,
+                "right": 1172,
+                "bottom": 2283
+            }
+        },
+        {
+            "text": "530 kJ/",
+            "box": {
+                "left": 1731,
+                "top": 1539,
+                "right": 1954,
+                "bottom": 1612
+            }
+        },
+        {
+            "text": "125 kcal",
+            "box": {
+                "left": 1722,
+                "top": 1626,
+                "right": 1949,
+                "bottom": 1690
+            }
+        },
+        {
+            "text": "2,0g",
+            "box": {
+                "left": 1791,
+                "top": 1737,
+                "right": 1940,
+                "bottom": 1806
+            }
+        },
+        {
+            "text": "0,6g",
+            "box": {
+                "left": 1819,
+                "top": 1820,
+                "right": 1954,
+                "bottom": 1885
+            }
+        },
+        {
+            "text": "de las cuales saturadas",
+            "box": {
+                "left": 1108,
+                "top": 1820,
+                "right": 1738,
+                "bottom": 1885
+            }
+        },
+        {
+            "text": "Hidratos de carbono 059",
+            "box": {
+                "left": 1106,
+                "top": 1909,
+                "right": 1933,
+                "bottom": 1994
+            }
+        },
+        {
+            "text": "de los cuales azúcares <0,5g",
+            "box": {
+                "left": 1114,
+                "top": 2006,
+                "right": 1938,
+                "bottom": 2071
+            }
+        },
+        {
+            "text": "Proteinas",
+            "box": {
+                "left": 1057,
+                "top": 2115,
+                "right": 1358,
+                "bottom": 2181
+            }
+        },
+        {
+            "text": "26,8g",
+            "box": {
+                "left": 1758,
+                "top": 2102,
+                "right": 1941,
+                "bottom": 2168
+            }
+        },
+        {
+            "text": "1,60g",
+            "box": {
+                "left": 1758,
+                "top": 2204,
+                "right": 1939,
+                "bottom": 2281
+            }
+        },
+        {
+            "text": "SIN LACTOSA",
+            "box": {
+                "left": 2315,
+                "top": 318,
+                "right": 2630,
+                "bottom": 396
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 2043,
+                "top": 1330,
+                "right": 2372,
+                "bottom": 1397
+            }
+        },
+        {
+            "text": "dextrosd nttoxidg",
+            "box": {
+                "left": 2067,
+                "top": 1400,
+                "right": 2559,
+                "bottom": 1454
+            }
+        },
+        {
+            "text": "Sodico) Puede conte",
+            "box": {
+                "left": 2057,
+                "top": 1456,
+                "right": 2590,
+                "bottom": 1513
+            }
+        },
+        {
+            "text": "CascarO y huIeug",
+            "box": {
+                "left": 2053,
+                "top": 1521,
+                "right": 2519,
+                "bottom": 1574
+            }
+        },
+        {
+            "text": "proceder de unupolo",
+            "box": {
+                "left": 2057,
+                "top": 1582,
+                "right": 2569,
+                "bottom": 1631
+            }
+        },
+        {
+            "text": "CONSERVACION Y CONSUD",
+            "box": {
+                "left": 2061,
+                "top": 1674,
+                "right": 2727,
+                "bottom": 1733
+            }
+        },
+        {
+            "text": "en atmósterdDrote0",
+            "box": {
+                "left": 2052,
+                "top": 1744,
+                "right": 2666,
+                "bottom": 1792
+            }
+        },
+        {
+            "text": "abierto, consumi ent",
+            "box": {
+                "left": 2051,
+                "top": 1798,
+                "right": 2608,
+                "bottom": 1849
+            }
+        },
+        {
+            "text": "CARLOTENA DEASADOS, SL",
+            "box": {
+                "left": 2049,
+                "top": 2024,
+                "right": 2655,
+                "bottom": 2081
+            }
+        },
+        {
+            "text": "Pol. Ind. Autouia Nore",
+            "box": {
+                "left": 2047,
+                "top": 2076,
+                "right": 2538,
+                "bottom": 2141
+            }
+        },
+        {
+            "text": "C/ELChaparral n",
+            "box": {
+                "left": 2052,
+                "top": 2136,
+                "right": 2418,
+                "bottom": 2196
+            }
+        },
+        {
+            "text": "La Carlota (Córdobo",
+            "box": {
+                "left": 2048,
+                "top": 2195,
+                "right": 2478,
+                "bottom": 2246
+            }
+        },
+        {
+            "text": "www. lacarlotena.com",
+            "box": {
+                "left": 2045,
+                "top": 2253,
+                "right": 2547,
+                "bottom": 2301
+            }
+        },
+        {
+            "text": "PESO NETO",
+            "box": {
+                "left": 2099,
+                "top": 2546,
+                "right": 2516,
+                "bottom": 2622
+            }
+        },
+        {
+            "text": "1259",
+            "box": {
+                "left": 2063,
+                "top": 2635,
+                "right": 2479,
+                "bottom": 2817
+            }
+        },
+        {
+            "text": "102563CO",
+            "box": {
+                "left": 2636,
+                "top": 2145,
+                "right": 2863,
+                "bottom": 2190
+            }
+        },
+        {
+            "text": "8437010'848",
+            "box": {
+                "left": 2557,
+                "top": 2770,
+                "right": 3053,
+                "bottom": 2842
+            }
+        }
+    ]
+}

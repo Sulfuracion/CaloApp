@@ -1,0 +1,485 @@
+{
+    "imageFileName": "label_17.jpg",
+    "timestamp": "2026-10-14T10:33:09.173397Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "CoSTa Brava",
+            "box": {
+                "left": 655,
+                "top": 198,
+                "right": 1152,
+                "bottom": 293
+            }
+        },
+        {
+            "text": "10 min.",
+            "box": {
+                "left": 490,
+                "top": 2524,
+                "right": 624,
+                "bottom": 2574
+            }
+        },
+        {
+            "text": "antes",
+            "box": {
+                "left": 492,
+                "top": 2577,
+                "right": 609,
+                "bottom": 2614
+            }
+        },
+        {
+            "text": "MEDITERRANtAN Foobs",
+            "box": {
+                "left": 712,
+                "top": 281,
+                "right": 1104,
+                "bottom": 329
+            }
+        },
+        {
+            "text": "CHORIZO DE PAMPLONA EXTRA",
+            "box": {
+                "left": 448,
+                "top": 1435,
+                "right": 977,
+                "bottom": 1495
+            }
+        },
+        {
+            "text": "CON PROTEINASDE LA LECHE",
+            "box": {
+                "left": 471,
+                "top": 1502,
+                "right": 971,
+                "bottom": 1559
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 580,
+                "top": 1591,
+                "right": 846,
+                "bottom": 1640
+            }
+        },
+        {
+            "text": "RIR AQUÍ",
+            "box": {
+                "left": 291,
+                "top": 2571,
+                "right": 556,
+                "bottom": 2808
+            }
+        },
+        {
+            "text": "Fabricado nor",
+            "box": {
+                "left": 676,
+                "top": 362,
+                "right": 924,
+                "bottom": 418
+            }
+        },
+        {
+            "text": "EMBUTIDOS MONTER, SLU.",
+            "box": {
+                "left": 665,
+                "top": 414,
+                "right": 1138,
+                "bottom": 484
+            }
+        },
+        {
+            "text": "Cami del Moll, s/n.x",
+            "box": {
+                "left": 680,
+                "top": 471,
+                "right": 1010,
+                "bottom": 530
+            }
+        },
+        {
+            "text": "854 Sant Jaume de Llierca",
+            "box": {
+                "left": 668,
+                "top": 523,
+                "right": 1155,
+                "bottom": 582
+            }
+        },
+        {
+            "text": "(Girona) España",
+            "box": {
+                "left": 674,
+                "top": 568,
+                "right": 948,
+                "bottom": 627
+            }
+        },
+        {
+            "text": "Carnede cerdo, tocino, sal,",
+            "box": {
+                "left": 356,
+                "top": 1665,
+                "right": 1078,
+                "bottom": 1739
+            }
+        },
+        {
+            "text": "pimentones, proteinas de la leche.",
+            "box": {
+                "left": 339,
+                "top": 1737,
+                "right": 1078,
+                "bottom": 1792
+            }
+        },
+        {
+            "text": "dextrina. dextrosa, lactosa, ajo",
+            "box": {
+                "left": 366,
+                "top": 1797,
+                "right": 1077,
+                "bottom": 1857
+            }
+        },
+        {
+            "text": "especias, estabilizantes(E-450,",
+            "box": {
+                "left": 337,
+                "top": 1860,
+                "right": 1096,
+                "bottom": 1919
+            }
+        },
+        {
+            "text": "E451), antioidantes (E301. E-331)",
+            "box": {
+                "left": 355,
+                "top": 1920,
+                "right": 1057,
+                "bottom": 1987
+            }
+        },
+        {
+            "text": "potenciador del sabor (E-621),",
+            "box": {
+                "left": 342,
+                "top": 1989,
+                "right": 1075,
+                "bottom": 2043
+            }
+        },
+        {
+            "text": "conservadofes E-250, E-252) y",
+            "box": {
+                "left": 366,
+                "top": 2044,
+                "right": 1079,
+                "bottom": 2107
+            }
+        },
+        {
+            "text": "colorante (E-420).",
+            "box": {
+                "left": 339,
+                "top": 2104,
+                "right": 691,
+                "bottom": 2168
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1145,
+                "top": 1481,
+                "right": 1222,
+                "bottom": 1527
+            }
+        },
+        {
+            "text": "Energético",
+            "box": {
+                "left": 1150,
+                "top": 1532,
+                "right": 1391,
+                "bottom": 1597
+            }
+        },
+        {
+            "text": "Grasas",
+            "box": {
+                "left": 1157,
+                "top": 1625,
+                "right": 1270,
+                "bottom": 1671
+            }
+        },
+        {
+            "text": "de las cuales:",
+            "box": {
+                "left": 1162,
+                "top": 1691,
+                "right": 1350,
+                "bottom": 1748
+            }
+        },
+        {
+            "text": "-Saturadas",
+            "box": {
+                "left": 1188,
+                "top": 1757,
+                "right": 1369,
+                "bottom": 1810
+            }
+        },
+        {
+            "text": "Hidratos de arbono",
+            "box": {
+                "left": 1157,
+                "top": 1823,
+                "right": 1516,
+                "bottom": 1890
+            }
+        },
+        {
+            "text": "de los cuales:",
+            "box": {
+                "left": 1171,
+                "top": 1905,
+                "right": 1351,
+                "bottom": 1954
+            }
+        },
+        {
+            "text": "Azúcares",
+            "box": {
+                "left": 1180,
+                "top": 1955,
+                "right": 1345,
+                "bottom": 2020
+            }
+        },
+        {
+            "text": "Proteinas",
+            "box": {
+                "left": 1157,
+                "top": 2039,
+                "right": 1325,
+                "bottom": 2089
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1156,
+                "top": 2128,
+                "right": 1206,
+                "bottom": 2173
+            }
+        },
+        {
+            "text": "PAMP",
+            "box": {
+                "left": 1455,
+                "top": 59,
+                "right": 2196,
+                "bottom": 420
+            }
+        },
+        {
+            "text": "chorizot",
+            "box": {
+                "left": 1564,
+                "top": 449,
+                "right": 2371,
+                "bottom": 849
+            }
+        },
+        {
+            "text": "8 402001\"030222",
+            "box": {
+                "left": 835,
+                "top": 2593,
+                "right": 1446,
+                "bottom": 2660
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1548,
+                "top": 1398,
+                "right": 1642,
+                "bottom": 1455
+            }
+        },
+        {
+            "text": "1916 kJ",
+            "box": {
+                "left": 1601,
+                "top": 1485,
+                "right": 1698,
+                "bottom": 1530
+            }
+        },
+        {
+            "text": "458 keal",
+            "box": {
+                "left": 1518,
+                "top": 1531,
+                "right": 1709,
+                "bottom": 1595
+            }
+        },
+        {
+            "text": "2g",
+            "box": {
+                "left": 1621,
+                "top": 1629,
+                "right": 1694,
+                "bottom": 1679
+            }
+        },
+        {
+            "text": "16",
+            "box": {
+                "left": 1631,
+                "top": 1761,
+                "right": 1663,
+                "bottom": 1804
+            }
+        },
+        {
+            "text": "3,0 g",
+            "box": {
+                "left": 1606,
+                "top": 1838,
+                "right": 1687,
+                "bottom": 1890
+            }
+        },
+        {
+            "text": "154",
+            "box": {
+                "left": 1619,
+                "top": 1970,
+                "right": 1685,
+                "bottom": 2018
+            }
+        },
+        {
+            "text": "7g",
+            "box": {
+                "left": 1628,
+                "top": 2047,
+                "right": 1685,
+                "bottom": 2100
+            }
+        },
+        {
+            "text": "3,89",
+            "box": {
+                "left": 1620,
+                "top": 2125,
+                "right": 1698,
+                "bottom": 2189
+            }
+        },
+        {
+            "text": "Contiene 4 unidades de aprox, 60 g.",
+            "box": {
+                "left": 1130,
+                "top": 2207,
+                "right": 1718,
+                "bottom": 2262
+            }
+        },
+        {
+            "text": "60",
+            "box": {
+                "left": 1847,
+                "top": 1394,
+                "right": 1898,
+                "bottom": 1456
+            }
+        },
+        {
+            "text": "g",
+            "box": {
+                "left": 1910,
+                "top": 1394,
+                "right": 1928,
+                "bottom": 1456
+            }
+        },
+        {
+            "text": "I150 kJ",
+            "box": {
+                "left": 1840,
+                "top": 1485,
+                "right": 1936,
+                "bottom": 1527
+            }
+        },
+        {
+            "text": "275 kcal",
+            "box": {
+                "left": 1767,
+                "top": 1531,
+                "right": 1930,
+                "bottom": 1595
+            }
+        },
+        {
+            "text": "25 g",
+            "box": {
+                "left": 1853,
+                "top": 1629,
+                "right": 1934,
+                "bottom": 1689
+            }
+        },
+        {
+            "text": "96g",
+            "box": {
+                "left": 1844,
+                "top": 1767,
+                "right": 1930,
+                "bottom": 1820
+            }
+        },
+        {
+            "text": "28-12-2028 1345 L-290928S1788S C5",
+            "box": {
+                "left": 2033,
+                "top": 1136,
+                "right": 2138,
+                "bottom": 2237
+            }
+        },
+        {
+            "text": "-12-2Oz6 į345 L2s0zSsiP5Ss",
+            "box": {
+                "left": 2159,
+                "top": 1276,
+                "right": 2207,
+                "bottom": 2168
+            }
+        },
+        {
+            "text": "HACENDUM",
+            "box": {
+                "left": 1979,
+                "top": 2565,
+                "right": 2237,
+                "bottom": 2678
+            }
+        }
+    ]
+}

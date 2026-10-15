@@ -9,11 +9,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,7 +69,8 @@ import com.controlcal.app.camera.CameraPreview
 import com.controlcal.app.camera.VibrationHelper
 import com.controlcal.app.data.off.OffProduct
 import com.controlcal.app.ui.debug.DebugFeatures
-import com.controlcal.core.model.Meal
+import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.Product
 import com.controlcal.core.nutrition.MealClassifier
 import com.controlcal.core.nutrition.NumberFormatHelper
@@ -80,6 +83,7 @@ fun ScannerRoute(
     onNavigateToConfirmation: (OffProduct) -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToManualEntry: (String?) -> Unit,
+    onNavigateToOcrCapture: (String?) -> Unit = {},
     onNavigateToDebugOcr: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -156,6 +160,7 @@ fun ScannerRoute(
         onBack = onBack,
         onNavigateToAbout = onNavigateToAbout,
         onNavigateToManualEntry = onNavigateToManualEntry,
+        onNavigateToOcrCapture = onNavigateToOcrCapture,
         onNavigateToDebugOcr = onNavigateToDebugOcr,
         modifier = modifier
     )
@@ -173,10 +178,11 @@ fun ScannerScreen(
     onTorchAvailabilityChanged: (Boolean) -> Unit,
     onScanAgain: () -> Unit,
     onRetryLookup: () -> Unit,
-    onAddLocalProductToDiary: (Product, Meal, Double) -> Unit,
+    onAddLocalProductToDiary: (Product, String, Double) -> Unit,
     onBack: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToManualEntry: (String?) -> Unit,
+    onNavigateToOcrCapture: (String?) -> Unit = {},
     onNavigateToDebugOcr: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -230,6 +236,7 @@ fun ScannerScreen(
                 onBack = onBack,
                 onNavigateToAbout = onNavigateToAbout,
                 onNavigateToManualEntry = onNavigateToManualEntry,
+                onNavigateToOcrCapture = onNavigateToOcrCapture,
                 onNavigateToDebugOcr = onNavigateToDebugOcr,
                 onToggleTorch = onToggleTorch,
                 onTorchAvailabilityChanged = onTorchAvailabilityChanged,
@@ -249,12 +256,13 @@ private fun ScannerCameraContent(
     onBack: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToManualEntry: (String?) -> Unit,
+    onNavigateToOcrCapture: (String?) -> Unit,
     onNavigateToDebugOcr: () -> Unit,
     onToggleTorch: () -> Unit,
     onTorchAvailabilityChanged: (Boolean) -> Unit,
     onScanAgain: () -> Unit,
     onRetryLookup: () -> Unit,
-    onAddLocalProductToDiary: (Product, Meal, Double) -> Unit,
+    onAddLocalProductToDiary: (Product, String, Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -441,6 +449,8 @@ private fun ScannerCameraContent(
             is BarcodeLookupState.LocalProductFound -> {
                 LocalProductCard(
                     product = lookup.product,
+                    availableMeals = uiState.availableMeals,
+                    defaultMeal = uiState.preselectedMeal,
                     onAddToDiary = { meal, grams ->
                         onAddLocalProductToDiary(lookup.product, meal, grams)
                     },
@@ -538,13 +548,20 @@ private fun ScannerCameraContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
+                            onClick = { onNavigateToOcrCapture(lookup.barcode) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = stringResource(R.string.ocr_capture_action_from_scanner))
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
                             onClick = { onNavigateToManualEntry(lookup.barcode) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(text = stringResource(R.string.scanner_permission_denied_manual_button))
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedButton(
+                        TextButton(
                             onClick = onScanAgain,
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -614,12 +631,14 @@ private fun ScannerCameraContent(
 @Composable
 private fun LocalProductCard(
     product: Product,
-    onAddToDiary: (Meal, Double) -> Unit,
+    availableMeals: List<ConfiguredMeal>,
+    defaultMeal: String,
+    onAddToDiary: (String, Double) -> Unit,
     onScanAgain: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedMeal by remember {
-        mutableStateOf(MealClassifier.suggestMealForHour(LocalTime.now().hour))
+    var selectedMeal by remember(defaultMeal) {
+        mutableStateOf(defaultMeal)
     }
     val defaultGramsText = product.servingG?.let { NumberFormatHelper.formatDecimal(it) } ?: "100"
     var gramsText by remember { mutableStateOf(defaultGramsText) }
@@ -679,29 +698,18 @@ private fun LocalProductCard(
 
             // Meal chips
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = selectedMeal == Meal.BREAKFAST,
-                    onClick = { selectedMeal = Meal.BREAKFAST },
-                    label = { Text(stringResource(R.string.confirm_product_meal_breakfast)) }
-                )
-                FilterChip(
-                    selected = selectedMeal == Meal.LUNCH,
-                    onClick = { selectedMeal = Meal.LUNCH },
-                    label = { Text(stringResource(R.string.confirm_product_meal_lunch)) }
-                )
-                FilterChip(
-                    selected = selectedMeal == Meal.SNACK,
-                    onClick = { selectedMeal = Meal.SNACK },
-                    label = { Text(stringResource(R.string.confirm_product_meal_snack)) }
-                )
-                FilterChip(
-                    selected = selectedMeal == Meal.DINNER,
-                    onClick = { selectedMeal = Meal.DINNER },
-                    label = { Text(stringResource(R.string.confirm_product_meal_dinner)) }
-                )
+                availableMeals.forEach { meal ->
+                    FilterChip(
+                        selected = selectedMeal == meal.id,
+                        onClick = { selectedMeal = meal.id },
+                        label = { Text(meal.name) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

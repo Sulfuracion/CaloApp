@@ -2,8 +2,8 @@ package com.controlcal.core.nutrition
 
 import com.controlcal.core.model.DayRemaining
 import com.controlcal.core.model.DayTotals
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MacroTargets
-import com.controlcal.core.model.Meal
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.MealTotals
 import com.controlcal.core.model.NutrientTotals
@@ -55,15 +55,21 @@ object NutritionCalculator {
     }
 
     /**
-     * Aggregates [entries] by [Meal], calculates per-meal totals (never below zero)
-     * and day totals (never below zero).
+     * Aggregates [entries] by meal ID, calculates per-meal totals (never below zero)
+     * and day totals (never below zero). Ensures [mealIds] (defaulting to [DefaultMealIds.ALL])
+     * plus any meal IDs present in [entries] are included in [DayTotals.byMeal].
      */
-    fun calculateDayTotals(date: String, entries: List<MealEntry>): DayTotals {
+    fun calculateDayTotals(
+        date: String,
+        entries: List<MealEntry>,
+        mealIds: List<String> = DefaultMealIds.ALL,
+    ): DayTotals {
         val grouped = entries.groupBy { it.meal }
-        val byMeal = Meal.entries.associateWith { meal ->
-            val mealEntries = grouped[meal] ?: emptyList()
+        val allMealIds = (mealIds + entries.map { it.meal }).distinct()
+        val byMeal = allMealIds.associateWith { mealId ->
+            val mealEntries = grouped[mealId] ?: emptyList()
             MealTotals(
-                meal = meal,
+                meal = mealId,
                 totals = calculateTotals(mealEntries),
                 entries = mealEntries,
             )

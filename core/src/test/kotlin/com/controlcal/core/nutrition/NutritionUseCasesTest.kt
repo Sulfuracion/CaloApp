@@ -1,7 +1,7 @@
 package com.controlcal.core.nutrition
 
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MacroTargets
-import com.controlcal.core.model.Meal
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.NutrientTotals
 import com.controlcal.core.repo.MealEntryRepository
@@ -42,12 +42,28 @@ class NutritionUseCasesTest {
             return storage.filter { it.date == date }
         }
 
-        override suspend fun getByDateAndMeal(date: String, meal: Meal): List<MealEntry> {
+        override suspend fun getByDateAndMeal(date: String, meal: String): List<MealEntry> {
             return storage.filter { it.date == date && it.meal == meal }
+        }
+
+        override suspend fun insertAll(entries: List<MealEntry>): List<Long> {
+            return entries.map { insert(it) }
         }
 
         override suspend fun getByProduct(productId: Long): List<MealEntry> {
             return storage.filter { it.productId == productId }
+        }
+
+        override suspend fun getSince(sinceMillis: Long): List<MealEntry> {
+            return storage.filter { it.loggedAt >= sinceMillis }
+        }
+
+        override suspend fun getLatestDateWithMealBefore(date: String, meal: String): String? {
+            return storage.filter { it.date < date && it.meal == meal }.maxOfOrNull { it.date }
+        }
+
+        override suspend fun countByMeal(meal: String): Int {
+            return storage.count { it.meal == meal }
         }
     }
 
@@ -58,7 +74,7 @@ class NutritionUseCasesTest {
             MealEntry(
                 id = 1L,
                 date = "2026-10-06",
-                meal = Meal.BREAKFAST,
+                meal = DefaultMealIds.BREAKFAST,
                 productId = 10L,
                 productName = "Avena",
                 grams = 50.0,
@@ -73,7 +89,7 @@ class NutritionUseCasesTest {
             MealEntry(
                 id = 2L,
                 date = "2026-10-06",
-                meal = Meal.LUNCH,
+                meal = DefaultMealIds.LUNCH,
                 productId = 20L,
                 productName = "Arroz",
                 grams = 100.0,
@@ -92,8 +108,8 @@ class NutritionUseCasesTest {
         assertEquals(9.0, dayTotals.totals.protein, 0.001)
         assertEquals(58.0, dayTotals.totals.carbs, 0.001)
         assertEquals(3.8, dayTotals.totals.fat, 0.001)
-        assertEquals(185.0, dayTotals.byMeal[Meal.BREAKFAST]?.totals?.kcal ?: 0.0, 0.001)
-        assertEquals(130.0, dayTotals.byMeal[Meal.LUNCH]?.totals?.kcal ?: 0.0, 0.001)
+        assertEquals(185.0, dayTotals.byMeal[DefaultMealIds.BREAKFAST]?.totals?.kcal ?: 0.0, 0.001)
+        assertEquals(130.0, dayTotals.byMeal[DefaultMealIds.LUNCH]?.totals?.kcal ?: 0.0, 0.001)
     }
 
     @Test

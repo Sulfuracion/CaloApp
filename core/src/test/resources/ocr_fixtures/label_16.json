@@ -1,0 +1,485 @@
+{
+    "imageFileName": "label_16.jpg",
+    "timestamp": "2026-10-14T10:33:00.140063Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "ALLADO",
+            "box": {
+                "left": 10,
+                "top": 1315,
+                "right": 175,
+                "bottom": 1366
+            }
+        },
+        {
+            "text": "JRIZADO.",
+            "box": {
+                "left": 13,
+                "top": 1374,
+                "right": 190,
+                "bottom": 1424
+            }
+        },
+        {
+            "text": "ALADO.",
+            "box": {
+                "left": 1,
+                "top": 1445,
+                "right": 160,
+                "bottom": 1498
+            }
+        },
+        {
+            "text": "e1ZADO.",
+            "box": {
+                "left": 0,
+                "top": 1499,
+                "right": 151,
+                "bottom": 1554
+            }
+        },
+        {
+            "text": "mantequilla,",
+            "box": {
+                "left": 112,
+                "top": 1688,
+                "right": 407,
+                "bottom": 1743
+            }
+        },
+        {
+            "text": "aca, oveja y cabra),",
+            "box": {
+                "left": 13,
+                "top": 1750,
+                "right": 414,
+                "bottom": 1802
+            }
+        },
+        {
+            "text": "ne,",
+            "box": {
+                "left": 1,
+                "top": 1692,
+                "right": 53,
+                "bottom": 1744
+            }
+        },
+        {
+            "text": "0, E-332 y E-330).",
+            "box": {
+                "left": 14,
+                "top": 1804,
+                "right": 412,
+                "bottom": 1862
+            }
+        },
+        {
+            "text": "y antiagiomerante",
+            "box": {
+                "left": 34,
+                "top": 1868,
+                "right": 410,
+                "bottom": 1924
+            }
+        },
+        {
+            "text": "oveja y cabra.",
+            "box": {
+                "left": 2,
+                "top": 1926,
+                "right": 298,
+                "bottom": 1990
+            }
+        },
+        {
+            "text": "anteiga, amidos",
+            "box": {
+                "left": 14,
+                "top": 2054,
+                "right": 406,
+                "bottom": 2106
+            }
+        },
+        {
+            "text": "e cabra), sal, sais",
+            "box": {
+                "left": 13,
+                "top": 2112,
+                "right": 402,
+                "bottom": 2165
+            }
+        },
+        {
+            "text": "30), conservante",
+            "box": {
+                "left": 1,
+                "top": 2172,
+                "right": 394,
+                "bottom": 2226
+            }
+        },
+        {
+            "text": "merante (E-460ii).",
+            "box": {
+                "left": 0,
+                "top": 2220,
+                "right": 374,
+                "bottom": 2286
+            }
+        },
+        {
+            "text": "a",
+            "box": {
+                "left": 22,
+                "top": 2298,
+                "right": 34,
+                "bottom": 2338
+            }
+        },
+        {
+            "text": "ÇÃO",
+            "box": {
+                "left": 21,
+                "top": 2540,
+                "right": 104,
+                "bottom": 2614
+            }
+        },
+        {
+            "text": "Cy 89C. Una vez",
+            "box": {
+                "left": 19,
+                "top": 2646,
+                "right": 362,
+                "bottom": 2705
+            }
+        },
+        {
+            "text": "sumir antes de",
+            "box": {
+                "left": 13,
+                "top": 2714,
+                "right": 362,
+                "bottom": 2765
+            }
+        },
+        {
+            "text": "C. Depois de",
+            "box": {
+                "left": 4,
+                "top": 2957,
+                "right": 354,
+                "bottom": 3036
+            }
+        },
+        {
+            "text": "mir em 5 dias.",
+            "box": {
+                "left": 1,
+                "top": 3008,
+                "right": 349,
+                "bottom": 3089
+            }
+        },
+        {
+            "text": "es del:",
+            "box": {
+                "left": -3,
+                "top": 3802,
+                "right": 140,
+                "bottom": 3881
+            }
+        },
+        {
+            "text": "de:",
+            "box": {
+                "left": 2,
+                "top": 3883,
+                "right": 75,
+                "bottom": 3926
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1116,
+                "top": 1527,
+                "right": 1219,
+                "bottom": 1573
+            }
+        },
+        {
+            "text": "Grasas/Lípidos",
+            "box": {
+                "left": 1140,
+                "top": 1650,
+                "right": 1519,
+                "bottom": 1713
+            }
+        },
+        {
+            "text": "Energético/Energia 284 kcal",
+            "box": {
+                "left": 1145,
+                "top": 1567,
+                "right": 2015,
+                "bottom": 1646
+            }
+        },
+        {
+            "text": "de las cuales/dos quais:",
+            "box": {
+                "left": 1141,
+                "top": 1721,
+                "right": 1600,
+                "bottom": 1773
+            }
+        },
+        {
+            "text": "Saturadas/Saturados",
+            "box": {
+                "left": 1208,
+                "top": 1774,
+                "right": 1743,
+                "bottom": 1833
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 1142,
+                "top": 1844,
+                "right": 1668,
+                "bottom": 1904
+            }
+        },
+        {
+            "text": "de los cuales/dos quais:",
+            "box": {
+                "left": 1169,
+                "top": 1917,
+                "right": 1601,
+                "bottom": 1971
+            }
+        },
+        {
+            "text": "- Azúcares/Açúcares",
+            "box": {
+                "left": 1209,
+                "top": 1967,
+                "right": 1704,
+                "bottom": 2036
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1172,
+                "top": 2030,
+                "right": 1391,
+                "bottom": 2095
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1181,
+                "top": 2112,
+                "right": 1252,
+                "bottom": 2155
+            }
+        },
+        {
+            "text": "Peso Neto/Líquido:",
+            "box": {
+                "left": 1161,
+                "top": 2261,
+                "right": 1594,
+                "bottom": 2348
+            }
+        },
+        {
+            "text": "400 ge",
+            "box": {
+                "left": 1146,
+                "top": 2320,
+                "right": 1609,
+                "bottom": 2524
+            }
+        },
+        {
+            "text": "Fabricado por:",
+            "box": {
+                "left": 1082,
+                "top": 3135,
+                "right": 1399,
+                "bottom": 3217
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1824,
+                "top": 1454,
+                "right": 1956,
+                "bottom": 1522
+            }
+        },
+        {
+            "text": "ENTREPINARES",
+            "box": {
+                "left": 1074,
+                "top": 3273,
+                "right": 1336,
+                "bottom": 3356
+            }
+        },
+        {
+            "text": "1182 kJ",
+            "box": {
+                "left": 1871,
+                "top": 1539,
+                "right": 2026,
+                "bottom": 1594
+            }
+        },
+        {
+            "text": "20 g",
+            "box": {
+                "left": 1902,
+                "top": 1661,
+                "right": 2011,
+                "bottom": 1727
+            }
+        },
+        {
+            "text": "7,0 g",
+            "box": {
+                "left": 1892,
+                "top": 1849,
+                "right": 2029,
+                "bottom": 1912
+            }
+        },
+        {
+            "text": "MERCADONA",
+            "box": {
+                "left": 1403,
+                "top": 2597,
+                "right": 1892,
+                "bottom": 2698
+            }
+        },
+        {
+            "text": "800 500 220",
+            "box": {
+                "left": 1391,
+                "top": 2665,
+                "right": 1890,
+                "bottom": 2782
+            }
+        },
+        {
+            "text": "13 9",
+            "box": {
+                "left": 1913,
+                "top": 1774,
+                "right": 2031,
+                "bottom": 1847
+            }
+        },
+        {
+            "text": "<0,5 g",
+            "box": {
+                "left": 1870,
+                "top": 1975,
+                "right": 2025,
+                "bottom": 2041
+            }
+        },
+        {
+            "text": "19 g",
+            "box": {
+                "left": 1912,
+                "top": 2055,
+                "right": 2023,
+                "bottom": 2107
+            }
+        },
+        {
+            "text": "UE",
+            "box": {
+                "left": 1851,
+                "top": 2992,
+                "right": 1905,
+                "bottom": 3028
+            }
+        },
+        {
+            "text": "1,5 g",
+            "box": {
+                "left": 1906,
+                "top": 2130,
+                "right": 2030,
+                "bottom": 2202
+            }
+        },
+        {
+            "text": "ES",
+            "box": {
+                "left": 1855,
+                "top": 2920,
+                "right": 1909,
+                "bottom": 2960
+            }
+        },
+        {
+            "text": "(15.007638/NA)",
+            "box": {
+                "left": 1746,
+                "top": 2947,
+                "right": 2012,
+                "bottom": 3004
+            }
+        },
+        {
+            "text": "QUESERÍAS ENTREPINARES, S.A.U.",
+            "box": {
+                "left": 1079,
+                "top": 3379,
+                "right": 1842,
+                "bottom": 3447
+            }
+        },
+        {
+            "text": ". Santander 140, 47011, Valladolid.",
+            "box": {
+                "left": 1142,
+                "top": 3420,
+                "right": 1967,
+                "bottom": 3510
+            }
+        },
+        {
+            "text": "España/Espanha",
+            "box": {
+                "left": 1079,
+                "top": 3492,
+                "right": 1443,
+                "bottom": 3561
+            }
+        },
+        {
+            "text": "1ONGANWER",
+            "box": {
+                "left": 2362,
+                "top": 1908,
+                "right": 3129,
+                "bottom": 2244
+            }
+        }
+    ]
+}

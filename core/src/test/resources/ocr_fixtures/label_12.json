@@ -1,0 +1,494 @@
+{
+    "imageFileName": "label_12.jpg",
+    "timestamp": "2026-10-14T10:32:30.800880Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "PORRAs CONGELADAS",
+            "box": {
+                "left": 1,
+                "top": 1201,
+                "right": 568,
+                "bottom": 1260
+            }
+        },
+        {
+            "text": "RTURAS cONGELADAS",
+            "box": {
+                "left": 1,
+                "top": 1266,
+                "right": 586,
+                "bottom": 1340
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 41,
+                "top": 1395,
+                "right": 409,
+                "bottom": 1454
+            }
+        },
+        {
+            "text": "go(glten,agua, aceite refinado de",
+            "box": {
+                "left": 17,
+                "top": 1482,
+                "right": 795,
+                "bottom": 1564
+            }
+        },
+        {
+            "text": "esiicante(E- 500. Puede contener",
+            "box": {
+                "left": 7,
+                "top": 1562,
+                "right": 812,
+                "bottom": 1627
+            }
+        },
+        {
+            "text": "os de cáscara cacahuete, soja",
+            "box": {
+                "left": 27,
+                "top": 1639,
+                "right": 796,
+                "bottom": 1701
+            }
+        },
+        {
+            "text": "ey/o derivados lácteos huevo",
+            "box": {
+                "left": 20,
+                "top": 1705,
+                "right": 783,
+                "bottom": 1780
+            }
+        },
+        {
+            "text": "rigo igliten, agua, bleo de grasso",
+            "box": {
+                "left": 16,
+                "top": 1882,
+                "right": 796,
+                "bottom": 1941
+            }
+        },
+        {
+            "text": "fermento E5001 Pode conter",
+            "box": {
+                "left": 45,
+                "top": 1948,
+                "right": 799,
+                "bottom": 2007
+            }
+        },
+        {
+            "text": "asca ria amendons",
+            "box": {
+                "left": 302,
+                "top": 2024,
+                "right": 800,
+                "bottom": 2082
+            }
+        },
+        {
+            "text": "derivados do leite",
+            "box": {
+                "left": 373,
+                "top": 2090,
+                "right": 808,
+                "bottom": 2153
+            }
+        },
+        {
+            "text": "Selaslsem estuelas",
+            "box": {
+                "left": 196,
+                "top": 3104,
+                "right": 612,
+                "bottom": 3179
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 939,
+                "top": 1355,
+                "right": 1045,
+                "bottom": 1400
+            }
+        },
+        {
+            "text": "ERCADONA",
+            "box": {
+                "left": 335,
+                "top": 3471,
+                "right": 607,
+                "bottom": 3529
+            }
+        },
+        {
+            "text": "800500 220) h",
+            "box": {
+                "left": 300,
+                "top": 3504,
+                "right": 769,
+                "bottom": 3599
+            }
+        },
+        {
+            "text": "CION/CONSERVAÇAO",
+            "box": {
+                "left": 481,
+                "top": 2621,
+                "right": 1027,
+                "bottom": 2684
+            }
+        },
+        {
+            "text": "Fabricado por. BOLL FRIT,SAL",
+            "box": {
+                "left": 181,
+                "top": 3597,
+                "right": 698,
+                "bottom": 3676
+            }
+        },
+        {
+            "text": "Grasas/Lípidos",
+            "box": {
+                "left": 949,
+                "top": 1497,
+                "right": 1389,
+                "bottom": 1560
+            }
+        },
+        {
+            "text": "d00onservar a 180Una vez descongeado",
+            "box": {
+                "left": 450,
+                "top": 2717,
+                "right": 1206,
+                "bottom": 2769
+            }
+        },
+        {
+            "text": "ryconsu en as siguientes 12horas",
+            "box": {
+                "left": 401,
+                "top": 2781,
+                "right": 1089,
+                "bottom": 2833
+            }
+        },
+        {
+            "text": "gelado,consernvar a 180. rna vez",
+            "box": {
+                "left": 401,
+                "top": 2825,
+                "right": 1217,
+                "bottom": 2904
+            }
+        },
+        {
+            "text": "Não volepongear COnsunir dentro das",
+            "box": {
+                "left": 357,
+                "top": 2895,
+                "right": 1207,
+                "bottom": 2960
+            }
+        },
+        {
+            "text": "C/ Laquna del Marquesauo 32 nave E",
+            "box": {
+                "left": 192,
+                "top": 3654,
+                "right": 865,
+                "bottom": 3761
+            }
+        },
+        {
+            "text": "Energético/Energia 419 kcal",
+            "box": {
+                "left": 967,
+                "top": 1398,
+                "right": 1940,
+                "bottom": 1500
+            }
+        },
+        {
+            "text": "de las cuales/dos quais:",
+            "box": {
+                "left": 949,
+                "top": 1570,
+                "right": 1475,
+                "bottom": 1628
+            }
+        },
+        {
+            "text": "- Saturadas/Saturados",
+            "box": {
+                "left": 994,
+                "top": 1636,
+                "right": 1633,
+                "bottom": 1693
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 954,
+                "top": 1717,
+                "right": 1551,
+                "bottom": 1771
+            }
+        },
+        {
+            "text": "de los cuales/dos quais:",
+            "box": {
+                "left": 955,
+                "top": 1790,
+                "right": 1477,
+                "bottom": 1847
+            }
+        },
+        {
+            "text": "- Azúcares/Açúcares",
+            "box": {
+                "left": 998,
+                "top": 1851,
+                "right": 1589,
+                "bottom": 1923
+            }
+        },
+        {
+            "text": "Fibra alimentaria/Fibra",
+            "box": {
+                "left": 960,
+                "top": 1935,
+                "right": 1617,
+                "bottom": 1990
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 961,
+                "top": 2030,
+                "right": 1236,
+                "bottom": 2079
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 963,
+                "top": 2119,
+                "right": 1048,
+                "bottom": 2168
+            }
+        },
+        {
+            "text": "Ner fecha de consumo preferentel",
+            "box": {
+                "left": 551,
+                "top": 3312,
+                "right": 1227,
+                "bottom": 3381
+            }
+        },
+        {
+            "text": "3 dias/dias",
+            "box": {
+                "left": 1020,
+                "top": 3121,
+                "right": 1222,
+                "bottom": 3189
+            }
+        },
+        {
+            "text": "sennana",
+            "box": {
+                "left": 1075,
+                "top": 3201,
+                "right": 1230,
+                "bottom": 3256
+            }
+        },
+        {
+            "text": "Ner prazo de validade",
+            "box": {
+                "left": 789,
+                "top": 3373,
+                "right": 1234,
+                "bottom": 3450
+            }
+        },
+        {
+            "text": "Gb00S",
+            "box": {
+                "left": 1456,
+                "top": 723,
+                "right": 1618,
+                "bottom": 1013
+            }
+        },
+        {
+            "text": "28021 Madrid. Españia/Espanha peEAA20,43690/M",
+            "box": {
+                "left": 196,
+                "top": 3720,
+                "right": 1297,
+                "bottom": 3820
+            }
+        },
+        {
+            "text": "100 9",
+            "box": {
+                "left": 1727,
+                "top": 1271,
+                "right": 1879,
+                "bottom": 1350
+            }
+        },
+        {
+            "text": "1749 kJ",
+            "box": {
+                "left": 1773,
+                "top": 1368,
+                "right": 1949,
+                "bottom": 1436
+            }
+        },
+        {
+            "text": "25,5 g",
+            "box": {
+                "left": 1773,
+                "top": 1500,
+                "right": 1936,
+                "bottom": 1601
+            }
+        },
+        {
+            "text": "8'480000\" 15 1377",
+            "box": {
+                "left": 1560,
+                "top": 3118,
+                "right": 1637,
+                "bottom": 3741
+            }
+        },
+        {
+            "text": "339",
+            "box": {
+                "left": 1793,
+                "top": 1635,
+                "right": 1935,
+                "bottom": 1737
+            }
+        },
+        {
+            "text": "411g",
+            "box": {
+                "left": 1744,
+                "top": 1712,
+                "right": 1922,
+                "bottom": 1814
+            }
+        },
+        {
+            "text": "1,3 g",
+            "box": {
+                "left": 1804,
+                "top": 1870,
+                "right": 1927,
+                "bottom": 1932
+            }
+        },
+        {
+            "text": "1,2 9eso Neto",
+            "box": {
+                "left": 1792,
+                "top": 1942,
+                "right": 2236,
+                "bottom": 2044
+            }
+        },
+        {
+            "text": "Vquido",
+            "box": {
+                "left": 1995,
+                "top": 2020,
+                "right": 2209,
+                "bottom": 2092
+            }
+        },
+        {
+            "text": "5,79",
+            "box": {
+                "left": 1791,
+                "top": 2032,
+                "right": 1945,
+                "bottom": 2121
+            }
+        },
+        {
+            "text": "1,1g",
+            "box": {
+                "left": 1797,
+                "top": 2125,
+                "right": 1941,
+                "bottom": 2199
+            }
+        },
+        {
+            "text": "OnsuDTeerentene",
+            "box": {
+                "left": 1313,
+                "top": 2618,
+                "right": 1864,
+                "bottom": 2661
+            }
+        },
+        {
+            "text": "de/Lote ver lateral del envase",
+            "box": {
+                "left": 1339,
+                "top": 2665,
+                "right": 1991,
+                "bottom": 2742
+            }
+        },
+        {
+            "text": "00",
+            "box": {
+                "left": 2037,
+                "top": 2115,
+                "right": 2228,
+                "bottom": 2249
+            }
+        },
+        {
+            "text": "Consumir de preferencia antes do fi",
+            "box": {
+                "left": 1341,
+                "top": 2745,
+                "right": 2268,
+                "bottom": 2808
+            }
+        },
+        {
+            "text": "de/Lot Ver lado da embalagen",
+            "box": {
+                "left": 1332,
+                "top": 2807,
+                "right": 1997,
+                "bottom": 2882
+            }
+        }
+    ]
+}

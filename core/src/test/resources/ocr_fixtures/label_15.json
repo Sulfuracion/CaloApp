@@ -1,0 +1,440 @@
+{
+    "imageFileName": "label_15.jpg",
+    "timestamp": "2026-10-14T10:32:53.380526Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "OCIDO",
+            "box": {
+                "left": 6,
+                "top": 1,
+                "right": 1008,
+                "bottom": 289
+            }
+        },
+        {
+            "text": "INAS LONCHAS",
+            "box": {
+                "left": 1,
+                "top": 277,
+                "right": 1527,
+                "bottom": 542
+            }
+        },
+        {
+            "text": "JAMON COCIDO",
+            "box": {
+                "left": 195,
+                "top": 1325,
+                "right": 632,
+                "bottom": 1407
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 213,
+                "top": 1432,
+                "right": 617,
+                "bottom": 1501
+            }
+        },
+        {
+            "text": "(58), agua, sal, jarabe de glucosa,",
+            "box": {
+                "left": 4,
+                "top": 1517,
+                "right": 1047,
+                "bottom": 1625
+            }
+        },
+        {
+            "text": "estabilizantesE-451i, E-450i, E-407),",
+            "box": {
+                "left": 10,
+                "top": 1590,
+                "right": 1046,
+                "bottom": 1699
+            }
+        },
+        {
+            "text": "antes (ascorbato sódico, E-331), aromas,",
+            "box": {
+                "left": -3,
+                "top": 1664,
+                "right": 1044,
+                "bottom": 1780
+            }
+        },
+        {
+            "text": "adores (nitrito sódico, acetato potásico).",
+            "box": {
+                "left": -2,
+                "top": 1736,
+                "right": 1021,
+                "bottom": 1854
+            }
+        },
+        {
+            "text": "CONSERVACION",
+            "box": {
+                "left": 199,
+                "top": 1897,
+                "right": 638,
+                "bottom": 1968
+            }
+        },
+        {
+            "text": "na vez abierto consumir en 48 horas.",
+            "box": {
+                "left": 0,
+                "top": 2060,
+                "right": 907,
+                "bottom": 2146
+            }
+        },
+        {
+            "text": "RADEL",
+            "box": {
+                "left": -4,
+                "top": 2333,
+                "right": 168,
+                "bottom": 2407
+            }
+        },
+        {
+            "text": "er entre 0°Cy 5°C. Abrir 5 minutos antes de Proteinas",
+            "box": {
+                "left": -2,
+                "top": 1989,
+                "right": 1347,
+                "bottom": 2080
+            }
+        },
+        {
+            "text": "o en atmósfera protectora. Consumir",
+            "box": {
+                "left": 36,
+                "top": 2160,
+                "right": 1039,
+                "bottom": 2252
+            }
+        },
+        {
+            "text": "temente antes del/lote: Ver envase.",
+            "box": {
+                "left": 1,
+                "top": 2230,
+                "right": 868,
+                "bottom": 2318
+            }
+        },
+        {
+            "text": "Elaborado por.",
+            "box": {
+                "left": 280,
+                "top": 2389,
+                "right": 560,
+                "bottom": 2459
+            }
+        },
+        {
+            "text": "CASA TARRADELLAS, S.A.",
+            "box": {
+                "left": 262,
+                "top": 2451,
+                "right": 788,
+                "bottom": 2515
+            }
+        },
+        {
+            "text": "N-152, Km 70, CP 08503",
+            "box": {
+                "left": 265,
+                "top": 2521,
+                "right": 774,
+                "bottom": 2574
+            }
+        },
+        {
+            "text": "INFORMACION NUTRICIONAL",
+            "box": {
+                "left": 1199,
+                "top": 1472,
+                "right": 1945,
+                "bottom": 1554
+            }
+        },
+        {
+            "text": "Valores medios",
+            "box": {
+                "left": 1147,
+                "top": 1559,
+                "right": 1499,
+                "bottom": 1641
+            }
+        },
+        {
+            "text": "Valor eneroético",
+            "box": {
+                "left": 1145,
+                "top": 1631,
+                "right": 1514,
+                "bottom": 1716
+            }
+        },
+        {
+            "text": "Grasas",
+            "box": {
+                "left": 1130,
+                "top": 1709,
+                "right": 1297,
+                "bottom": 1773
+            }
+        },
+        {
+            "text": "ES",
+            "box": {
+                "left": 931,
+                "top": 2422,
+                "right": 983,
+                "bottom": 2460
+            }
+        },
+        {
+            "text": "(10.027343/B)",
+            "box": {
+                "left": 853,
+                "top": 2464,
+                "right": 1071,
+                "bottom": 2512
+            }
+        },
+        {
+            "text": "UE",
+            "box": {
+                "left": 938,
+                "top": 2514,
+                "right": 980,
+                "bottom": 2547
+            }
+        },
+        {
+            "text": "de las cuales saturadas",
+            "box": {
+                "left": 1209,
+                "top": 1780,
+                "right": 1730,
+                "bottom": 1858
+            }
+        },
+        {
+            "text": "Hidratos de carbono",
+            "box": {
+                "left": 1147,
+                "top": 1844,
+                "right": 1598,
+                "bottom": 1931
+            }
+        },
+        {
+            "text": "de los cuales azúcares",
+            "box": {
+                "left": 1188,
+                "top": 1927,
+                "right": 1702,
+                "bottom": 1999
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1122,
+                "top": 2067,
+                "right": 1189,
+                "bottom": 2128
+            }
+        },
+        {
+            "text": "SIN",
+            "box": {
+                "left": 1225,
+                "top": 2231,
+                "right": 1280,
+                "bottom": 2269
+            }
+        },
+        {
+            "text": "GLUTEN",
+            "box": {
+                "left": 1123,
+                "top": 2278,
+                "right": 1365,
+                "bottom": 2346
+            }
+        },
+        {
+            "text": "HACENDADO",
+            "box": {
+                "left": 613,
+                "top": 2629,
+                "right": 1193,
+                "bottom": 2781
+            }
+        },
+        {
+            "text": "Por 100g",
+            "box": {
+                "left": 1810,
+                "top": 1581,
+                "right": 2017,
+                "bottom": 1657
+            }
+        },
+        {
+            "text": "416kJ /99kcal",
+            "box": {
+                "left": 1682,
+                "top": 1645,
+                "right": 1996,
+                "bottom": 1727
+            }
+        },
+        {
+            "text": "279",
+            "box": {
+                "left": 1897,
+                "top": 1725,
+                "right": 2001,
+                "bottom": 1804
+            }
+        },
+        {
+            "text": "14g",
+            "box": {
+                "left": 1895,
+                "top": 1872,
+                "right": 1996,
+                "bottom": 1938
+            }
+        },
+        {
+            "text": "14g",
+            "box": {
+                "left": 1881,
+                "top": 1937,
+                "right": 2001,
+                "bottom": 2013
+            }
+        },
+        {
+            "text": "1720",
+            "box": {
+                "left": 1850,
+                "top": 2005,
+                "right": 1995,
+                "bottom": 2076
+            }
+        },
+        {
+            "text": "2,1g",
+            "box": {
+                "left": 1883,
+                "top": 2079,
+                "right": 1987,
+                "bottom": 2147
+            }
+        },
+        {
+            "text": "Peso Neto:",
+            "box": {
+                "left": 1727,
+                "top": 2223,
+                "right": 1966,
+                "bottom": 2267
+            }
+        },
+        {
+            "text": "on 225 g",
+            "box": {
+                "left": 1541,
+                "top": 2267,
+                "right": 2005,
+                "bottom": 2413
+            }
+        },
+        {
+            "text": "MERGADONA",
+            "box": {
+                "left": 1527,
+                "top": 2513,
+                "right": 1939,
+                "bottom": 2578
+            }
+        },
+        {
+            "text": "800 500220",
+            "box": {
+                "left": 1558,
+                "top": 2570,
+                "right": 1936,
+                "bottom": 2646
+            }
+        },
+        {
+            "text": "JAM",
+            "box": {
+                "left": 2681,
+                "top": 7,
+                "right": 3076,
+                "bottom": 354
+            }
+        },
+        {
+            "text": "Pack COC",
+            "box": {
+                "left": 2385,
+                "top": 235,
+                "right": 3098,
+                "bottom": 619
+            }
+        },
+        {
+            "text": "Ahorr",
+            "box": {
+                "left": 2327,
+                "top": 394,
+                "right": 2655,
+                "bottom": 591
+            }
+        },
+        {
+            "text": "INDIVISsINAS",
+            "box": {
+                "left": 2121,
+                "top": 543,
+                "right": 3042,
+                "bottom": 810
+            }
+        },
+        {
+            "text": "450",
+            "box": {
+                "left": 2240,
+                "top": 742,
+                "right": 2685,
+                "bottom": 1042
+            }
+        },
+        {
+            "text": "24-10-2 LO1 150",
+            "box": {
+                "left": 2240,
+                "top": 1409,
+                "right": 2402,
+                "bottom": 2450
+            }
+        }
+    ]
+}

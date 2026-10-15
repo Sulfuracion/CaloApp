@@ -1,0 +1,593 @@
+{
+    "imageFileName": "label_20.jpg",
+    "timestamp": "2026-10-14T10:33:35.348399Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "ALLETAS RELLENAS CON CREMA DE CACAO (46%)",
+            "box": {
+                "left": 9,
+                "top": 1431,
+                "right": 860,
+                "bottom": 1472
+            }
+        },
+        {
+            "text": "LACHAS RECHEADAS COM CREME DE CACAU (46%)",
+            "box": {
+                "left": 10,
+                "top": 1469,
+                "right": 889,
+                "bottom": 1514
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 254,
+                "top": 1534,
+                "right": 510,
+                "bottom": 1568
+            }
+        },
+        {
+            "text": "taza.",
+            "box": {
+                "left": 8,
+                "top": 1783,
+                "right": 87,
+                "bottom": 1811
+            }
+        },
+        {
+            "text": "luten), azúca, grasas y aceites vegetales (palma, girasol), cacao en",
+            "box": {
+                "left": 11,
+                "top": 1587,
+                "right": 1102,
+                "bottom": 1632
+            }
+        },
+        {
+            "text": "6), suero de leche en polvo, proteinas de la leche, almidon de maiz,",
+            "box": {
+                "left": 12,
+                "top": 1625,
+                "right": 1102,
+                "bottom": 1683
+            }
+        },
+        {
+            "text": "tos de amonio, carbonatos de sodio), jarabe de glucosa, aroma, sal,",
+            "box": {
+                "left": 11,
+                "top": 1675,
+                "right": 1103,
+                "bottom": 1725
+            }
+        },
+        {
+            "text": "isulfito sódico), emulgente (lecitina de girasol).Puede contener",
+            "box": {
+                "left": 12,
+                "top": 1722,
+                "right": 1105,
+                "bottom": 1773
+            }
+        },
+        {
+            "text": "HACEYDADO",
+            "box": {
+                "left": 928,
+                "top": 1268,
+                "right": 1377,
+                "bottom": 1337
+            }
+        },
+        {
+            "text": "glutén), açúcat, gorduras e öleos vegetais (palma, girassol), cacau",
+            "box": {
+                "left": 13,
+                "top": 1823,
+                "right": 1104,
+                "bottom": 1876
+            }
+        },
+        {
+            "text": "soro de leite em pó, proteinas do leite, amido de miho, levedantes",
+            "box": {
+                "left": 11,
+                "top": 1867,
+                "right": 1107,
+                "bottom": 1918
+            }
+        },
+        {
+            "text": "nonio, carbonatos de sódio), xarope de glicose, aroma, sal,",
+            "box": {
+                "left": 11,
+                "top": 1916,
+                "right": 1109,
+                "bottom": 1965
+            }
+        },
+        {
+            "text": "issulfito de sódio), emulsionante (lecitina de girasol).Pode conter",
+            "box": {
+                "left": 2,
+                "top": 1963,
+                "right": 1114,
+                "bottom": 2016
+            }
+        },
+        {
+            "text": "mostarda.",
+            "box": {
+                "left": 2,
+                "top": 2014,
+                "right": 184,
+                "bottom": 2052
+            }
+        },
+        {
+            "text": "CONSERVACIÓN/CONSERVAÇÃo",
+            "box": {
+                "left": 113,
+                "top": 2055,
+                "right": 683,
+                "bottom": 2110
+            }
+        },
+        {
+            "text": "agarfresco y secoy protegido de la luz.",
+            "box": {
+                "left": 1,
+                "top": 2116,
+                "right": 620,
+                "bottom": 2159
+            }
+        },
+        {
+            "text": "ocalfresco eseco, ao abrigo da luz.",
+            "box": {
+                "left": 8,
+                "top": 2162,
+                "right": 571,
+                "bottom": 2193
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1162,
+                "top": 1505,
+                "right": 1249,
+                "bottom": 1537
+            }
+        },
+        {
+            "text": "Energético/Energia 484 kcal",
+            "box": {
+                "left": 1162,
+                "top": 1532,
+                "right": 1793,
+                "bottom": 1589
+            }
+        },
+        {
+            "text": "Grasas/Lípidos",
+            "box": {
+                "left": 1172,
+                "top": 1605,
+                "right": 1430,
+                "bottom": 1644
+            }
+        },
+        {
+            "text": "21 g",
+            "box": {
+                "left": 1722,
+                "top": 1602,
+                "right": 1783,
+                "bottom": 1643
+            }
+        },
+        {
+            "text": "de las cuales/dos quais:",
+            "box": {
+                "left": 1171,
+                "top": 1661,
+                "right": 1568,
+                "bottom": 1705
+            }
+        },
+        {
+            "text": "- Saturadas/ Saturados",
+            "box": {
+                "left": 1217,
+                "top": 1699,
+                "right": 1583,
+                "bottom": 1748
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 1174,
+                "top": 1764,
+                "right": 1522,
+                "bottom": 1798
+            }
+        },
+        {
+            "text": "de los cuales/dos quais:",
+            "box": {
+                "left": 1194,
+                "top": 1814,
+                "right": 1573,
+                "bottom": 1863
+            }
+        },
+        {
+            "text": "- Azúcares/Açúcares",
+            "box": {
+                "left": 1217,
+                "top": 1860,
+                "right": 1553,
+                "bottom": 1905
+            }
+        },
+        {
+            "text": "Fibra alimentaria/Fibra",
+            "box": {
+                "left": 1177,
+                "top": 1911,
+                "right": 1567,
+                "bottom": 1956
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1180,
+                "top": 1988,
+                "right": 1334,
+                "bottom": 2019
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1642,
+                "top": 1458,
+                "right": 1731,
+                "bottom": 1488
+            }
+        },
+        {
+            "text": "2028 kJ",
+            "box": {
+                "left": 1664,
+                "top": 1504,
+                "right": 1785,
+                "bottom": 1536
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1182,
+                "top": 2049,
+                "right": 1225,
+                "bottom": 2079
+            }
+        },
+        {
+            "text": "779",
+            "box": {
+                "left": 1716,
+                "top": 1702,
+                "right": 1783,
+                "bottom": 1746
+            }
+        },
+        {
+            "text": "65g",
+            "box": {
+                "left": 1712,
+                "top": 1760,
+                "right": 1783,
+                "bottom": 1802
+            }
+        },
+        {
+            "text": "34g",
+            "box": {
+                "left": 1710,
+                "top": 1860,
+                "right": 1781,
+                "bottom": 1903
+            }
+        },
+        {
+            "text": "4,9 g",
+            "box": {
+                "left": 1698,
+                "top": 1921,
+                "right": 1779,
+                "bottom": 1959
+            }
+        },
+        {
+            "text": "6,4 g",
+            "box": {
+                "left": 1698,
+                "top": 1984,
+                "right": 1778,
+                "bottom": 2021
+            }
+        },
+        {
+            "text": "0,32 g",
+            "box": {
+                "left": 1677,
+                "top": 2046,
+                "right": 1775,
+                "bottom": 2081
+            }
+        },
+        {
+            "text": "26 g",
+            "box": {
+                "left": 1885,
+                "top": 1443,
+                "right": 1972,
+                "bottom": 1490
+            }
+        },
+        {
+            "text": "527 kJ",
+            "box": {
+                "left": 1902,
+                "top": 1494,
+                "right": 2003,
+                "bottom": 1539
+            }
+        },
+        {
+            "text": "126 kcal",
+            "box": {
+                "left": 1834,
+                "top": 1532,
+                "right": 2006,
+                "bottom": 1589
+            }
+        },
+        {
+            "text": "5,4g",
+            "box": {
+                "left": 1917,
+                "top": 1601,
+                "right": 1997,
+                "bottom": 1641
+            }
+        },
+        {
+            "text": "Contiene aprox. 19 porciones de aprox. 26 g./",
+            "box": {
+                "left": 1165,
+                "top": 2111,
+                "right": 1871,
+                "bottom": 2152
+            }
+        },
+        {
+            "text": "Contém aprox. 19 porções de aprox. 26g.",
+            "box": {
+                "left": 1167,
+                "top": 2147,
+                "right": 1812,
+                "bottom": 2185
+            }
+        },
+        {
+            "text": "2g",
+            "box": {
+                "left": 1951,
+                "top": 1700,
+                "right": 2000,
+                "bottom": 1745
+            }
+        },
+        {
+            "text": "17g",
+            "box": {
+                "left": 1938,
+                "top": 1761,
+                "right": 1997,
+                "bottom": 1801
+            }
+        },
+        {
+            "text": "8,7g",
+            "box": {
+                "left": 1921,
+                "top": 1860,
+                "right": 1996,
+                "bottom": 1902
+            }
+        },
+        {
+            "text": "1,3 g",
+            "box": {
+                "left": 1920,
+                "top": 1919,
+                "right": 1992,
+                "bottom": 1957
+            }
+        },
+        {
+            "text": "1,7 g",
+            "box": {
+                "left": 1922,
+                "top": 1983,
+                "right": 1985,
+                "bottom": 2020
+            }
+        },
+        {
+            "text": "0,08 g",
+            "box": {
+                "left": 1882,
+                "top": 2045,
+                "right": 1980,
+                "bottom": 2080
+            }
+        },
+        {
+            "text": "Peso Neto/MLíquido:",
+            "box": {
+                "left": 2066,
+                "top": 1524,
+                "right": 2372,
+                "bottom": 1569
+            }
+        },
+        {
+            "text": "500 g €",
+            "box": {
+                "left": 2098,
+                "top": 1575,
+                "right": 2460,
+                "bottom": 1690
+            }
+        },
+        {
+            "text": "Fabricado por:",
+            "box": {
+                "left": 2072,
+                "top": 1702,
+                "right": 2317,
+                "bottom": 1742
+            }
+        },
+        {
+            "text": "CEREALTO FOODS",
+            "box": {
+                "left": 2070,
+                "top": 1739,
+                "right": 2373,
+                "bottom": 1785
+            }
+        },
+        {
+            "text": "CORPORATE S.LU.",
+            "box": {
+                "left": 2069,
+                "top": 1796,
+                "right": 2381,
+                "bottom": 1831
+            }
+        },
+        {
+            "text": "Avenida de Burgos 29",
+            "box": {
+                "left": 2066,
+                "top": 1842,
+                "right": 2432,
+                "bottom": 1883
+            }
+        },
+        {
+            "text": "34200 Venta de Baños",
+            "box": {
+                "left": 2080,
+                "top": 1884,
+                "right": 2440,
+                "bottom": 1928
+            }
+        },
+        {
+            "text": "(Palencia) España/Espanha",
+            "box": {
+                "left": 2063,
+                "top": 1934,
+                "right": 2521,
+                "bottom": 1976
+            }
+        },
+        {
+            "text": "Consumir preferentemente",
+            "box": {
+                "left": 2060,
+                "top": 1988,
+                "right": 2510,
+                "bottom": 2025
+            }
+        },
+        {
+            "text": "antes del fin de/Lote: ver",
+            "box": {
+                "left": 2055,
+                "top": 2026,
+                "right": 2459,
+                "bottom": 2062
+            }
+        },
+        {
+            "text": "envase./Consumir de",
+            "box": {
+                "left": 2050,
+                "top": 2069,
+                "right": 2397,
+                "bottom": 2101
+            }
+        },
+        {
+            "text": "preferência antes do fim",
+            "box": {
+                "left": 2043,
+                "top": 2103,
+                "right": 2438,
+                "bottom": 2140
+            }
+        },
+        {
+            "text": "de/Lote: ver emnbalagem.",
+            "box": {
+                "left": 2052,
+                "top": 2141,
+                "right": 2441,
+                "bottom": 2172
+            }
+        },
+        {
+            "text": "MERCADONA",
+            "box": {
+                "left": 2653,
+                "top": 1556,
+                "right": 2985,
+                "bottom": 1605
+            }
+        },
+        {
+            "text": "800 500220",
+            "box": {
+                "left": 2675,
+                "top": 1603,
+                "right": 2982,
+                "bottom": 1662
+            }
+        },
+        {
+            "text": "8 48000 0l141",
+            "box": {
+                "left": 2606,
+                "top": 2028,
+                "right": 3052,
+                "bottom": 2085
+            }
+        }
+    ]
+}

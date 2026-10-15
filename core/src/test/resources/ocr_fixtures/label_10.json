@@ -1,0 +1,737 @@
+{
+    "imageFileName": "label_10.jpg",
+    "timestamp": "2026-10-13T21:55:16.619694Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "OsOPA DE POLO DESHIDRATADA CON FIDEOS FIHOS DCAMJADE PPAn",
+            "box": {
+                "left": 1113,
+                "top": 831,
+                "right": 2351,
+                "bottom": 948
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1066,
+                "top": 1397,
+                "right": 1157,
+                "bottom": 1438
+            }
+        },
+        {
+            "text": "Energético/",
+            "box": {
+                "left": 1058,
+                "top": 1433,
+                "right": 1388,
+                "bottom": 1505
+            }
+        },
+        {
+            "text": "Energia",
+            "box": {
+                "left": 1068,
+                "top": 1495,
+                "right": 1277,
+                "bottom": 1562
+            }
+        },
+        {
+            "text": "Grasas/",
+            "box": {
+                "left": 1082,
+                "top": 1575,
+                "right": 1256,
+                "bottom": 1619
+            }
+        },
+        {
+            "text": "Lípidos",
+            "box": {
+                "left": 1084,
+                "top": 1614,
+                "right": 1247,
+                "bottom": 1676
+            }
+        },
+        {
+            "text": "de las cuales/",
+            "box": {
+                "left": 1079,
+                "top": 1684,
+                "right": 1319,
+                "bottom": 1731
+            }
+        },
+        {
+            "text": "dos quais:",
+            "box": {
+                "left": 1084,
+                "top": 1720,
+                "right": 1258,
+                "bottom": 1772
+            }
+        },
+        {
+            "text": "-Saturadas/",
+            "box": {
+                "left": 1128,
+                "top": 1766,
+                "right": 1386,
+                "bottom": 1821
+            }
+        },
+        {
+            "text": "Saturados",
+            "box": {
+                "left": 1148,
+                "top": 1813,
+                "right": 1369,
+                "bottom": 1864
+            }
+        },
+        {
+            "text": "OPHsta alimenticla (ideos, sémola de trlgo (glten) duro) %, d, phenothnes sans K1,",
+            "box": {
+                "left": 1049,
+                "top": 966,
+                "right": 2484,
+                "bottom": 1085
+            }
+        },
+        {
+            "text": "hadna de trlgo (glten), pollo 1,9%, alridón, erdtado de leratus, enpeas 9,7%(comayge",
+            "box": {
+                "left": 1051,
+                "top": 1026,
+                "right": 2463,
+                "bottom": 1128
+            }
+        },
+        {
+            "text": "colorante caramelo (E150a), antionidarteedtados de tomeo, Puede eontener trs de",
+            "box": {
+                "left": 1050,
+                "top": 1088,
+                "right": 2372,
+                "bottom": 1159
+            }
+        },
+        {
+            "text": "QMassa (aletris: sémola de trigo (glten) duro) 7%, sal, intensfcates de sas (EK, 6",
+            "box": {
+                "left": 1046,
+                "top": 1132,
+                "right": 2579,
+                "bottom": 1232
+            }
+        },
+        {
+            "text": "farinha de trlgo (glúten), frango 1,9%, arnido, ertrato de leveduta, eeiatias 0,3% (ouoms esd",
+            "box": {
+                "left": 1048,
+                "top": 1186,
+                "right": 2534,
+                "bottom": 1283
+            }
+        },
+        {
+            "text": "batata), corante caramelo (E150a), antioxddarte, etatos de alectim,. Pole conter veos de leta",
+            "box": {
+                "left": 1062,
+                "top": 1240,
+                "right": 2570,
+                "bottom": 1333
+            }
+        },
+        {
+            "text": "T250 ml",
+            "box": {
+                "left": 1655,
+                "top": 1321,
+                "right": 1939,
+                "bottom": 1393
+            }
+        },
+        {
+            "text": "PREPARACIÓNIPREP9s",
+            "box": {
+                "left": 2222,
+                "top": 1350,
+                "right": 2624,
+                "bottom": 1413
+            }
+        },
+        {
+            "text": "Hidratos de",
+            "box": {
+                "left": 1077,
+                "top": 1868,
+                "right": 1341,
+                "bottom": 1936
+            }
+        },
+        {
+            "text": "Carbono",
+            "box": {
+                "left": 1090,
+                "top": 1923,
+                "right": 1270,
+                "bottom": 1982
+            }
+        },
+        {
+            "text": "de los cuales/",
+            "box": {
+                "left": 1088,
+                "top": 1988,
+                "right": 1318,
+                "bottom": 2034
+            }
+        },
+        {
+            "text": "dos quais:",
+            "box": {
+                "left": 1085,
+                "top": 2024,
+                "right": 1256,
+                "bottom": 2070
+            }
+        },
+        {
+            "text": "- Azúcares/",
+            "box": {
+                "left": 1118,
+                "top": 2069,
+                "right": 1363,
+                "bottom": 2126
+            }
+        },
+        {
+            "text": "Açúcares",
+            "box": {
+                "left": 1136,
+                "top": 2120,
+                "right": 1345,
+                "bottom": 2180
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1061,
+                "top": 2326,
+                "right": 1141,
+                "bottom": 2380
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1445,
+                "top": 1336,
+                "right": 1562,
+                "bottom": 1390
+            }
+        },
+        {
+            "text": "327 kcal",
+            "box": {
+                "left": 1418,
+                "top": 1497,
+                "right": 1647,
+                "bottom": 1558
+            }
+        },
+        {
+            "text": "02-2027",
+            "box": {
+                "left": 1061,
+                "top": 2721,
+                "right": 1317,
+                "bottom": 2776
+            }
+        },
+        {
+            "text": "1387 kJ",
+            "box": {
+                "left": 1519,
+                "top": 1458,
+                "right": 1650,
+                "bottom": 1502
+            }
+        },
+        {
+            "text": "Consumir prelerentermente antes del/Lote.",
+            "box": {
+                "left": 987,
+                "top": 2513,
+                "right": 1486,
+                "bottom": 2574
+            }
+        },
+        {
+            "text": "Consurmir de preleréncia antes de:/Lote",
+            "box": {
+                "left": 985,
+                "top": 2553,
+                "right": 1453,
+                "bottom": 2618
+            }
+        },
+        {
+            "text": "2,0 g",
+            "box": {
+                "left": 1529,
+                "top": 1578,
+                "right": 1637,
+                "bottom": 1630
+            }
+        },
+        {
+            "text": "Fibra alimentaria/Fibra 3,2 g",
+            "box": {
+                "left": 1078,
+                "top": 2175,
+                "right": 1611,
+                "bottom": 2248
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1072,
+                "top": 2257,
+                "right": 1289,
+                "bottom": 2308
+            }
+        },
+        {
+            "text": "0,5 g",
+            "box": {
+                "left": 1529,
+                "top": 1777,
+                "right": 1630,
+                "bottom": 1830
+            }
+        },
+        {
+            "text": "08 02A6 09:44",
+            "box": {
+                "left": 1073,
+                "top": 2760,
+                "right": 1480,
+                "bottom": 2826
+            }
+        },
+        {
+            "text": "60,4 g",
+            "box": {
+                "left": 1491,
+                "top": 1886,
+                "right": 1624,
+                "bottom": 1940
+            }
+        },
+        {
+            "text": "2,4g",
+            "box": {
+                "left": 1520,
+                "top": 2086,
+                "right": 1621,
+                "bottom": 2139
+            }
+        },
+        {
+            "text": "15,3 g",
+            "box": {
+                "left": 1492,
+                "top": 2258,
+                "right": 1624,
+                "bottom": 2328
+            }
+        },
+        {
+            "text": "11,49",
+            "box": {
+                "left": 1473,
+                "top": 2340,
+                "right": 1621,
+                "bottom": 2402
+            }
+        },
+        {
+            "text": "Pollo",
+            "box": {
+                "left": 1850,
+                "top": 512,
+                "right": 2162,
+                "bottom": 654
+            }
+        },
+        {
+            "text": "Frango",
+            "box": {
+                "left": 1804,
+                "top": 642,
+                "right": 2239,
+                "bottom": 834
+            }
+        },
+        {
+            "text": "INGPEDIENTES",
+            "box": {
+                "left": 1881,
+                "top": 939,
+                "right": 2152,
+                "bottom": 993
+            }
+        },
+        {
+            "text": "Conjo de",
+            "box": {
+                "left": 1912,
+                "top": 618,
+                "right": 2109,
+                "bottom": 695
+            }
+        },
+        {
+            "text": "250 k4",
+            "box": {
+                "left": 1850,
+                "top": 1460,
+                "right": 1950,
+                "bottom": 1508
+            }
+        },
+        {
+            "text": "59 kcal",
+            "box": {
+                "left": 1764,
+                "top": 1501,
+                "right": 1950,
+                "bottom": 1558
+            }
+        },
+        {
+            "text": "0,4 g",
+            "box": {
+                "left": 1835,
+                "top": 1580,
+                "right": 1940,
+                "bottom": 1633
+            }
+        },
+        {
+            "text": "0,1 g",
+            "box": {
+                "left": 1829,
+                "top": 1780,
+                "right": 1928,
+                "bottom": 1834
+            }
+        },
+        {
+            "text": "10,9 g",
+            "box": {
+                "left": 1791,
+                "top": 1891,
+                "right": 1920,
+                "bottom": 1942
+            }
+        },
+        {
+            "text": "04g",
+            "box": {
+                "left": 1815,
+                "top": 2086,
+                "right": 1915,
+                "bottom": 2138
+            }
+        },
+        {
+            "text": "0,6g",
+            "box": {
+                "left": 1802,
+                "top": 2195,
+                "right": 1914,
+                "bottom": 2251
+            }
+        },
+        {
+            "text": "2,8 g",
+            "box": {
+                "left": 1798,
+                "top": 2268,
+                "right": 1912,
+                "bottom": 2320
+            }
+        },
+        {
+            "text": "Pu 250 mil de producto reconstuido. / Por 250 m de prodto reconstiuúdo.",
+            "box": {
+                "left": 1071,
+                "top": 2416,
+                "right": 1959,
+                "bottom": 2470
+            }
+        },
+        {
+            "text": "Este sobte contiene 4 raciones./Este embalagem contém 4 porçoes.",
+            "box": {
+                "left": 1047,
+                "top": 2458,
+                "right": 1850,
+                "bottom": 2517
+            }
+        },
+        {
+            "text": "2,1 gl",
+            "box": {
+                "left": 1803,
+                "top": 2336,
+                "right": 1935,
+                "bottom": 2389
+            }
+        },
+        {
+            "text": "1.",
+            "box": {
+                "left": 2049,
+                "top": 1459,
+                "right": 2075,
+                "bottom": 1498
+            }
+        },
+        {
+            "text": "2",
+            "box": {
+                "left": 2022,
+                "top": 1930,
+                "right": 2055,
+                "bottom": 1965
+            }
+        },
+        {
+            "text": "O5 mín.",
+            "box": {
+                "left": 2098,
+                "top": 2141,
+                "right": 2223,
+                "bottom": 2203
+            }
+        },
+        {
+            "text": "Porinmes",
+            "box": {
+                "left": 2408,
+                "top": 640,
+                "right": 2673,
+                "bottom": 712
+            }
+        },
+        {
+            "text": "Peso Neto/Lquide: 12g e",
+            "box": {
+                "left": 1674,
+                "top": 2519,
+                "right": 2296,
+                "bottom": 2637
+            }
+        },
+        {
+            "text": "Fabricado par: lNTERAL, SA",
+            "box": {
+                "left": 1667,
+                "top": 2725,
+                "right": 2087,
+                "bottom": 2805
+            }
+        },
+        {
+            "text": "C/Urune, 34 PoL 10A 201001",
+            "box": {
+                "left": 1646,
+                "top": 2763,
+                "right": 2097,
+                "bottom": 2848
+            }
+        },
+        {
+            "text": "Espala/Espanha",
+            "box": {
+                "left": 1646,
+                "top": 2833,
+                "right": 1898,
+                "bottom": 2883
+            }
+        },
+        {
+            "text": "Prngos",
+            "box": {
+                "left": 2448,
+                "top": 716,
+                "right": 2677,
+                "bottom": 801
+            }
+        },
+        {
+            "text": "GVerta ed conteri",
+            "box": {
+                "left": 2321,
+                "top": 1460,
+                "right": 2668,
+                "bottom": 1530
+            }
+        },
+        {
+            "text": "un litro de aqua calia",
+            "box": {
+                "left": 2331,
+                "top": 1521,
+                "right": 2637,
+                "bottom": 1570
+            }
+        },
+        {
+            "text": "aheri) y lee s",
+            "box": {
+                "left": 2317,
+                "top": 1565,
+                "right": 2617,
+                "bottom": 1630
+            }
+        },
+        {
+            "text": "d mismo tlempo.",
+            "box": {
+                "left": 2331,
+                "top": 1617,
+                "right": 2588,
+                "bottom": 1676
+            }
+        },
+        {
+            "text": "PVetero",
+            "box": {
+                "left": 2314,
+                "top": 1668,
+                "right": 2548,
+                "bottom": 1724
+            }
+        },
+        {
+            "text": "embalagem num t",
+            "box": {
+                "left": 2326,
+                "top": 1725,
+                "right": 2620,
+                "bottom": 1765
+            }
+        },
+        {
+            "text": "(sem ferver) e",
+            "box": {
+                "left": 2312,
+                "top": 1770,
+                "right": 2582,
+                "bottom": 1823
+            }
+        },
+        {
+            "text": "mesendo ao mesmo",
+            "box": {
+                "left": 2329,
+                "top": 1821,
+                "right": 2614,
+                "bottom": 1870
+            }
+        },
+        {
+            "text": "Deje cocer a fueg",
+            "box": {
+                "left": 2366,
+                "top": 1956,
+                "right": 2649,
+                "bottom": 2013
+            }
+        },
+        {
+            "text": "5 mínutos removiend",
+            "box": {
+                "left": 2333,
+                "top": 2007,
+                "right": 2657,
+                "bottom": 2057
+            }
+        },
+        {
+            "text": "Cuando.",
+            "box": {
+                "left": 2307,
+                "top": 2057,
+                "right": 2439,
+                "bottom": 2106
+            }
+        },
+        {
+            "text": "CONSERVACIÓN/CONSERVACAL",
+            "box": {
+                "left": 2144,
+                "top": 2265,
+                "right": 2684,
+                "bottom": 2315
+            }
+        },
+        {
+            "text": "Conservaren lugar fresco y seco",
+            "box": {
+                "left": 2041,
+                "top": 2319,
+                "right": 2515,
+                "bottom": 2382
+            }
+        },
+        {
+            "text": "P Conserar em local fresco e seca",
+            "box": {
+                "left": 2012,
+                "top": 2359,
+                "right": 2521,
+                "bottom": 2424
+            }
+        },
+        {
+            "text": "ODeixe ferver por",
+            "box": {
+                "left": 2305,
+                "top": 2100,
+                "right": 2654,
+                "bottom": 2160
+            }
+        },
+        {
+            "text": "mexendo 0casionamert",
+            "box": {
+                "left": 2325,
+                "top": 2160,
+                "right": 2673,
+                "bottom": 2199
+            }
+        },
+        {
+            "text": "4020",
+            "box": {
+                "left": 2423,
+                "top": 2763,
+                "right": 2522,
+                "bottom": 2795
+            }
+        }
+    ]
+}

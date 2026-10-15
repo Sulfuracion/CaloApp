@@ -38,7 +38,7 @@ Dos módulos Gradle. `:core` es Kotlin puro (JVM) y contiene modelos de dominio,
 | --- | --- |
 | products | id PK, barcode TEXT UNIQUE NULL, name, brand NULL, kcal_100g, protein_100g, carbs_100g, fat_100g (obligatorios), fiber_100g, sugars_100g, sat_fat_100g, salt_100g (NULL), is_liquid BOOL, unit_name NULL, unit_g NULL, serving_g NULL, min_g NULL, max_g NULL, in_pantry BOOL, source (MANUAL, OFF, OCR), archived BOOL, created_at, updated_at |
 | daily_logs | date PK (ISO local), day_type (TRAINING, REST), water_ml, notes NULL |
-| meal_entries | id PK, date FK, meal (BREAKFAST, LUNCH, DINNER, SNACK), product_id FK, product_name (copia), grams (puede ser negativo en modo tara), kcal, protein, carbs, fat (copia calculada al guardar), logged_at |
+| meal_entries | id PK, date FK, meal (id de comida TEXT), product_id FK (NULL para calorías rápidas desde M.6), product_name (copia), grams (puede ser negativo en modo tara), kcal, protein, carbs, fat (copia calculada al guardar), logged_at |
 | weight_entries | date PK, weight_kg |
 | goal_profiles | id PK, day_type, kcal, protein_g, carbs_g, fat_g, valid_from, origin (MANUAL, TDEE) |
 
@@ -47,12 +47,19 @@ Dos módulos Gradle. `:core` es Kotlin puro (JVM) y contiene modelos de dominio,
 - Los macros se copian en meal_entries para que editar un producto no cambie el historial.
 - Un producto con entradas no se borra: se marca archived.
 - El total de un día nunca se muestra por debajo de cero aunque haya entradas negativas.
+- meal_entries.meal pasa a ser el id (TEXT) de una comida configurada. Las cuatro por defecto conservan los ids actuales: BREAKFAST (Desayuno), LUNCH (Almuerzo), SNACK (Merienda) y DINNER (Cena). Los datos existentes no se migran.
+- logged_at siempre cae dentro de date: fecha del día más la hora de la comida. Las copias conservan la hora del original.
+- Desde la tarea M.6, meal_entries.product_id admite NULL: una entrada sin producto es de calorías rápidas (kcal, macros opcionales y grams = 0).
+- La configuración de comidas vive en DataStore: lista de id, nombre, hora de inicio y activa.
+- Una entrada con un id de comida desconocido se muestra en «Sin asignar» y cuenta en el total.
 
 ## 5. Especificación de cada función
 
 ### 5.1 Diario y alta de entradas
 
-- La app abre en hoy. Deslizar horizontalmente cambia de día.
+- La app abre en hoy. Deslizar horizontalmente cambia de día. Además de deslizar, al tocar la fecha se abre un calendario para saltar a cualquier día.
+- Las comidas dejan de ser fijas. El usuario decide en Ajustes cuántas hay, su nombre y su hora de inicio; por defecto, Desayuno, Almuerzo, Merienda y Cena. El orden y la comida preseleccionada salen de la hora de inicio; antes de la primera, se preselecciona la última del día. Una comida con entradas no se borra: se desactiva.
+- Detalle de comida: selector de comida en la cabecera, hora de la comida, resumen de kcal y macros, lista con [-] y [+], «Añadir alimento», «Añadir calorías», «Restar sobras», «Repetir esta comida» y «Hecho». Los cambios se guardan al momento.
 - Añadir entrada: buscador con resultados desde la primera letra (productos recientes primero), cantidad en gramos o en unidades si el producto tiene unit_g, y comida preseleccionada según la hora.
 - Modo tara: en el detalle de una comida, «Restar sobras» crea una entrada negativa del mismo producto.
 - Objetivo del día = perfil de goal_profiles vigente para el day_type de ese día.
@@ -116,10 +123,10 @@ Entrada: macros restantes del día b = (kcal, proteína, carbohidratos, grasa) y
 
 ### 5.8 Health Connect y copia de seguridad
 
-- Escribe NutritionRecord por entrada e HydrationRecord por agua, con un identificador de cliente estable para poder actualizar y borrar. Lectura de WeightRecord solo si el humano lo decide.
+- Escribe NutritionRecord por entrada e HydrationRecord por agua, con un identificador de cliente estable para poder actualizar y borrar. Lectura de WeightRecord solo si el humano lo decide. Health Connect: el mealType de cada NutritionRecord sale de su comida: BREAKFAST, LUNCH, DINNER o SNACK para las cuatro por defecto y SNACK para las creadas por el usuario. Las calorías rápidas también se envían.
 - Pide permisos en contexto, la primera vez que el usuario activa la sincronización, con una pantalla que explica para qué. La app funciona completa sin ellos.
-- Exportar: un único archivo con todos los datos en JSON, cifrado con AES-256-GCM y clave derivada de una contraseña (PBKDF2 con muchas iteraciones o Argon2 si hay implementación fiable). Selector de archivos del sistema.
-- Importar: valida versión y esquema antes de tocar la base de datos; restaura dentro de una transacción.
+- Exportar: un único archivo con todos los datos en JSON, cifrado con AES-256-GCM y clave derivada de una contraseña (PBKDF2 con muchas iteraciones o Argon2 si hay implementación fiable). Selector de archivos del sistema. Copia de seguridad: además de la base de datos, incluye la configuración de comidas y las preferencias que el usuario cambia en Ajustes. Nunca la clave de la base de datos ni el estado del dispositivo (sincronización con Health Connect, modelo descargado).
+- Importar: valida versión y esquema antes de tocar la base de datos; restaura dentro de una transacción. Al importar, DataStore se escribe solo después de que la transacción de Room termine bien.
 
 ## 6. Seguridad
 
@@ -178,6 +185,12 @@ Trabaja en orden. Una tarea por conversación. No abras una fase hasta que el hu
 | 5.1 | Despensa y límites por producto | Marca y edita |
 | 5.2 | MacroSolver y FoodSelector con tests | Casos límite en verde |
 | 5.3 | Pantalla Macro Tetris y añadir al diario | Fase 5: menos de 100 ms |
+| M.1 | Selector de fecha con calendario | Se guarda el día elegido |
+| M.2 | Comidas con id y configuración guardada | Nada cambia en pantalla y los datos antiguos siguen intactos |
+| M.3 | Comidas del día en Ajustes y en el panel | Renombrar, añadir y desactivar sin perder entradas |
+| M.4 | Tarjetas de comida y detalle | 3 toques para un habitual |
+| M.5 | [-] y [+] y hora de la comida | Editar un producto no cambia el historial |
+| M.6 | Calorías rápidas. REVISION HUMANA | Fase M: datos intactos tras la migración |
 | 6.1 | Informe comparativo de 3 modelos en el móvil | El humano elige modelo |
 | 6.2 | ModelDownloader con hash. REVISION HUMANA | Reanuda y verifica |
 | 6.3 | RecipeEngine, prompt, streaming y memoria | Cifras iguales a las del solver |

@@ -1,11 +1,12 @@
 package com.controlcal.core.nutrition
 
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MacroTargets
-import com.controlcal.core.model.Meal
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.NutrientTotals
 import com.controlcal.core.model.Product
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NutritionCalculatorTest {
@@ -37,8 +38,8 @@ class NutritionCalculatorTest {
         val dayTotals = NutritionCalculator.calculateDayTotals("2026-10-06", emptyEntries)
         assertEquals(0.0, dayTotals.totals.kcal, 0.001)
         assertEquals(4, dayTotals.byMeal.size)
-        assertEquals(0.0, dayTotals.byMeal[Meal.LUNCH]?.totals?.kcal ?: -1.0, 0.001)
-        assertEquals(0.0, dayTotals.byMeal[Meal.BREAKFAST]?.totals?.protein ?: -1.0, 0.001)
+        assertEquals(0.0, dayTotals.byMeal[DefaultMealIds.LUNCH]?.totals?.kcal ?: -1.0, 0.001)
+        assertEquals(0.0, dayTotals.byMeal[DefaultMealIds.BREAKFAST]?.totals?.protein ?: -1.0, 0.001)
     }
 
     // -------------------------------------------------------------
@@ -59,8 +60,8 @@ class NutritionCalculatorTest {
         assertEquals(-1.8, tareMacros.fat, 0.001)
 
         val entries = listOf(
-            createEntry(meal = Meal.LUNCH, grams = 200.0, macros = servedMacros),
-            createEntry(meal = Meal.LUNCH, grams = -50.0, macros = tareMacros),
+            createEntry(meal = DefaultMealIds.LUNCH, grams = 200.0, macros = servedMacros),
+            createEntry(meal = DefaultMealIds.LUNCH, grams = -50.0, macros = tareMacros),
         )
 
         val lunchTotals = NutritionCalculator.calculateTotals(entries)
@@ -76,8 +77,8 @@ class NutritionCalculatorTest {
     fun totalsNeverDropBelowZeroEvenWithExcessNegativeEntries() {
         // Si hay una entrada negativa huérfana o mayor que lo consumido:
         // ej. -300 g cuando solo se sirvieron 100 g
-        val served = createEntry(meal = Meal.DINNER, grams = 100.0, macros = NutrientTotals(165.0, 31.0, 0.0, 3.6))
-        val excessTare = createEntry(meal = Meal.DINNER, grams = -300.0, macros = NutrientTotals(-495.0, -93.0, 0.0, -10.8))
+        val served = createEntry(meal = DefaultMealIds.DINNER, grams = 100.0, macros = NutrientTotals(165.0, 31.0, 0.0, 3.6))
+        val excessTare = createEntry(meal = DefaultMealIds.DINNER, grams = -300.0, macros = NutrientTotals(-495.0, -93.0, 0.0, -10.8))
 
         val totals = NutritionCalculator.calculateTotals(listOf(served, excessTare))
 
@@ -89,7 +90,7 @@ class NutritionCalculatorTest {
 
         val dayTotals = NutritionCalculator.calculateDayTotals("2026-10-06", listOf(served, excessTare))
         assertEquals(0.0, dayTotals.totals.kcal, 0.001)
-        assertEquals(0.0, dayTotals.byMeal[Meal.DINNER]?.totals?.kcal ?: -1.0, 0.001)
+        assertEquals(0.0, dayTotals.byMeal[DefaultMealIds.DINNER]?.totals?.kcal ?: -1.0, 0.001)
     }
 
     // -------------------------------------------------------------
@@ -169,7 +170,75 @@ class NutritionCalculatorTest {
         assertEquals(0.0, zeroUnitG, 0.001)
     }
 
-    private fun createEntry(meal: Meal, grams: Double, macros: NutrientTotals): MealEntry =
+    @Test
+    fun dayWithNormalTareAndQuickCaloriesEntriesCalculatesTotalsAndCountsInIntake() {
+        val normalEntry = MealEntry(
+            id = 1L,
+            date = "2026-10-15",
+            meal = DefaultMealIds.LUNCH,
+            productId = 10L,
+            productName = "Pechuga de pollo",
+            grams = 200.0,
+            kcal = 300.0,
+            protein = 40.0,
+            carbs = 0.0,
+            fat = 5.0,
+            loggedAt = 1000L,
+        )
+        val tareEntry = MealEntry(
+            id = 2L,
+            date = "2026-10-15",
+            meal = DefaultMealIds.LUNCH,
+            productId = 10L,
+            productName = "Pechuga de pollo",
+            grams = -50.0,
+            kcal = -75.0,
+            protein = -10.0,
+            carbs = 0.0,
+            fat = -1.25,
+            loggedAt = 2000L,
+        )
+        val quickCaloriesEntry = MealEntry(
+            id = 3L,
+            date = "2026-10-15",
+            meal = DefaultMealIds.LUNCH,
+            productId = null,
+            productName = "Calorías rápidas",
+            grams = 0.0,
+            kcal = 150.0,
+            protein = 8.0,
+            carbs = 18.0,
+            fat = 4.0,
+            loggedAt = 3000L,
+        )
+
+        val dayEntries = listOf(normalEntry, tareEntry, quickCaloriesEntry)
+        val dayTotals = NutritionCalculator.calculateDayTotals("2026-10-15", dayEntries)
+
+        // All 3 entries appear
+        val lunchEntries = dayTotals.byMeal[DefaultMealIds.LUNCH]?.entries.orEmpty()
+        assertEquals(3, lunchEntries.size)
+        assertTrue(lunchEntries.contains(normalEntry))
+        assertTrue(lunchEntries.contains(tareEntry))
+        assertTrue(lunchEntries.contains(quickCaloriesEntry))
+
+        // Totals count all 3: 300 - 75 + 150 = 375 kcal
+        assertEquals(375.0, dayTotals.totals.kcal, 0.001)
+        assertEquals(38.0, dayTotals.totals.protein, 0.001)
+        assertEquals(18.0, dayTotals.totals.carbs, 0.001)
+        assertEquals(7.75, dayTotals.totals.fat, 0.001)
+
+        // Verifies intake representation for TDEE
+        val dailyIntake = com.controlcal.core.tdee.DailyIntake(
+            date = "2026-10-15",
+            kcal = dayTotals.totals.kcal,
+            isComplete = dayEntries.isNotEmpty(),
+        )
+        assertEquals(375.0, dailyIntake.kcal, 0.001)
+        assertTrue(dailyIntake.isComplete)
+    }
+
+    private fun createEntry(meal: String, grams: Double, macros: NutrientTotals): MealEntry =
         MealEntry(
             id = 0L,
             date = "2026-10-06",

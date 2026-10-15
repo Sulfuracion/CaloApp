@@ -3,7 +3,9 @@ package com.controlcal.app.camera
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
@@ -21,9 +23,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 
 /**
- * Camera preview composable using CameraX with optional image analysis.
+ * Camera preview composable using CameraX with optional image analysis and capture.
  *
- * Binds the CameraX preview and analysis lifecycles to the current LifecycleOwner,
+ * Binds the CameraX preview, analysis and capture lifecycles to the current LifecycleOwner,
  * controls the flashlight/torch state, and unbinds the camera completely
  * when leaving the composition.
  */
@@ -34,6 +36,7 @@ fun CameraPreview(
     modifier: Modifier = Modifier,
     cameraSelector: CameraSelector = CameraSelector.DEFAULT_BACK_CAMERA,
     imageAnalyzer: ImageAnalysis.Analyzer? = null,
+    imageCapture: ImageCapture? = null,
     onCameraError: (Throwable) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -95,21 +98,20 @@ fun CameraPreview(
                                 }
                         }
 
-                        provider.unbindAll()
-                        val boundCamera = if (analysisUseCase != null) {
-                            provider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview,
-                                analysisUseCase
-                            )
-                        } else {
-                            provider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview
-                            )
+                        val useCases = mutableListOf<UseCase>(preview)
+                        if (analysisUseCase != null) {
+                            useCases.add(analysisUseCase)
                         }
+                        if (imageCapture != null) {
+                            useCases.add(imageCapture)
+                        }
+
+                        provider.unbindAll()
+                        val boundCamera = provider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            *useCases.toTypedArray()
+                        )
                         camera = boundCamera
                         val hasFlash = boundCamera.cameraInfo.hasFlashUnit()
                         onTorchAvailabilityChanged(hasFlash)

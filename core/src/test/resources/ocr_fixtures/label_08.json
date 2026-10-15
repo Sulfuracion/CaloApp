@@ -1,0 +1,341 @@
+{
+    "imageFileName": "label_08.jpg",
+    "timestamp": "2026-10-13T21:54:41.251452Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "MAIZENA",
+            "box": {
+                "left": 1290,
+                "top": 640,
+                "right": 1876,
+                "bottom": 849
+            }
+        },
+        {
+            "text": "ESPESANTE",
+            "box": {
+                "left": 1347,
+                "top": 892,
+                "right": 1812,
+                "bottom": 1013
+            }
+        },
+        {
+            "text": "INSTANTÁNEO",
+            "box": {
+                "left": 1294,
+                "top": 1020,
+                "right": 1855,
+                "bottom": 1155
+            }
+        },
+        {
+            "text": "Información",
+            "box": {
+                "left": 1253,
+                "top": 1264,
+                "right": 1493,
+                "bottom": 1320
+            }
+        },
+        {
+            "text": "nutricional",
+            "box": {
+                "left": 1252,
+                "top": 1325,
+                "right": 1469,
+                "bottom": 1377
+            }
+        },
+        {
+            "text": "-a inica -",
+            "box": {
+                "left": 1470,
+                "top": 544,
+                "right": 1708,
+                "bottom": 589
+            }
+        },
+        {
+            "text": "ORIGINAL",
+            "box": {
+                "left": 1530,
+                "top": 582,
+                "right": 1695,
+                "bottom": 625
+            }
+        },
+        {
+            "text": "Valor energético",
+            "box": {
+                "left": 1250,
+                "top": 1418,
+                "right": 1545,
+                "bottom": 1479
+            }
+        },
+        {
+            "text": "Grasas",
+            "box": {
+                "left": 1252,
+                "top": 1496,
+                "right": 1370,
+                "bottom": 1543
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1245,
+                "top": 1927,
+                "right": 1294,
+                "bottom": 1971
+            }
+        },
+        {
+            "text": "de las cuales saturadas",
+            "box": {
+                "left": 1269,
+                "top": 1564,
+                "right": 1715,
+                "bottom": 1633
+            }
+        },
+        {
+            "text": "Hidratos de carbono",
+            "box": {
+                "left": 1248,
+                "top": 1636,
+                "right": 1618,
+                "bottom": 1700
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1246,
+                "top": 1856,
+                "right": 1418,
+                "bottom": 1903
+            }
+        },
+        {
+            "text": "Por 100 g",
+            "box": {
+                "left": 1723,
+                "top": 1281,
+                "right": 1894,
+                "bottom": 1338
+            }
+        },
+        {
+            "text": "de producto",
+            "box": {
+                "left": 1664,
+                "top": 1334,
+                "right": 1890,
+                "bottom": 1403
+            }
+        },
+        {
+            "text": "1623kJ/384 kcal",
+            "box": {
+                "left": 1601,
+                "top": 1425,
+                "right": 1895,
+                "bottom": 1486
+            }
+        },
+        {
+            "text": "de los cuales azúcares",
+            "box": {
+                "left": 1267,
+                "top": 1712,
+                "right": 1681,
+                "bottom": 1768
+            }
+        },
+        {
+            "text": "Fibra alimentaria",
+            "box": {
+                "left": 1247,
+                "top": 1781,
+                "right": 1556,
+                "bottom": 1838
+            }
+        },
+        {
+            "text": "SERVICIO DE ATENCIÓN",
+            "box": {
+                "left": 1380,
+                "top": 2295,
+                "right": 1721,
+                "bottom": 2347
+            }
+        },
+        {
+            "text": "AL CONSUMIDOR",
+            "box": {
+                "left": 1428,
+                "top": 2354,
+                "right": 1673,
+                "bottom": 2398
+            }
+        },
+        {
+            "text": "Unilever",
+            "box": {
+                "left": 1228,
+                "top": 2992,
+                "right": 1464,
+                "bottom": 3047
+            }
+        },
+        {
+            "text": "MAIZENA",
+            "box": {
+                "left": 1360,
+                "top": 2415,
+                "right": 1734,
+                "bottom": 2532
+            }
+        },
+        {
+            "text": "< 0,5 g",
+            "box": {
+                "left": 1780,
+                "top": 1510,
+                "right": 1886,
+                "bottom": 1565
+            }
+        },
+        {
+            "text": "<0,1g",
+            "box": {
+                "left": 1768,
+                "top": 1582,
+                "right": 1882,
+                "bottom": 1638
+            }
+        },
+        {
+            "text": "959",
+            "box": {
+                "left": 1800,
+                "top": 1653,
+                "right": 1884,
+                "bottom": 1711
+            }
+        },
+        {
+            "text": "25 g",
+            "box": {
+                "left": 1802,
+                "top": 1725,
+                "right": 1880,
+                "bottom": 1780
+            }
+        },
+        {
+            "text": "<0,5g",
+            "box": {
+                "left": 1762,
+                "top": 1798,
+                "right": 1877,
+                "bottom": 1848
+            }
+        },
+        {
+            "text": "Ingredientes:",
+            "box": {
+                "left": 1410,
+                "top": 2009,
+                "right": 1700,
+                "bottom": 2073
+            }
+        },
+        {
+            "text": "fécula de patata, LACTOSA,",
+            "box": {
+                "left": 1317,
+                "top": 2066,
+                "right": 1778,
+                "bottom": 2125
+            }
+        },
+        {
+            "text": "maltodextrina, harina de arroz.",
+            "box": {
+                "left": 1282,
+                "top": 2124,
+                "right": 1811,
+                "bottom": 2179
+            }
+        },
+        {
+            "text": "900 812 511- www.maizena.es",
+            "box": {
+                "left": 1305,
+                "top": 2548,
+                "right": 1783,
+                "bottom": 2598
+            }
+        },
+        {
+            "text": "0,8 g",
+            "box": {
+                "left": 1808,
+                "top": 1868,
+                "right": 1873,
+                "bottom": 1920
+            }
+        },
+        {
+            "text": "0,01 g",
+            "box": {
+                "left": 1764,
+                "top": 1940,
+                "right": 1870,
+                "bottom": 1992
+            }
+        },
+        {
+            "text": "Unilever España, S.A.",
+            "box": {
+                "left": 1494,
+                "top": 2804,
+                "right": 1868,
+                "bottom": 2862
+            }
+        },
+        {
+            "text": "C/ Tecnologia 19,",
+            "box": {
+                "left": 1530,
+                "top": 2857,
+                "right": 1831,
+                "bottom": 2910
+            }
+        },
+        {
+            "text": "08840 Viladecans",
+            "box": {
+                "left": 1521,
+                "top": 2906,
+                "right": 1839,
+                "bottom": 2955
+            }
+        },
+        {
+            "text": "(Barcelona)",
+            "box": {
+                "left": 1577,
+                "top": 2961,
+                "right": 1777,
+                "bottom": 3011
+            }
+        }
+    ]
+}

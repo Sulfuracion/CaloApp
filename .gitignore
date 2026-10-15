@@ -66,3 +66,7 @@ node_modules/
 target/
 __pycache__/
 *.pyc
+
+# Local debug captures and temporary dumps
+ocr_labels/
+

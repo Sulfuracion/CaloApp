@@ -3,7 +3,7 @@ package com.controlcal.app.ui.scanner
 import com.controlcal.app.data.off.OffClient
 import com.controlcal.app.data.off.OffProduct
 import com.controlcal.app.data.off.OffSearchResult
-import com.controlcal.core.model.Meal
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
 import com.controlcal.core.model.ProductSource
@@ -22,6 +22,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.model.DefaultMeals
+import com.controlcal.core.repo.MealConfigRepository
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -31,6 +34,7 @@ class ScannerViewModelTest {
     private lateinit var fakeProductRepository: FakeProductRepository
     private lateinit var fakeOffClient: FakeOffClient
     private lateinit var fakeMealEntryRepository: FakeMealEntryRepository
+    private lateinit var fakeMealConfigRepository: FakeMealConfigRepository
     private lateinit var viewModel: ScannerViewModel
 
     @Before
@@ -39,10 +43,12 @@ class ScannerViewModelTest {
         fakeProductRepository = FakeProductRepository()
         fakeOffClient = FakeOffClient()
         fakeMealEntryRepository = FakeMealEntryRepository()
+        fakeMealConfigRepository = FakeMealConfigRepository()
         viewModel = ScannerViewModel(
             productRepository = fakeProductRepository,
             offClient = fakeOffClient,
-            mealEntryRepository = fakeMealEntryRepository
+            mealEntryRepository = fakeMealEntryRepository,
+            mealConfigRepository = fakeMealConfigRepository,
         )
     }
 
@@ -258,14 +264,14 @@ class ScannerViewModelTest {
         )
         fakeProductRepository.products.add(existing)
 
-        viewModel.onAddLocalProductToDiary(existing, Meal.BREAKFAST, 50.0)
+        viewModel.onAddLocalProductToDiary(existing, DefaultMealIds.BREAKFAST, 50.0)
         advanceUntilIdle()
 
         assertEquals(1, fakeMealEntryRepository.entries.size)
         val entry = fakeMealEntryRepository.entries.first()
         assertEquals(10L, entry.productId)
         assertEquals("Avena", entry.productName)
-        assertEquals(Meal.BREAKFAST, entry.meal)
+        assertEquals(DefaultMealIds.BREAKFAST, entry.meal)
         assertEquals(50.0, entry.grams, 0.001)
         assertEquals(185.0, entry.kcal, 0.001) // 370 * 0.5
 
@@ -284,6 +290,16 @@ class ScannerViewModelTest {
         assertNull(state.scannedBarcode)
         assertEquals(BarcodeLookupState.Idle, state.lookupState)
     }
+
+    @Test
+    fun loadMealConfig_loadsConfiguredMealsAndPreselectsSuggestedMeal() = runTest {
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(4, state.availableMeals.size)
+        assertTrue(state.availableMeals.all { it.isActive })
+        assertTrue(state.availableMeals.any { it.id == state.preselectedMeal })
+    }
 }
 
 private class FakeProductRepository : ProductRepository {
@@ -293,6 +309,30 @@ private class FakeProductRepository : ProductRepository {
     override suspend fun getByBarcode(barcode: String): Product? = products.find { it.barcode == barcode }
     override suspend fun searchByName(prefix: String): List<Product> = products.filter { it.name.startsWith(prefix, ignoreCase = true) }
     override suspend fun getActiveProducts(): List<Product> = products.filter { !it.archived }
+    override suspend fun getPantryProducts(): List<Product> = products.filter { !it.archived && it.inPantry }
+    override suspend fun setInPantry(id: Long, inPantry: Boolean) {
+        val idx = products.indexOfFirst { it.id == id }
+        if (idx >= 0) products[idx] = products[idx].copy(inPantry = inPantry)
+    }
+    override suspend fun updatePantryConfig(
+        id: Long,
+        inPantry: Boolean,
+        minG: Double?,
+        maxG: Double?,
+        unitName: String?,
+        unitG: Double?,
+    ) {
+        val idx = products.indexOfFirst { it.id == id }
+        if (idx >= 0) {
+            products[idx] = products[idx].copy(
+                inPantry = inPantry,
+                minG = minG,
+                maxG = maxG,
+                unitName = unitName,
+                unitG = unitG,
+            )
+        }
+    }
     override suspend fun insert(product: Product): Long {
         val id = if (product.id == 0L) (products.size + 1).toLong() else product.id
         products.add(product.copy(id = id))
@@ -327,9 +367,27 @@ private class FakeMealEntryRepository : MealEntryRepository {
         entries.add(entry.copy(id = id))
         return id
     }
+    override suspend fun insertAll(entries: List<MealEntry>): List<Long> {
+        return entries.map { insert(it) }
+    }
     override suspend fun update(entry: MealEntry) {}
     override suspend fun delete(entry: MealEntry) {}
     override suspend fun getByDate(date: String): List<MealEntry> = entries.filter { it.date == date }
-    override suspend fun getByDateAndMeal(date: String, meal: Meal): List<MealEntry> = entries.filter { it.date == date && it.meal == meal }
+    override suspend fun getByDateAndMeal(date: String, meal: String): List<MealEntry> = entries.filter { it.date == date && it.meal == meal }
     override suspend fun getByProduct(productId: Long): List<MealEntry> = entries.filter { it.productId == productId }
+    override suspend fun getSince(sinceMillis: Long): List<MealEntry> = entries.filter { it.loggedAt >= sinceMillis }
+    override suspend fun getLatestDateWithMealBefore(date: String, meal: String): String? =
+        entries.filter { it.date < date && it.meal == meal }.maxOfOrNull { it.date }
+    override suspend fun countByMeal(meal: String): Int = entries.count { it.meal == meal }
+}
+
+private class FakeMealConfigRepository(
+    initialConfigs: List<ConfiguredMeal> = DefaultMeals.defaults()
+) : MealConfigRepository {
+    var configs = initialConfigs.toMutableList()
+
+    override suspend fun getMealConfigs(): List<ConfiguredMeal> = configs.toList()
+    override suspend fun saveMealConfigs(configs: List<ConfiguredMeal>) {
+        this.configs = configs.toMutableList()
+    }
 }

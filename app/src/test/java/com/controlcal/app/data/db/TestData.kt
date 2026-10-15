@@ -6,8 +6,8 @@ import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
 import com.controlcal.app.data.db.entity.WeightEntryEntity
 import com.controlcal.core.model.DayType
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.GoalOrigin
-import com.controlcal.core.model.Meal
 import com.controlcal.core.model.ProductSource
 
 /** Shared builders for DAO tests. */
@@ -76,9 +76,9 @@ object TestData {
     fun mealEntry(
         id: Long = 0,
         date: String = DATE_A,
-        meal: Meal = Meal.LUNCH,
-        productId: Long,
-        productName: String,
+        meal: String = DefaultMealIds.LUNCH,
+        productId: Long? = null,
+        productName: String = "Test Product",
         grams: Double = 100.0,
         kcal: Double = 350.0,
         protein: Double = 7.5,

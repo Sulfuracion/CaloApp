@@ -1,0 +1,224 @@
+{
+    "imageFileName": "label_01.jpg",
+    "timestamp": "2026-10-13T21:50:16.161733Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "labr Energético 426 kJ 101l keal 53 KJ 126 kecal",
+            "box": {
+                "left": 1186,
+                "top": 1240,
+                "right": 1970,
+                "bottom": 1314
+            }
+        },
+        {
+            "text": "Grasas",
+            "box": {
+                "left": 1174,
+                "top": 1328,
+                "right": 1261,
+                "bottom": 1367
+            }
+        },
+        {
+            "text": "de las cuales Saturadas",
+            "box": {
+                "left": 1175,
+                "top": 1389,
+                "right": 1488,
+                "bottom": 1440
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 1155,
+                "top": 1455,
+                "right": 1470,
+                "bottom": 1509
+            }
+        },
+        {
+            "text": "de los cuales Azúcares",
+            "box": {
+                "left": 1166,
+                "top": 1526,
+                "right": 1470,
+                "bottom": 1579
+            }
+        },
+        {
+            "text": "Fibra alimentaria",
+            "box": {
+                "left": 1164,
+                "top": 1594,
+                "right": 1409,
+                "bottom": 1645
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1161,
+                "top": 1680,
+                "right": 1294,
+                "bottom": 1727
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1171,
+                "top": 1759,
+                "right": 1192,
+                "bottom": 1806
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1546,
+                "top": 1172,
+                "right": 1633,
+                "bottom": 1225
+            }
+        },
+        {
+            "text": "Vitaminas y minerales",
+            "box": {
+                "left": 1158,
+                "top": 1845,
+                "right": 1497,
+                "bottom": 1910
+            }
+        },
+        {
+            "text": "Calcio",
+            "box": {
+                "left": 1158,
+                "top": 1917,
+                "right": 1234,
+                "bottom": 1965
+            }
+        },
+        {
+            "text": "29g",
+            "box": {
+                "left": 1636,
+                "top": 1338,
+                "right": 1711,
+                "bottom": 1383
+            }
+        },
+        {
+            "text": "1.8g",
+            "box": {
+                "left": 1652,
+                "top": 1402,
+                "right": 1709,
+                "bottom": 1452
+            }
+        },
+        {
+            "text": "1369",
+            "box": {
+                "left": 1625,
+                "top": 1468,
+                "right": 1709,
+                "bottom": 1521
+            }
+        },
+        {
+            "text": "127g",
+            "box": {
+                "left": 1634,
+                "top": 1538,
+                "right": 1706,
+                "bottom": 1591
+            }
+        },
+        {
+            "text": "1,8g",
+            "box": {
+                "left": 1639,
+                "top": 1608,
+                "right": 1705,
+                "bottom": 1659
+            }
+        },
+        {
+            "text": "42g",
+            "box": {
+                "left": 1631,
+                "top": 1694,
+                "right": 1706,
+                "bottom": 1745
+            }
+        },
+        {
+            "text": "012g",
+            "box": {
+                "left": 1620,
+                "top": 1780,
+                "right": 1703,
+                "bottom": 1829
+            }
+        },
+        {
+            "text": "120 mg (15%)",
+            "box": {
+                "left": 1497,
+                "top": 1933,
+                "right": 1696,
+                "bottom": 1984
+            }
+        },
+        {
+            "text": "590",
+            "box": {
+                "left": 1893,
+                "top": 1547,
+                "right": 1947,
+                "bottom": 1587
+            }
+        },
+        {
+            "text": "23g emam",
+            "box": {
+                "left": 1904,
+                "top": 1611,
+                "right": 2043,
+                "bottom": 1659
+            }
+        },
+        {
+            "text": "52g",
+            "box": {
+                "left": 1890,
+                "top": 1694,
+                "right": 1940,
+                "bottom": 1741
+            }
+        },
+        {
+            "text": "Consumt",
+            "box": {
+                "left": 1964,
+                "top": 1834,
+                "right": 2012,
+                "bottom": 1862
+            }
+        },
+        {
+            "text": "150 mg (19%.",
+            "box": {
+                "left": 1782,
+                "top": 1920,
+                "right": 2058,
+                "bottom": 1988
+            }
+        }
+    ]
+}

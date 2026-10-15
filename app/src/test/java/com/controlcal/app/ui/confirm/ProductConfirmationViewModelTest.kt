@@ -1,7 +1,7 @@
 package com.controlcal.app.ui.confirm
 
 import com.controlcal.app.data.off.OffProduct
-import com.controlcal.core.model.Meal
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
 import com.controlcal.core.model.ProductSource
@@ -23,12 +23,17 @@ import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
 
+import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.model.DefaultMeals
+import com.controlcal.core.repo.MealConfigRepository
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProductConfirmationViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeProductRepository: FakeProductRepository
     private lateinit var fakeMealEntryRepository: FakeMealEntryRepository
+    private lateinit var fakeMealConfigRepository: FakeMealConfigRepository
     private lateinit var viewModel: ProductConfirmationViewModel
 
     @Before
@@ -36,9 +41,11 @@ class ProductConfirmationViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakeProductRepository = FakeProductRepository()
         fakeMealEntryRepository = FakeMealEntryRepository()
+        fakeMealConfigRepository = FakeMealConfigRepository()
         viewModel = ProductConfirmationViewModel(
             productRepository = fakeProductRepository,
-            mealEntryRepository = fakeMealEntryRepository
+            mealEntryRepository = fakeMealEntryRepository,
+            mealConfigRepository = fakeMealConfigRepository,
         )
     }
 
@@ -153,7 +160,7 @@ class ProductConfirmationViewModelTest {
         )
         viewModel.initialize(product)
         viewModel.onAddToDiaryChanged(true)
-        viewModel.onMealSelected(Meal.SNACK)
+        viewModel.onMealSelected(DefaultMealIds.SNACK)
         viewModel.onDiaryGramsChanged("150")
 
         var savedSuccess = false
@@ -168,7 +175,7 @@ class ProductConfirmationViewModelTest {
         assertEquals(1, fakeMealEntryRepository.entries.size)
         val entry = fakeMealEntryRepository.entries.first()
         assertEquals(LocalDate.now().toString(), entry.date)
-        assertEquals(Meal.SNACK, entry.meal)
+        assertEquals(DefaultMealIds.SNACK, entry.meal)
         assertEquals(savedProd.id, entry.productId)
         assertEquals("Plátano", entry.productName)
         assertEquals(150.0, entry.grams, 0.001)
@@ -195,6 +202,107 @@ class ProductConfirmationViewModelTest {
         assertEquals(0, fakeProductRepository.products.size)
         assertEquals(0, fakeMealEntryRepository.entries.size)
     }
+
+    @Test
+    fun initializeFromOcr_setsSourceOcr_andDetectsDubiousAndValidationIssues() {
+        val tempPhoto = java.io.File.createTempFile("ocr_test", ".jpg")
+        try {
+            val ocrNutrients = com.controlcal.core.ocr.model.OcrParsedNutrients(
+                kcal = 100.0,
+                protein = 5.0,
+                carbs = 10.0,
+                fat = 2.0,
+                sugars = 15.0, // sugars > carbs!
+                satFat = 0.5,
+                confidence = mapOf("kcal" to 0.95f, "protein" to 0.60f), // protein has low confidence < 0.85
+                approximations = setOf("satFat")
+            )
+
+            viewModel.initializeFromOcr(tempPhoto, ocrNutrients, barcode = "840001")
+            val state = viewModel.uiState.value
+
+            assertEquals(ProductSource.OCR, state.source)
+            assertEquals(tempPhoto, state.photoFile)
+            assertEquals("840001", state.barcode)
+            assertEquals("100", state.kcal100g)
+            assertEquals("5", state.protein100g)
+            assertEquals("10", state.carbs100g)
+            assertEquals("15", state.sugars100g)
+
+            // protein and satFat are dubious
+            assertTrue(state.dubiousFields.contains("protein"))
+            assertTrue(state.dubiousFields.contains("satFat"))
+
+            // sugars > carbs validation issue
+            assertTrue(state.validationIssues.containsKey("sugars"))
+
+            // Edit carbs to 20g -> validation issue should be resolved dynamically
+            viewModel.onCarbsChanged("20")
+            assertFalse(viewModel.uiState.value.validationIssues.containsKey("sugars"))
+        } finally {
+            if (tempPhoto.exists()) tempPhoto.delete()
+        }
+    }
+
+    @Test
+    fun saveProduct_withOcrSource_persistsSourceOcrAndDeletesPhotoFile() = runTest {
+        val tempPhoto = java.io.File.createTempFile("ocr_save_test", ".jpg")
+        assertTrue(tempPhoto.exists())
+
+        val ocrNutrients = com.controlcal.core.ocr.model.OcrParsedNutrients(
+            kcal = 200.0,
+            protein = 10.0,
+            carbs = 20.0,
+            fat = 5.0
+        )
+        viewModel.initializeFromOcr(tempPhoto, ocrNutrients)
+        viewModel.onNameChanged("Barrita Proteica")
+
+        var saved = false
+        viewModel.onConfirmAndSave { saved = true }
+        advanceUntilIdle()
+
+        assertTrue(saved)
+        assertEquals(1, fakeProductRepository.products.size)
+        val savedProduct = fakeProductRepository.products.first()
+        assertEquals(ProductSource.OCR, savedProduct.source)
+        assertEquals("Barrita Proteica", savedProduct.name)
+
+        // Photo file must be deleted after save
+        assertFalse(tempPhoto.exists())
+    }
+
+    @Test
+    fun discard_withOcrSource_deletesPhotoFile() = runTest {
+        val tempPhoto = java.io.File.createTempFile("ocr_discard_test", ".jpg")
+        assertTrue(tempPhoto.exists())
+
+        val ocrNutrients = com.controlcal.core.ocr.model.OcrParsedNutrients(
+            kcal = 150.0,
+            protein = 8.0,
+            carbs = 12.0,
+            fat = 4.0
+        )
+        viewModel.initializeFromOcr(tempPhoto, ocrNutrients)
+
+        var discarded = false
+        viewModel.onDiscard { discarded = true }
+
+        assertTrue(discarded)
+        assertEquals(0, fakeProductRepository.products.size)
+        // Photo file must be deleted upon discard
+        assertFalse(tempPhoto.exists())
+    }
+
+    @Test
+    fun loadMealConfig_loadsConfiguredMealsAndPreselectsSuggestedMeal() = runTest {
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(4, state.availableMeals.size)
+        assertTrue(state.availableMeals.all { it.isActive })
+        assertTrue(state.availableMeals.any { it.id == state.selectedMeal })
+    }
 }
 
 private class FakeProductRepository : ProductRepository {
@@ -204,6 +312,30 @@ private class FakeProductRepository : ProductRepository {
     override suspend fun getByBarcode(barcode: String): Product? = products.find { it.barcode == barcode }
     override suspend fun searchByName(prefix: String): List<Product> = products.filter { it.name.startsWith(prefix, ignoreCase = true) }
     override suspend fun getActiveProducts(): List<Product> = products.filter { !it.archived }
+    override suspend fun getPantryProducts(): List<Product> = products.filter { !it.archived && it.inPantry }
+    override suspend fun setInPantry(id: Long, inPantry: Boolean) {
+        val idx = products.indexOfFirst { it.id == id }
+        if (idx >= 0) products[idx] = products[idx].copy(inPantry = inPantry)
+    }
+    override suspend fun updatePantryConfig(
+        id: Long,
+        inPantry: Boolean,
+        minG: Double?,
+        maxG: Double?,
+        unitName: String?,
+        unitG: Double?,
+    ) {
+        val idx = products.indexOfFirst { it.id == id }
+        if (idx >= 0) {
+            products[idx] = products[idx].copy(
+                inPantry = inPantry,
+                minG = minG,
+                maxG = maxG,
+                unitName = unitName,
+                unitG = unitG,
+            )
+        }
+    }
     override suspend fun insert(product: Product): Long {
         val id = if (product.id == 0L) (products.size + 1).toLong() else product.id
         products.add(product.copy(id = id))
@@ -228,9 +360,27 @@ private class FakeMealEntryRepository : MealEntryRepository {
         entries.add(entry.copy(id = id))
         return id
     }
+    override suspend fun insertAll(entries: List<MealEntry>): List<Long> {
+        return entries.map { insert(it) }
+    }
     override suspend fun update(entry: MealEntry) {}
     override suspend fun delete(entry: MealEntry) {}
     override suspend fun getByDate(date: String): List<MealEntry> = entries.filter { it.date == date }
-    override suspend fun getByDateAndMeal(date: String, meal: Meal): List<MealEntry> = entries.filter { it.date == date && it.meal == meal }
+    override suspend fun getByDateAndMeal(date: String, meal: String): List<MealEntry> = entries.filter { it.date == date && it.meal == meal }
     override suspend fun getByProduct(productId: Long): List<MealEntry> = entries.filter { it.productId == productId }
+    override suspend fun getSince(sinceMillis: Long): List<MealEntry> = entries.filter { it.loggedAt >= sinceMillis }
+    override suspend fun getLatestDateWithMealBefore(date: String, meal: String): String? =
+        entries.filter { it.date < date && it.meal == meal }.maxOfOrNull { it.date }
+    override suspend fun countByMeal(meal: String): Int = entries.count { it.meal == meal }
+}
+
+private class FakeMealConfigRepository(
+    initialConfigs: List<ConfiguredMeal> = DefaultMeals.defaults()
+) : MealConfigRepository {
+    var configs = initialConfigs.toMutableList()
+
+    override suspend fun getMealConfigs(): List<ConfiguredMeal> = configs.toList()
+    override suspend fun saveMealConfigs(configs: List<ConfiguredMeal>) {
+        this.configs = configs.toMutableList()
+    }
 }

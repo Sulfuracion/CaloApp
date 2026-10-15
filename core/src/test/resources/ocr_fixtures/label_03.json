@@ -1,0 +1,422 @@
+{
+    "imageFileName": "label_03.jpg",
+    "timestamp": "2026-10-13T21:52:23.737083Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "@SALSA LIGHT P MOLHO LIGHT",
+            "box": {
+                "left": 1350,
+                "top": 643,
+                "right": 2025,
+                "bottom": 731
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 1546,
+                "top": 726,
+                "right": 1864,
+                "bottom": 797
+            }
+        },
+        {
+            "text": "Agua, aceites vegetales srefinadoslatasoly y soja en",
+            "box": {
+                "left": 1232,
+                "top": 768,
+                "right": 2193,
+                "bottom": 955
+            }
+        },
+        {
+            "text": "estabilizante (alrmidón modificado o de malz).vinagre de uva,",
+            "box": {
+                "left": 1130,
+                "top": 877,
+                "right": 2224,
+                "bottom": 1079
+            }
+        },
+        {
+            "text": "proporción variable), yema de huezo pasteurizada,",
+            "box": {
+                "left": 1161,
+                "top": 842,
+                "right": 2201,
+                "bottom": 987
+            }
+        },
+        {
+            "text": "potásico), colorantes (beta-caroteno y exActo de pimentón),",
+            "box": {
+                "left": 1108,
+                "top": 1026,
+                "right": 2236,
+                "bottom": 1167
+            }
+        },
+        {
+            "text": "sal, zumo de limón concentrado, aroma, conservador(sorbato",
+            "box": {
+                "left": 1116,
+                "top": 968,
+                "right": 2234,
+                "bottom": 1117
+            }
+        },
+        {
+            "text": "antioxidante (E-385) y edulcorante (sucratoa",
+            "box": {
+                "left": 1082,
+                "top": 1107,
+                "right": 1946,
+                "bottom": 1174
+            }
+        },
+        {
+            "text": "OAgua, óleos vegetais s refinados (girasa8 am proporções",
+            "box": {
+                "left": 1112,
+                "top": 1147,
+                "right": 2255,
+                "bottom": 1274
+            }
+        },
+        {
+            "text": "variáveis), gema d de ovo pasteurizada, estan or (amido de milho",
+            "box": {
+                "left": 1068,
+                "top": 1205,
+                "right": 2263,
+                "bottom": 1341
+            }
+        },
+        {
+            "text": "modificado), vinagre de e uva, sal, sumo de i áa concentrado, aroma,",
+            "box": {
+                "left": 1077,
+                "top": 1278,
+                "right": 2272,
+                "bottom": 1379
+            }
+        },
+        {
+            "text": "Conservante (sorbato de potássio), corantes oata-caroteno e extrato",
+            "box": {
+                "left": 1062,
+                "top": 1324,
+                "right": 2267,
+                "bottom": 1450
+            }
+        },
+        {
+            "text": "de pimentão), antioxidante (E-385) e adoçarte",
+            "box": {
+                "left": 1038,
+                "top": 1408,
+                "right": 1911,
+                "bottom": 1469
+            }
+        },
+        {
+            "text": "Grasas/Lipidos",
+            "box": {
+                "left": 1049,
+                "top": 1671,
+                "right": 1334,
+                "bottom": 1722
+            }
+        },
+        {
+            "text": "Valor Energético/Energia 1222 kJ292 kcal",
+            "box": {
+                "left": 1052,
+                "top": 1577,
+                "right": 2048,
+                "bottom": 1645
+            }
+        },
+        {
+            "text": "de las cuales Saturadas/dos quais Saturados",
+            "box": {
+                "left": 1050,
+                "top": 1742,
+                "right": 1900,
+                "bottom": 1788
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 1052,
+                "top": 1813,
+                "right": 1448,
+                "bottom": 1855
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1053,
+                "top": 2033,
+                "right": 1100,
+                "bottom": 2073
+            }
+        },
+        {
+            "text": "de los cuales Azúcares/dos quais Açúcares",
+            "box": {
+                "left": 1052,
+                "top": 1882,
+                "right": 1868,
+                "bottom": 1929
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1051,
+                "top": 1950,
+                "right": 1224,
+                "bottom": 1996
+            }
+        },
+        {
+            "text": "ioralose)",
+            "box": {
+                "left": 1957,
+                "top": 1408,
+                "right": 2106,
+                "bottom": 1469
+            }
+        },
+        {
+            "text": "Contenido Neto/",
+            "box": {
+                "left": 1206,
+                "top": 2722,
+                "right": 1525,
+                "bottom": 2777
+            }
+        },
+        {
+            "text": "Conteúdo Líquido:",
+            "box": {
+                "left": 1232,
+                "top": 2780,
+                "right": 1579,
+                "bottom": 2840
+            }
+        },
+        {
+            "text": "b,3g",
+            "box": {
+                "left": 1966,
+                "top": 1747,
+                "right": 2039,
+                "bottom": 1792
+            }
+        },
+        {
+            "text": "47g",
+            "box": {
+                "left": 1962,
+                "top": 1813,
+                "right": 2037,
+                "bottom": 1870
+            }
+        },
+        {
+            "text": "*50% menos de grasa que la mayonesa Hacendado/",
+            "box": {
+                "left": 1069,
+                "top": 2137,
+                "right": 2077,
+                "bottom": 2193
+            }
+        },
+        {
+            "text": "50% menos gordura do que a maionese Hacendado.",
+            "box": {
+                "left": 1073,
+                "top": 2195,
+                "right": 2028,
+                "bottom": 2247
+            }
+        },
+        {
+            "text": "MERCADONA",
+            "box": {
+                "left": 1390,
+                "top": 2868,
+                "right": 1635,
+                "bottom": 2905
+            }
+        },
+        {
+            "text": "cONSERVACIÓN/CONSERVAÇÃO",
+            "box": {
+                "left": 1360,
+                "top": 2261,
+                "right": 2009,
+                "bottom": 2330
+            }
+        },
+        {
+            "text": "800 500 220 ả",
+            "box": {
+                "left": 1398,
+                "top": 2870,
+                "right": 1760,
+                "bottom": 2965
+            }
+        },
+        {
+            "text": "0g",
+            "box": {
+                "left": 1992,
+                "top": 1881,
+                "right": 2040,
+                "bottom": 1930
+            }
+        },
+        {
+            "text": "0,8g",
+            "box": {
+                "left": 1949,
+                "top": 1950,
+                "right": 2040,
+                "bottom": 1999
+            }
+        },
+        {
+            "text": "17g",
+            "box": {
+                "left": 1970,
+                "top": 2032,
+                "right": 2039,
+                "bottom": 2082
+            }
+        },
+        {
+            "text": "EConservar en lugar fresco y seco. Una yez abierto, conserval",
+            "box": {
+                "left": 1096,
+                "top": 2333,
+                "right": 2227,
+                "bottom": 2399
+            }
+        },
+        {
+            "text": "en refrigerado un plazo máximo de un mes.",
+            "box": {
+                "left": 1114,
+                "top": 2403,
+                "right": 1913,
+                "bottom": 2456
+            }
+        },
+        {
+            "text": "PGuarde em local fresco e seco. Depois de aberto conserval",
+            "box": {
+                "left": 1119,
+                "top": 2450,
+                "right": 2200,
+                "bottom": 2514
+            }
+        },
+        {
+            "text": "no Trigorífico, num prazo máximo de um mês.",
+            "box": {
+                "left": 1140,
+                "top": 2514,
+                "right": 1980,
+                "bottom": 2574
+            }
+        },
+        {
+            "text": "Consumir preferentemente antes del/Lote: ver tapa/",
+            "box": {
+                "left": 1183,
+                "top": 2577,
+                "right": 2167,
+                "bottom": 2656
+            }
+        },
+        {
+            "text": "Consumir de preferência antes del/Lote: ver tampa.",
+            "box": {
+                "left": 1181,
+                "top": 2641,
+                "right": 2108,
+                "bottom": 2708
+            }
+        },
+        {
+            "text": "Avda. Cameros 70,",
+            "box": {
+                "left": 1520,
+                "top": 3016,
+                "right": 1865,
+                "bottom": 3079
+            }
+        },
+        {
+            "text": "26150 Agoncillo (La Rioja)",
+            "box": {
+                "left": 1449,
+                "top": 3064,
+                "right": 1930,
+                "bottom": 3142
+            }
+        },
+        {
+            "text": "España/Espanha",
+            "box": {
+                "left": 1536,
+                "top": 3128,
+                "right": 1851,
+                "bottom": 3197
+            }
+        },
+        {
+            "text": "490 mla)",
+            "box": {
+                "left": 1636,
+                "top": 2729,
+                "right": 2103,
+                "bottom": 2829
+            }
+        },
+        {
+            "text": "Fabricado por: SALSA RICA S.L.",
+            "box": {
+                "left": 1405,
+                "top": 2951,
+                "right": 1972,
+                "bottom": 3030
+            }
+        },
+        {
+            "text": "ES",
+            "box": {
+                "left": 2006,
+                "top": 2702,
+                "right": 2049,
+                "bottom": 2752
+            }
+        },
+        {
+            "text": "00",
+            "box": {
+                "left": 2225,
+                "top": 2097,
+                "right": 2249,
+                "bottom": 2121
+            }
+        }
+    ]
+}

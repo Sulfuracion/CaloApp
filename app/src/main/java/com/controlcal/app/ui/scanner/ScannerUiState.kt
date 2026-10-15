@@ -1,6 +1,8 @@
 package com.controlcal.app.ui.scanner
 
 import com.controlcal.app.data.off.OffProduct
+import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.Product
 
 enum class CameraPermissionState {
@@ -27,4 +29,6 @@ data class ScannerUiState(
     val showRationaleDialog: Boolean = false,
     val scannedBarcode: String? = null,
     val lookupState: BarcodeLookupState = BarcodeLookupState.Idle,
+    val availableMeals: List<ConfiguredMeal> = emptyList(),
+    val preselectedMeal: String = DefaultMealIds.BREAKFAST,
 )

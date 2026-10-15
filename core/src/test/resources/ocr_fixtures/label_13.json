@@ -1,0 +1,575 @@
+{
+    "imageFileName": "label_13.jpg",
+    "timestamp": "2026-10-14T10:32:38.418409Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "LONGANIZA de PAYÉS",
+            "box": {
+                "left": 458,
+                "top": 1191,
+                "right": 1565,
+                "bottom": 1315
+            }
+        },
+        {
+            "text": "eLONGANIZA de PAYÉS EXTRA",
+            "box": {
+                "left": 333,
+                "top": 1329,
+                "right": 770,
+                "bottom": 1384
+            }
+        },
+        {
+            "text": "QUNGUICA de PAVÉS EXTRA",
+            "box": {
+                "left": 345,
+                "top": 1384,
+                "right": 750,
+                "bottom": 1439
+            }
+        },
+        {
+            "text": "INGREDIENTES",
+            "box": {
+                "left": 420,
+                "top": 1467,
+                "right": 643,
+                "bottom": 1508
+            }
+        },
+        {
+            "text": "Vdo, panceta, leche desnatada en polvo,",
+            "box": {
+                "left": 366,
+                "top": 1528,
+                "right": 933,
+                "bottom": 1578
+            }
+        },
+        {
+            "text": "ntioxidante (E-301) y conservadores",
+            "box": {
+                "left": 370,
+                "top": 1577,
+                "right": 928,
+                "bottom": 1624
+            }
+        },
+        {
+            "text": "Abarriga, leite em pó desnatado, sal,",
+            "box": {
+                "left": 375,
+                "top": 1681,
+                "right": 931,
+                "bottom": 1730
+            }
+        },
+        {
+            "text": "iondante (E-301) e conservantes (E-250,",
+            "box": {
+                "left": 359,
+                "top": 1727,
+                "right": 930,
+                "bottom": 1777
+            }
+        },
+        {
+            "text": "PREPARACIÓN/PREPARAÇÃO",
+            "box": {
+                "left": 314,
+                "top": 1852,
+                "right": 750,
+                "bottom": 1910
+            }
+        },
+        {
+            "text": "YAbrir el envase 10 minutos antes de consumir el producto.",
+            "box": {
+                "left": 162,
+                "top": 1929,
+                "right": 929,
+                "bottom": 1974
+            }
+        },
+        {
+            "text": "OAbra o pacote 10 minutos antes de consumir o produto.",
+            "box": {
+                "left": 166,
+                "top": 1987,
+                "right": 904,
+                "bottom": 2034
+            }
+        },
+        {
+            "text": "CONSERVACIÓN/CONSERVAÇÃO",
+            "box": {
+                "left": 284,
+                "top": 2066,
+                "right": 773,
+                "bottom": 2114
+            }
+        },
+        {
+            "text": "Una vez abierto se recomienda consumir ates de 2",
+            "box": {
+                "left": 179,
+                "top": 2139,
+                "right": 932,
+                "bottom": 2181
+            }
+        },
+        {
+            "text": "dles. Matener refrigerado entre 0°Cy 5°C. Envasado en",
+            "box": {
+                "left": 131,
+                "top": 2184,
+                "right": 933,
+                "bottom": 2233
+            }
+        },
+        {
+            "text": "atmóstera protectora.",
+            "box": {
+                "left": 126,
+                "top": 2237,
+                "right": 436,
+                "bottom": 2278
+            }
+        },
+        {
+            "text": "O Depois de aberto, consumir no prazo de 2 dias.",
+            "box": {
+                "left": 129,
+                "top": 2282,
+                "right": 931,
+                "bottom": 2326
+            }
+        },
+        {
+            "text": "Conservar no frigorfico entre os 0°C e 5°C. Embalado",
+            "box": {
+                "left": 132,
+                "top": 2320,
+                "right": 931,
+                "bottom": 2375
+            }
+        },
+        {
+            "text": "em atmostera protegida.",
+            "box": {
+                "left": 130,
+                "top": 2380,
+                "right": 484,
+                "bottom": 2423
+            }
+        },
+        {
+            "text": "Consumir preferentemente antes del (dd/mm/aaaa) y",
+            "box": {
+                "left": 146,
+                "top": 2430,
+                "right": 925,
+                "bottom": 2480
+            }
+        },
+        {
+            "text": "Lote (ver frontal)",
+            "box": {
+                "left": 151,
+                "top": 2473,
+                "right": 370,
+                "bottom": 2526
+            }
+        },
+        {
+            "text": "Consumir de preferéncia antes do (dd/mm/aaaa) e Lote",
+            "box": {
+                "left": 151,
+                "top": 2522,
+                "right": 930,
+                "bottom": 2570
+            }
+        },
+        {
+            "text": "(ver frente",
+            "box": {
+                "left": 150,
+                "top": 2568,
+                "right": 284,
+                "bottom": 2611
+            }
+        },
+        {
+            "text": "8402001043543",
+            "box": {
+                "left": 250,
+                "top": 2788,
+                "right": 800,
+                "bottom": 2850
+            }
+        },
+        {
+            "text": "Unidad no divisible para su venta.",
+            "box": {
+                "left": 300,
+                "top": 2869,
+                "right": 766,
+                "bottom": 2930
+            }
+        },
+        {
+            "text": "Unidade näo divisivel para a sua venda.",
+            "box": {
+                "left": 261,
+                "top": 2917,
+                "right": 801,
+                "bottom": 2977
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1087,
+                "top": 1545,
+                "right": 1148,
+                "bottom": 1580
+            }
+        },
+        {
+            "text": "Energético/Energia 351 kcal",
+            "box": {
+                "left": 1088,
+                "top": 1580,
+                "right": 1659,
+                "bottom": 1643
+            }
+        },
+        {
+            "text": "Grasas/Lipidos",
+            "box": {
+                "left": 1084,
+                "top": 1657,
+                "right": 1320,
+                "bottom": 1712
+            }
+        },
+        {
+            "text": "de las cuales/dos quais:",
+            "box": {
+                "left": 1095,
+                "top": 1729,
+                "right": 1388,
+                "bottom": 1770
+            }
+        },
+        {
+            "text": "- Saturadas/Saturados",
+            "box": {
+                "left": 1120,
+                "top": 1777,
+                "right": 1438,
+                "bottom": 1819
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 1086,
+                "top": 1842,
+                "right": 1410,
+                "bottom": 1891
+            }
+        },
+        {
+            "text": "de los cuales/dos quais:",
+            "box": {
+                "left": 1096,
+                "top": 1910,
+                "right": 1391,
+                "bottom": 1951
+            }
+        },
+        {
+            "text": "- Azúcares/Açúcares",
+            "box": {
+                "left": 1117,
+                "top": 1958,
+                "right": 1403,
+                "bottom": 2005
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1096,
+                "top": 2027,
+                "right": 1242,
+                "bottom": 2067
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1104,
+                "top": 2105,
+                "right": 1134,
+                "bottom": 2147
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1527,
+                "top": 1475,
+                "right": 1609,
+                "bottom": 1524
+            }
+        },
+        {
+            "text": "1461 kJ",
+            "box": {
+                "left": 1573,
+                "top": 1541,
+                "right": 1657,
+                "bottom": 1582
+            }
+        },
+        {
+            "text": "MERCADONA",
+            "box": {
+                "left": 1221,
+                "top": 2537,
+                "right": 1533,
+                "bottom": 2577
+            }
+        },
+        {
+            "text": "24 g",
+            "box": {
+                "left": 1597,
+                "top": 1664,
+                "right": 1658,
+                "bottom": 1709
+            }
+        },
+        {
+            "text": "CoSTa Brava",
+            "box": {
+                "left": 1136,
+                "top": 2759,
+                "right": 1362,
+                "bottom": 2804
+            }
+        },
+        {
+            "text": "8,2g",
+            "box": {
+                "left": 1593,
+                "top": 1777,
+                "right": 1658,
+                "bottom": 1824
+            }
+        },
+        {
+            "text": "MEDITERRANIAN vOoD#",
+            "box": {
+                "left": 1135,
+                "top": 2810,
+                "right": 1331,
+                "bottom": 2823
+            }
+        },
+        {
+            "text": "3,7g",
+            "box": {
+                "left": 1591,
+                "top": 1843,
+                "right": 1659,
+                "bottom": 1889
+            }
+        },
+        {
+            "text": "3.7g",
+            "box": {
+                "left": 1597,
+                "top": 1957,
+                "right": 1660,
+                "bottom": 2004
+            }
+        },
+        {
+            "text": "Contiene 4 unidades de aprox. 37,5 g",
+            "box": {
+                "left": 1079,
+                "top": 2196,
+                "right": 1607,
+                "bottom": 2239
+            }
+        },
+        {
+            "text": "Contém 4 unidades de aprox. 37,5 g.",
+            "box": {
+                "left": 1078,
+                "top": 2243,
+                "right": 1595,
+                "bottom": 2287
+            }
+        },
+        {
+            "text": "30 g",
+            "box": {
+                "left": 1602,
+                "top": 2024,
+                "right": 1656,
+                "bottom": 2067
+            }
+        },
+        {
+            "text": "3,6g",
+            "box": {
+                "left": 1590,
+                "top": 2101,
+                "right": 1653,
+                "bottom": 2146
+            }
+        },
+        {
+            "text": "800 500 220 (A",
+            "box": {
+                "left": 1219,
+                "top": 2560,
+                "right": 1673,
+                "bottom": 2640
+            }
+        },
+        {
+            "text": "$37,5 g",
+            "box": {
+                "left": 1767,
+                "top": 1466,
+                "right": 1869,
+                "bottom": 1526
+            }
+        },
+        {
+            "text": "548 KJ",
+            "box": {
+                "left": 1788,
+                "top": 1544,
+                "right": 1861,
+                "bottom": 1580
+            }
+        },
+        {
+            "text": "132 kcal",
+            "box": {
+                "left": 1722,
+                "top": 1580,
+                "right": 1862,
+                "bottom": 1643
+            }
+        },
+        {
+            "text": "9,0 g",
+            "box": {
+                "left": 1787,
+                "top": 1663,
+                "right": 1861,
+                "bottom": 1708
+            }
+        },
+        {
+            "text": "3.1g",
+            "box": {
+                "left": 1803,
+                "top": 1775,
+                "right": 1864,
+                "bottom": 1822
+            }
+        },
+        {
+            "text": "1,4 g",
+            "box": {
+                "left": 1808,
+                "top": 1836,
+                "right": 1864,
+                "bottom": 1886
+            }
+        },
+        {
+            "text": "Peso Neto/lquido: l50g (4137,59)",
+            "box": {
+                "left": 1097,
+                "top": 2359,
+                "right": 1860,
+                "bottom": 2454
+            }
+        },
+        {
+            "text": "14g",
+            "box": {
+                "left": 1799,
+                "top": 1952,
+                "right": 1868,
+                "bottom": 2003
+            }
+        },
+        {
+            "text": "llg",
+            "box": {
+                "left": 1818,
+                "top": 2024,
+                "right": 1866,
+                "bottom": 2070
+            }
+        },
+        {
+            "text": "1,4g",
+            "box": {
+                "left": 1799,
+                "top": 2100,
+                "right": 1867,
+                "bottom": 2146
+            }
+        },
+        {
+            "text": "Fabricado por EMBUTIDOS MONTER, S.LU.",
+            "box": {
+                "left": 1102,
+                "top": 2864,
+                "right": 1714,
+                "bottom": 2925
+            }
+        },
+        {
+            "text": "Camí del Moll, s/n. 17854 Sant Jaume de Llierca (Girona)",
+            "box": {
+                "left": 1111,
+                "top": 2910,
+                "right": 1872,
+                "bottom": 2973
+            }
+        },
+        {
+            "text": "España/Espanha",
+            "box": {
+                "left": 1095,
+                "top": 2973,
+                "right": 1332,
+                "bottom": 3020
+            }
+        },
+        {
+            "text": "VRKIM",
+            "box": {
+                "left": 2254,
+                "top": 3707,
+                "right": 2355,
+                "bottom": 3835
+            }
+        }
+    ]
+}

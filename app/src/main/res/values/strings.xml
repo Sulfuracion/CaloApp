@@ -62,6 +62,11 @@
     <string name="confirm_product_meal_lunch">Comida</string>
     <string name="confirm_product_meal_dinner">Cena</string>
     <string name="confirm_product_meal_snack">Merienda / Snack</string>
+    <!-- Nombres por defecto de comidas configurables (M.2 / PLAN.md) -->
+    <string name="default_meal_breakfast">Desayuno</string>
+    <string name="default_meal_lunch">Almuerzo</string>
+    <string name="default_meal_snack">Merienda</string>
+    <string name="default_meal_dinner">Cena</string>
     <string name="confirm_product_quantity_label">Gramos consumidos</string>
     <string name="confirm_product_portion_preview">Aportará: %1$s kcal · %2$s g P · %3$s g C · %4$s g G</string>
     <string name="confirm_product_save_button">Confirmar y guardar</string>
@@ -102,4 +107,337 @@
     <string name="debug_ocr_error_capture">Error al capturar o analizar: %1$s</string>
     <string name="debug_ocr_copy_adb_action">Copiar comando ADB</string>
     <string name="debug_ocr_adb_copied">Comando ADB copiado</string>
+    <!-- Captura de tabla nutricional (OCR) -->
+    <string name="ocr_capture_title">Fotografiar tabla</string>
+    <string name="ocr_capture_viewfinder_hint">Encuadra la tabla nutricional en el recuadro</string>
+    <string name="ocr_capture_take_photo">Hacer foto</string>
+    <string name="ocr_capture_processing">Analizando tabla nutricional…</string>
+    <string name="ocr_capture_no_data_title">No se detectó información nutricional</string>
+    <string name="ocr_capture_no_data_message">No se pudieron reconocer datos de la tabla. Puedes reintentar con mejor iluminación y enfoque, o continuar rellenando los campos a mano con la foto de referencia.</string>
+    <string name="ocr_capture_retry_action">Repetir foto</string>
+    <string name="ocr_capture_continue_manual_action">Continuar con la foto</string>
+    <string name="ocr_capture_permission_rationale_title">Permiso de cámara necesario</string>
+    <string name="ocr_capture_permission_rationale_message">ControlCal necesita acceder a la cámara para fotografiar la tabla nutricional del producto.</string>
+    <string name="ocr_capture_action_from_scanner">Fotografiar tabla nutricional</string>
+    <string name="ocr_capture_action_from_manual">Fotografiar tabla nutricional</string>
+
+    <!-- Confirmación de producto (extensiones OCR) -->
+    <string name="confirm_product_source_ocr_badge">Origen: Reconocimiento de texto (OCR)</string>
+    <string name="confirm_product_photo_preview_title">Foto de la tabla nutricional</string>
+    <string name="confirm_product_photo_tap_to_enlarge">Toca para ampliar la foto</string>
+    <string name="confirm_product_close_photo_dialog">Cerrar foto</string>
+    <string name="confirm_product_field_dubious">Valor dudoso por OCR · Comprueba con la foto</string>
+    <string name="confirm_product_field_approximate">Valor aproximado (&lt;0,5 g)</string>
+    <string name="confirm_product_validation_error_title">Posibles incoherencias nutricionales detectadas</string>
+    <string name="confirm_product_caloric_balance_warning">El cálculo calórico (4·P + 4·C + 9·G + 2·fibra) difiere más del 15% de las calorías declaradas.</string>
+    <string name="confirm_product_sugars_warning">Los azúcares no pueden superar a los hidratos de carbono.</string>
+    <string name="confirm_product_sat_fat_warning">Las grasas saturadas no pueden superar a las grasas totales.</string>
+    <string name="confirm_product_value_100g_warning">Ningún nutriente por 100 g puede superar 100 g.</string>
+    <string name="confirm_product_kcal_900_warning">Las calorías por 100 g no pueden superar 900 kcal.</string>
+
+    <!-- Panel diario y Registro rápido (Tarea 4.1) -->
+    <string name="daily_panel_title">Diario</string>
+    <string name="daily_panel_today">Hoy</string>
+    <string name="daily_panel_previous_day">Día anterior</string>
+    <string name="daily_panel_next_day">Día siguiente</string>
+    <string name="daily_panel_copy_yesterday_action">Copiar el día de ayer</string>
+    <string name="daily_panel_copy_yesterday_success">Se han copiado las comidas de ayer</string>
+    <string name="daily_panel_copy_yesterday_empty">No hay registros en el día de ayer</string>
+    <string name="daily_panel_repeat_meal_action">Repetir comida</string>
+    <string name="daily_panel_repeat_meal_success">Comida repetida</string>
+    <string name="daily_panel_repeat_meal_empty">No hay registros anteriores de esta comida</string>
+    <string name="daily_panel_quick_log_title">Sugerencias de la hora</string>
+    <string name="daily_panel_quick_log_subtitle">Franja actual · Un toque añade, mantener pulsado edita</string>
+    <string name="daily_panel_quick_log_empty">Sin sugerencias para esta hora</string>
+    <string name="daily_panel_quick_add_success">Añadido %1$s (%2$s g) a %3$s</string>
+    <string name="daily_panel_edit_quantity_title">Editar cantidad</string>
+    <string name="daily_panel_quantity_label">Cantidad (g)</string>
+    <string name="daily_panel_add_action">Añadir</string>
+    <string name="daily_panel_cancel_action">Cancelar</string>
+    <string name="daily_panel_empty_meal">Sin alimentos registrados</string>
+    <string name="daily_panel_scanner_action">Escanear alimento</string>
+    <string name="daily_panel_kcal_label">kcal</string>
+    <string name="daily_panel_protein_label">Prot</string>
+    <string name="daily_panel_carbs_label">Carb</string>
+    <string name="daily_panel_fat_label">Gras</string>
+
+    <!-- Peso y Tendencia (Tarea 4.2) -->
+    <string name="weight_title">Peso y tendencia</string>
+    <string name="weight_today_card_title">Peso de hoy</string>
+    <string name="weight_today_logged">Registrado hoy: %1$s kg</string>
+    <string name="weight_today_not_logged">Aún no has registrado tu peso hoy</string>
+    <string name="weight_input_label">Peso (kg)</string>
+    <string name="weight_save_action">Guardar peso</string>
+    <string name="weight_save_success">Peso guardado correctamente</string>
+    <string name="weight_invalid_error">Introduce un peso válido (ej. 78,5)</string>
+    <string name="weight_chart_title">Evolución y tendencia</string>
+    <string name="weight_chart_filter_30">30 días</string>
+    <string name="weight_chart_filter_90">90 días</string>
+    <string name="weight_chart_filter_all">Todo</string>
+    <string name="weight_chart_legend_weigh_in">Pesajes</string>
+    <string name="weight_chart_legend_trend">Tendencia (EMA)</string>
+    <string name="weight_chart_empty">No hay pesajes en este período</string>
+    <string name="weight_chart_insufficient">Registra al menos 2 pesajes para ver la línea de tendencia</string>
+    <string name="weight_history_title">Historial de pesajes</string>
+    <string name="weight_history_empty">No hay pesajes registrados</string>
+    <string name="weight_history_trend_label">Tendencia: %1$s kg</string>
+    <string name="weight_add_past_action">Añadir pesaje anterior</string>
+    <string name="weight_edit_title">Editar pesaje</string>
+    <string name="weight_date_label">Fecha</string>
+    <string name="weight_delete_action">Eliminar</string>
+    <string name="weight_delete_title">¿Eliminar pesaje?</string>
+    <string name="weight_delete_confirmation">¿Seguro que deseas eliminar el pesaje del %1$s?</string>
+    <string name="weight_delete_success">Pesaje eliminado</string>
+    <string name="weight_edit_success">Pesaje actualizado</string>
+    <string name="weight_conflict_title">¿Sustituir pesaje existente?</string>
+    <string name="weight_conflict_message">Ya existe un pesaje de %1$s kg para el %2$s. ¿Deseas sustituirlo por %3$s kg?</string>
+    <string name="weight_conflict_confirm_action">Sustituir</string>
+    <string name="weight_navigate_action">Control de peso</string>
+    <string name="weight_back">Volver</string>
+
+    <!-- Selector de fechas (Tarea M.1) -->
+    <string name="date_picker_confirm">Aceptar</string>
+    <string name="date_picker_select_date">Seleccionar fecha</string>
+    <string name="date_picker_field_content_description">Abrir selector de fecha</string>
+    <string name="date_pattern_full_current_year">EEEE, d \'de\' MMMM</string>
+    <string name="date_pattern_full_other_year">EEEE, d \'de\' MMMM \'de\' yyyy</string>
+    <string name="date_pattern_nav_current_year">d \'de\' MMMM</string>
+    <string name="date_pattern_nav_other_year">d \'de\' MMMM \'de\' yyyy</string>
+
+    <!-- Ajustes y macros cíclicos (Tarea 4.3) -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_action">Ajustes</string>
+    <string name="settings_weekly_pattern_title">Patrón semanal habitual</string>
+    <string name="settings_weekly_pattern_subtitle">Tipo de día por defecto para cada día de la semana. Al abrir un día por primera vez, usará esta opción.</string>
+    <string name="settings_day_monday">L</string>
+    <string name="settings_day_tuesday">M</string>
+    <string name="settings_day_wednesday">X</string>
+    <string name="settings_day_thursday">J</string>
+    <string name="settings_day_friday">V</string>
+    <string name="settings_day_saturday">S</string>
+    <string name="settings_day_sunday">D</string>
+    <string name="settings_day_monday_full">Lunes</string>
+    <string name="settings_day_tuesday_full">Martes</string>
+    <string name="settings_day_wednesday_full">Miércoles</string>
+    <string name="settings_day_thursday_full">Jueves</string>
+    <string name="settings_day_friday_full">Viernes</string>
+    <string name="settings_day_saturday_full">Sábado</string>
+    <string name="settings_day_sunday_full">Domingo</string>
+    <string name="settings_training_goals_title">Objetivos de entrenamiento</string>
+    <string name="settings_training_goals_subtitle">Macronutrientes para los días de entrenamiento</string>
+    <string name="settings_rest_goals_title">Objetivos de descanso</string>
+    <string name="settings_rest_goals_subtitle">Macronutrientes para los días de descanso</string>
+    <string name="settings_kcal_label">Calorías (kcal)</string>
+    <string name="settings_protein_label">Proteínas (g)</string>
+    <string name="settings_carbs_label">Carbohidratos (g)</string>
+    <string name="settings_fat_label">Grasas (g)</string>
+    <string name="settings_save_goals_action">Guardar objetivos</string>
+    <string name="settings_goals_saved_message">Objetivos guardados para hoy y días posteriores</string>
+    <string name="settings_validation_error">Comprueba que todos los valores sean números positivos válidos</string>
+    <string name="day_type_training">Entrenamiento</string>
+    <string name="day_type_rest">Descanso</string>
+    <string name="daily_panel_remaining_kcal">Restante: %1$s kcal</string>
+    <string name="daily_panel_surplus_kcal">Exceso: %1$s kcal</string>
+    <string name="daily_panel_target_ratio">%1$s / %2$s</string>
+
+    <!-- TDEE y Propuesta Semanal (Tarea 4.4) -->
+    <string name="settings_safety_limits_title">Límites de seguridad</string>
+    <string name="settings_safety_limits_subtitle">Umbrales mínimos para garantizar un ajuste saludable</string>
+    <string name="settings_min_kcal_label">Mínimo de calorías diario (kcal)</string>
+    <string name="settings_min_kcal_explanation">Ninguna propuesta de nuevo objetivo bajará de esta cifra por seguridad.</string>
+
+    <string name="tdee_card_title">Propuesta semanal de objetivo</string>
+    <string name="tdee_card_subtitle">Basada en tu gasto energético real de los últimos 21 días</string>
+    <string name="tdee_card_accept_action">Aceptar nuevo objetivo</string>
+    <string name="tdee_card_reject_action">Rechazar</string>
+    <string name="tdee_card_current_target">Objetivo actual: %1$s kcal</string>
+    <string name="tdee_card_proposed_target">Nuevo objetivo propuesto: %1$s kcal</string>
+    <string name="tdee_card_delta">Cambio: %1$s kcal/día</string>
+    <string name="tdee_card_disclaimer">Aviso: Este cálculo es una estimación estadística y no constituye consejo médico ni nutricional clínico.</string>
+    <string name="tdee_card_accepted_success">Nuevo objetivo aplicado correctamente</string>
+    <string name="tdee_card_insufficient_title">Gasto energético (TDEE)</string>
+
+    <!-- Despensa y límites por producto (Tarea 5.1) -->
+    <string name="pantry_title">Despensa</string>
+    <string name="pantry_action">Despensa</string>
+    <string name="pantry_search_placeholder">Buscar alimentos…</string>
+    <string name="pantry_filter_in_pantry">En despensa (%1$d)</string>
+    <string name="pantry_filter_all">Todos (%1$d)</string>
+    <string name="pantry_switch_in_pantry_content_description">Disponible en casa</string>
+    <string name="pantry_edit_limits_action">Editar ración y unidad</string>
+    <string name="pantry_added_to_pantry">«%1$s» añadido a la despensa</string>
+    <string name="pantry_removed_from_pantry">«%1$s» retirado de la despensa</string>
+    <string name="pantry_empty_title">Tu despensa está vacía</string>
+    <string name="pantry_empty_subtitle">Marca los alimentos que tienes disponibles en casa para que el optimizador de Macro Tetris pueda sugerir combinaciones con ellos.</string>
+    <string name="pantry_empty_show_all_action">Ver todos los alimentos</string>
+    <string name="pantry_no_results">No se encontraron alimentos coincidentes</string>
+    <string name="pantry_limits_label">Ración: %1$s</string>
+    <string name="pantry_limits_range">%1$s g – %2$s g</string>
+    <string name="pantry_limits_min_only">Mín. %1$s g</string>
+    <string name="pantry_limits_max_only">Máx. %1$s g</string>
+    <string name="pantry_limits_none">Sin límites de ración</string>
+    <string name="pantry_unit_label">Unidad: 1 %1$s = %2$s g</string>
+    <string name="pantry_dialog_title">Ración y unidad</string>
+    <string name="pantry_dialog_product_in_pantry">Disponible en casa (despensa)</string>
+    <string name="pantry_dialog_limits_title">Límites por ración</string>
+    <string name="pantry_dialog_limits_subtitle">Rango en gramos para el optimizador (Macro Tetris)</string>
+    <string name="pantry_dialog_min_g_label">Mínimo (g)</string>
+    <string name="pantry_dialog_max_g_label">Máximo (g)</string>
+    <string name="pantry_dialog_unit_title">Unidad personalizada</string>
+    <string name="pantry_dialog_unit_subtitle">Permite calcular o redondear en porciones enteras (ej. 1 huevo = 55 g)</string>
+    <string name="pantry_dialog_unit_name_label">Nombre de la unidad (ej. huevo)</string>
+    <string name="pantry_dialog_unit_g_label">Gramos por unidad (ej. 55)</string>
+    <string name="pantry_dialog_save_action">Guardar</string>
+    <string name="pantry_dialog_cancel_action">Cancelar</string>
+    <string name="pantry_dialog_saved_success">Configuración guardada para «%1$s»</string>
+    <string name="pantry_error_negative">El valor no puede ser negativo</string>
+    <string name="pantry_error_min_exceeds_max">El mínimo no puede ser mayor que el máximo</string>
+    <string name="pantry_error_unit_name_required">Indica el nombre de la unidad si introduces los gramos</string>
+    <string name="pantry_error_unit_g_required">Introduce un peso en gramos mayor que 0</string>
+    <string name="pantry_back">Volver al diario</string>
+
+    <!-- Macro Tetris (Tarea 5.3) -->
+    <string name="tetris_title">Macro Tetris</string>
+    <string name="tetris_action">Macro Tetris</string>
+    <string name="tetris_back">Volver</string>
+    <string name="tetris_remaining_title">Macros que faltan hoy</string>
+    <string name="tetris_remaining_subtitle">Objetivo restante para completar tus metas del día</string>
+    <string name="tetris_remaining_kcal">Calorías: %1$s kcal</string>
+    <string name="tetris_remaining_protein">Proteínas: %1$s g</string>
+    <string name="tetris_remaining_carbs">Carbohidratos: %1$s g</string>
+    <string name="tetris_remaining_fat">Grasas: %1$s g</string>
+    <string name="tetris_targets_met_title">¡Objetivos ya alcanzados!</string>
+    <string name="tetris_targets_met_message">No quedan macronutrientes pendientes por cubrir hoy.</string>
+    <string name="tetris_calculate_action">Calcular combinación</string>
+    <string name="tetris_recalculate_action">Recalcular</string>
+    <string name="tetris_empty_pantry_title">Despensa vacía</string>
+    <string name="tetris_empty_pantry_message">Marca o añade alimentos a tu despensa para poder calcular combinaciones óptimas.</string>
+    <string name="tetris_go_to_pantry_action">Ir a la despensa</string>
+    <string name="tetris_solution_title">Alimentos seleccionados (%1$d)</string>
+    <string name="tetris_solution_subtitle">Cantidades óptimas calculadas por el optimizador</string>
+    <string name="tetris_no_solution_title">Sin combinación posible</string>
+    <string name="tetris_no_solution_message">No se encontraron alimentos en la despensa adecuados para cubrir este objetivo sin exceder los límites.</string>
+    <string name="tetris_exclude_action">Excluir</string>
+    <string name="tetris_exclude_content_description">Excluir %1$s de la combinación</string>
+    <string name="tetris_excluded_section_title">Alimentos excluidos (%1$d)</string>
+    <string name="tetris_restore_action">Reincluir</string>
+    <string name="tetris_restore_content_description">Reincluir %1$s en el cálculo</string>
+    <string name="tetris_unit_quantity_format">%1$s %2$s (%3$s g)</string>
+    <string name="tetris_grams_quantity_format">%1$s g</string>
+    <string name="tetris_portion_macros">%1$s kcal · %2$s g P · %3$s g C · %4$s g G</string>
+    <string name="tetris_error_title">Ajuste y error por macro</string>
+    <string name="tetris_error_subtitle">Comparativa entre lo conseguido con la combinación y el objetivo restante</string>
+    <string name="tetris_error_col_macro">Macro</string>
+    <string name="tetris_error_col_target">Objetivo</string>
+    <string name="tetris_error_col_achieved">Conseguido</string>
+    <string name="tetris_error_col_diff">Diferencia</string>
+    <string name="tetris_error_col_error">Error</string>
+    <string name="tetris_suggestions_title">Avisos de desviación (&gt;10 %)</string>
+    <string name="tetris_suggestions_subtitle">Sugerencias para ajustar mejor tus macros</string>
+    <string name="tetris_meal_destination_title">Comida de destino</string>
+    <string name="tetris_meal_destination_subtitle">Selecciona dónde registrar estos alimentos en el diario</string>
+    <string name="tetris_add_to_diary_action">Añadir al diario de una vez</string>
+    <string name="tetris_adding_to_diary">Añadiendo alimentos al diario…</string>
+    <string name="tetris_added_success">Se han añadido %1$d alimentos a %2$s</string>
+    <string name="daily_panel_tetris_action">Macro Tetris</string>
+    <string name="daily_panel_adjust_with_tetris">Ajustar con Macro Tetris</string>
+
+    <!-- Comidas del día (Tarea M.3) -->
+    <string name="settings_meals_section_title">Comidas del día</string>
+    <string name="settings_meals_section_subtitle">Personaliza las comidas que haces al día, su orden y su hora de inicio</string>
+    <string name="settings_meals_add_action">Añadir comida</string>
+    <string name="settings_meal_inactive_badge">Desactivada</string>
+    <string name="settings_meal_rename_action">Renombrar</string>
+    <string name="settings_meal_change_time_action">Cambiar hora</string>
+    <string name="settings_meal_deactivate_action">Desactivar</string>
+    <string name="settings_meal_reactivate_action">Reactivar</string>
+    <string name="settings_meal_delete_action">Eliminar</string>
+
+    <string name="meal_dialog_add_title">Añadir comida</string>
+    <string name="meal_dialog_rename_title">Renombrar comida</string>
+    <string name="meal_dialog_change_time_title">Cambiar hora de inicio</string>
+    <string name="meal_dialog_name_label">Nombre de la comida</string>
+    <string name="meal_dialog_hour_label">Hora (0–23)</string>
+    <string name="meal_dialog_minute_label">Minuto (0–59)</string>
+    <string name="meal_dialog_save_action">Guardar</string>
+    <string name="meal_dialog_cancel_action">Cancelar</string>
+
+    <string name="meal_delete_confirm_title">¿Eliminar comida?</string>
+    <string name="meal_delete_confirm_message">¿Seguro que quieres eliminar «%1$s»?</string>
+    <string name="meal_delete_confirm_action">Eliminar</string>
+
+    <string name="meal_deactivate_offer_title">No se puede eliminar</string>
+    <string name="meal_deactivate_offer_message">«%1$s» tiene alimentos registrados en el diario y no se puede eliminar. ¿Deseas desactivarla para que no aparezca al añadir nuevas comidas?</string>
+    <string name="meal_deactivate_offer_action">Desactivar</string>
+
+    <string name="meal_added_success">Comida «%1$s» añadida</string>
+    <string name="meal_renamed_success">Comida renombrada a «%1$s»</string>
+    <string name="meal_time_updated_success">Hora de «%1$s» actualizada a las %2$s</string>
+    <string name="meal_deactivated_success">Comida «%1$s» desactivada</string>
+    <string name="meal_reactivated_success">Comida «%1$s» reactivada</string>
+    <string name="meal_deleted_success">Comida «%1$s» eliminada</string>
+
+    <string name="unassigned_meal_name">Sin asignar</string>
+
+    <!-- Tarjetas de comida y Detalle de comida (Tarea M.4) -->
+    <string name="daily_panel_meal_add_food_description">Añadir alimento a %1$s</string>
+    <string name="meal_detail_title">Detalle de comida</string>
+    <string name="meal_detail_done_action">Hecho</string>
+    <string name="meal_detail_add_food_action">+ Añadir alimento</string>
+    <string name="meal_detail_tare_action">Restar sobras</string>
+    <string name="meal_detail_tare_dialog_title">Restar sobras (modo tara)</string>
+    <string name="meal_detail_tare_dialog_subtitle">Resta una cantidad no consumida de un alimento de esta comida</string>
+    <string name="meal_detail_tare_select_food">Seleccionar alimento</string>
+    <string name="meal_detail_tare_leftover_grams">Sobras a restar (g)</string>
+    <string name="meal_detail_tare_confirm">Restar sobras</string>
+    <string name="meal_detail_tare_empty_meal">No hay alimentos en esta comida para restar sobras</string>
+    <string name="meal_detail_entry_deleted">«%1$s» eliminado</string>
+    <string name="meal_detail_undo_action">Deshacer</string>
+    <string name="meal_detail_undo_success">Alimento restaurado</string>
+    <string name="meal_detail_empty_entries">Sin alimentos registrados en esta comida</string>
+    <string name="meal_detail_switch_meal">Cambiar comida</string>
+    <string name="meal_detail_repeat_meal_action">Repetir esta comida</string>
+    <string name="meal_detail_copy_yesterday_action">Copiar el día de ayer</string>
+    <string name="meal_detail_sobras_badge">Sobras</string>
+    <string name="meal_detail_delete_food_description">Eliminar %1$s</string>
+    <string name="meal_detail_options_menu">Más opciones</string>
+
+    <!-- Flujo de búsqueda y adición de alimentos (Tarea 1.6 / M.4) -->
+    <string name="add_entry_title">Añadir alimento</string>
+    <string name="add_entry_search_placeholder">Buscar alimento…</string>
+    <string name="add_entry_recent_frequent_title">Alimentos habituales</string>
+    <string name="add_entry_all_products_title">Todos los alimentos</string>
+    <string name="add_entry_empty_search">No se encontraron alimentos coincidentes</string>
+    <string name="add_entry_create_manual_action">Crear nuevo alimento</string>
+    <string name="add_entry_scan_barcode_action">Escanear código de barras</string>
+    <string name="add_entry_photo_ocr_action">Fotografiar tabla nutricional</string>
+    <string name="add_entry_portion_dialog_title">Añadir «%1$s»</string>
+    <string name="add_entry_quantity_grams">Cantidad en gramos (g)</string>
+    <string name="add_entry_quantity_units">Cantidad en unidades (%1$s)</string>
+    <string name="add_entry_switch_to_units">Medir en unidades</string>
+    <string name="add_entry_switch_to_grams">Medir en gramos</string>
+    <string name="add_entry_confirm_add">Añadir</string>
+    <string name="add_entry_success_message">Añadido «%1$s» (%2$s) a %3$s</string>
+    <string name="add_entry_unit_grams_indicator">1 %1$s = %2$s g</string>
+
+    <!-- Ajustes rápidos y selector de hora de la comida (Tarea M.5) -->
+    <string name="meal_detail_time_picker_title">Hora de la comida</string>
+    <string name="meal_detail_time_picker_description">Cambiar hora de la comida</string>
+    <string name="meal_detail_decrease_portion">Reducir porción de %1$s</string>
+    <string name="meal_detail_increase_portion">Aumentar porción de %1$s</string>
+
+    <!-- Calorías rápidas (Tarea M.6) -->
+    <string name="meal_detail_add_quick_calories_action">+ Añadir calorías</string>
+    <string name="quick_calories_dialog_title_add">Añadir calorías</string>
+    <string name="quick_calories_dialog_title_edit">Editar calorías</string>
+    <string name="quick_calories_kcal_label">Calorías (kcal) *</string>
+    <string name="quick_calories_protein_label">Proteína (g)</string>
+    <string name="quick_calories_carbs_label">Hidratos de carbono (g)</string>
+    <string name="quick_calories_fat_label">Grasas (g)</string>
+    <string name="quick_calories_description_label">Descripción (opcional)</string>
+    <string name="quick_calories_default_description">Calorías rápidas</string>
+    <string name="quick_calories_atwater_warning_all">Los macros (%1$s kcal) se alejan más de un 15 %% de las %2$s kcal</string>
+    <string name="quick_calories_atwater_warning_partial">Los macros parciales (%1$s kcal) superan las %2$s kcal en más de un 15 %%</string>
+    <string name="quick_calories_saved_success">Añadido «%1$s» a %2$s</string>
+    <string name="quick_calories_updated_success">Actualizado «%1$s»</string>
 </resources>

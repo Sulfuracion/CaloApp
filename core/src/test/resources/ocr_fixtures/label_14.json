@@ -1,0 +1,386 @@
+{
+    "imageFileName": "label_14.jpg",
+    "timestamp": "2026-10-14T10:32:45.571498Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "sOLOMILLO",
+            "box": {
+                "left": 948,
+                "top": 1204,
+                "right": 1910,
+                "bottom": 1383
+            }
+        },
+        {
+            "text": "FECHA DE",
+            "box": {
+                "left": 898,
+                "top": 1604,
+                "right": 1137,
+                "bottom": 1652
+            }
+        },
+        {
+            "text": "CADUCIDAD:",
+            "box": {
+                "left": 873,
+                "top": 1673,
+                "right": 1170,
+                "bottom": 1724
+            }
+        },
+        {
+            "text": "Para: plancha, freír, asar...",
+            "box": {
+                "left": 981,
+                "top": 1505,
+                "right": 1900,
+                "bottom": 1616
+            }
+        },
+        {
+            "text": "ES",
+            "box": {
+                "left": 991,
+                "top": 1846,
+                "right": 1041,
+                "bottom": 1885
+            }
+        },
+        {
+            "text": "(10.15703/cU)",
+            "box": {
+                "left": 866,
+                "top": 1884,
+                "right": 1154,
+                "bottom": 1942
+            }
+        },
+        {
+            "text": "25.10.26 R19 Gras as:",
+            "box": {
+                "left": 842,
+                "top": 1747,
+                "right": 1450,
+                "bottom": 1858
+            }
+        },
+        {
+            "text": "UE",
+            "box": {
+                "left": 991,
+                "top": 1944,
+                "right": 1044,
+                "bottom": 1981
+            }
+        },
+        {
+            "text": "Criado y Sacrificado:",
+            "box": {
+                "left": 828,
+                "top": 2010,
+                "right": 1232,
+                "bottom": 2069
+            }
+        },
+        {
+            "text": "ESPAÑA",
+            "box": {
+                "left": 938,
+                "top": 2069,
+                "right": 1099,
+                "bottom": 2118
+            }
+        },
+        {
+            "text": "Envasado al vacio.",
+            "box": {
+                "left": 821,
+                "top": 2296,
+                "right": 1170,
+                "bottom": 2346
+            }
+        },
+        {
+            "text": "Cocinar completanente antes de su cons umo",
+            "box": {
+                "left": 839,
+                "top": 2129,
+                "right": 1720,
+                "bottom": 2202
+            }
+        },
+        {
+            "text": "Una vez abierto consumir en 48 horas.",
+            "box": {
+                "left": 816,
+                "top": 2188,
+                "right": 1576,
+                "bottom": 2250
+            }
+        },
+        {
+            "text": "Conservar de 0 a 5°C",
+            "box": {
+                "left": 820,
+                "top": 2240,
+                "right": 1233,
+                "bottom": 2299
+            }
+        },
+        {
+            "text": "Lote: 991228327326 /286",
+            "box": {
+                "left": 851,
+                "top": 2372,
+                "right": 1345,
+                "bottom": 2453
+            }
+        },
+        {
+            "text": "AETO330",
+            "box": {
+                "left": 856,
+                "top": 3116,
+                "right": 901,
+                "bottom": 3215
+            }
+        },
+        {
+            "text": "Peso neto: Precio kilo:",
+            "box": {
+                "left": 859,
+                "top": 2470,
+                "right": 1339,
+                "bottom": 2535
+            }
+        },
+        {
+            "text": "INFORMACION NUTRICIONAL",
+            "box": {
+                "left": 1357,
+                "top": 1617,
+                "right": 1955,
+                "bottom": 1677
+            }
+        },
+        {
+            "text": "Valor medio por 100g",
+            "box": {
+                "left": 1438,
+                "top": 1678,
+                "right": 1871,
+                "bottom": 1742
+            }
+        },
+        {
+            "text": "Valor energetico: 546kJ/ 131 kcal",
+            "box": {
+                "left": 1276,
+                "top": 1746,
+                "right": 2012,
+                "bottom": 1807
+            }
+        },
+        {
+            "text": "5.1g",
+            "box": {
+                "left": 1911,
+                "top": 1818,
+                "right": 2003,
+                "bottom": 1870
+            }
+        },
+        {
+            "text": "De las cuales son saturadas: 2.05",
+            "box": {
+                "left": 1276,
+                "top": 1847,
+                "right": 2002,
+                "bottom": 1914
+            }
+        },
+        {
+            "text": "|Hidratos de Carbono:",
+            "box": {
+                "left": 1269,
+                "top": 1899,
+                "right": 1701,
+                "bottom": 1961
+            }
+        },
+        {
+            "text": "De los cuales son azúcares:",
+            "box": {
+                "left": 1269,
+                "top": 1951,
+                "right": 1829,
+                "bottom": 2013
+            }
+        },
+        {
+            "text": "Proteínas:",
+            "box": {
+                "left": 1268,
+                "top": 2007,
+                "right": 1483,
+                "bottom": 2062
+            }
+        },
+        {
+            "text": "|Sal:",
+            "box": {
+                "left": 1268,
+                "top": 2059,
+                "right": 1354,
+                "bottom": 2113
+            }
+        },
+        {
+            "text": "0.646kg 8,00€",
+            "box": {
+                "left": 885,
+                "top": 2533,
+                "right": 1346,
+                "bottom": 2641
+            }
+        },
+        {
+            "text": "CERDO",
+            "box": {
+                "left": 1365,
+                "top": 938,
+                "right": 1557,
+                "bottom": 994
+            }
+        },
+        {
+            "text": "PORCO",
+            "box": {
+                "left": 1363,
+                "top": 977,
+                "right": 1558,
+                "bottom": 1039
+            }
+        },
+        {
+            "text": "P.V.P.",
+            "box": {
+                "left": 1048,
+                "top": 2651,
+                "right": 1152,
+                "bottom": 2695
+            }
+        },
+        {
+            "text": "5,17€",
+            "box": {
+                "left": 913,
+                "top": 2727,
+                "right": 1283,
+                "bottom": 2882
+            }
+        },
+        {
+            "text": "12070030",
+            "box": {
+                "left": 1018,
+                "top": 2898,
+                "right": 1178,
+                "bottom": 2953
+            }
+        },
+        {
+            "text": "(3",
+            "box": {
+                "left": 1169,
+                "top": 3052,
+                "right": 1199,
+                "bottom": 3078
+            }
+        },
+        {
+            "text": "0g",
+            "box": {
+                "left": 1947,
+                "top": 1974,
+                "right": 2000,
+                "bottom": 2028
+            }
+        },
+        {
+            "text": "21 g",
+            "box": {
+                "left": 1919,
+                "top": 2026,
+                "right": 2002,
+                "bottom": 2073
+            }
+        },
+        {
+            "text": "0.13g",
+            "box": {
+                "left": 1873,
+                "top": 2063,
+                "right": 2009,
+                "bottom": 2138
+            }
+        },
+        {
+            "text": "2304460005178",
+            "box": {
+                "left": 1487,
+                "top": 2923,
+                "right": 1926,
+                "bottom": 3006
+            }
+        },
+        {
+            "text": "Fabricado por: Natur-All",
+            "box": {
+                "left": 1407,
+                "top": 3044,
+                "right": 1969,
+                "bottom": 3129
+            }
+        },
+        {
+            "text": "INCARLOPSA",
+            "box": {
+                "left": 1405,
+                "top": 3093,
+                "right": 1698,
+                "bottom": 3177
+            }
+        },
+        {
+            "text": "MERGADONA) 16400 Tarancón (Cuenca)",
+            "box": {
+                "left": 1062,
+                "top": 3177,
+                "right": 1964,
+                "bottom": 3308
+            }
+        },
+        {
+            "text": "Ctra. N-400 km. 95.4",
+            "box": {
+                "left": 1432,
+                "top": 3162,
+                "right": 1866,
+                "bottom": 3234
+            }
+        },
+        {
+            "text": "800 500 220 España/Espanha",
+            "box": {
+                "left": 1055,
+                "top": 3217,
+                "right": 1766,
+                "bottom": 3361
+            }
+        }
+    ]
+}

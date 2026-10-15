@@ -1,0 +1,494 @@
+{
+    "imageFileName": "label_22.jpg",
+    "timestamp": "2026-10-14T10:33:53.194680Z",
+    "imageWidth": 3060,
+    "imageHeight": 4080,
+    "lines": [
+        {
+            "text": "ETAS Y BARQULLOS",
+            "box": {
+                "left": -2,
+                "top": 1277,
+                "right": 468,
+                "bottom": 1372
+            }
+        },
+        {
+            "text": "OTOS E WAFERS",
+            "box": {
+                "left": 5,
+                "top": 1351,
+                "right": 417,
+                "bottom": 1413
+            }
+        },
+        {
+            "text": "hanteca de palma",
+            "box": {
+                "left": 154,
+                "top": 1553,
+                "right": 485,
+                "bottom": 1624
+            }
+        },
+        {
+            "text": "DON variable , azúcar,",
+            "box": {
+                "left": 116,
+                "top": 1620,
+                "right": 480,
+                "bottom": 1704
+            }
+        },
+        {
+            "text": "ndOn de trigo0, (arabe de",
+            "box": {
+                "left": 108,
+                "top": 1696,
+                "right": 483,
+                "bottom": 1782
+            }
+        },
+        {
+            "text": "ZRrahe te",
+            "box": {
+                "left": 89,
+                "top": 1789,
+                "right": 232,
+                "bottom": 1847
+            }
+        },
+        {
+            "text": "OSa-trucosa",
+            "box": {
+                "left": 307,
+                "top": 1768,
+                "right": 493,
+                "bottom": 1830
+            }
+        },
+        {
+            "text": "eRSSO lactosa",
+            "box": {
+                "left": 165,
+                "top": 1835,
+                "right": 518,
+                "bottom": 1900
+            }
+        },
+        {
+            "text": "che etra",
+            "box": {
+                "left": 70,
+                "top": 2047,
+                "right": 190,
+                "bottom": 2096
+            }
+        },
+        {
+            "text": "atural,",
+            "box": {
+                "left": 407,
+                "top": 2133,
+                "right": 495,
+                "bottom": 2181
+            }
+        },
+        {
+            "text": "Aratos de",
+            "box": {
+                "left": 344,
+                "top": 2195,
+                "right": 494,
+                "bottom": 2252
+            }
+        },
+        {
+            "text": "aes.",
+            "box": {
+                "left": 162,
+                "top": 2245,
+                "right": 368,
+                "bottom": 2316
+            }
+        },
+        {
+            "text": "Puede",
+            "box": {
+                "left": 311,
+                "top": 2260,
+                "right": 500,
+                "bottom": 2329
+            }
+        },
+        {
+            "text": "S palma e coCO em",
+            "box": {
+                "left": 217,
+                "top": 2407,
+                "right": 503,
+                "bottom": 2491
+            }
+        },
+        {
+            "text": "ATOse, pasta de cacau,",
+            "box": {
+                "left": 152,
+                "top": 2466,
+                "right": 507,
+                "bottom": 2559
+            }
+        },
+        {
+            "text": "cOse, manteiga de cacau,",
+            "box": {
+                "left": 118,
+                "top": 2529,
+                "right": 521,
+                "bottom": 2629
+            }
+        },
+        {
+            "text": "Sacacau em pó,emulsionante",
+            "box": {
+                "left": 22,
+                "top": 2581,
+                "right": 526,
+                "bottom": 2695
+            }
+        },
+        {
+            "text": "lacose, levedantes quimico",
+            "box": {
+                "left": 20,
+                "top": 2642,
+                "right": 531,
+                "bottom": 2762
+            }
+        },
+        {
+            "text": "IND, Catbonatos de sodio),",
+            "box": {
+                "left": 61,
+                "top": 2705,
+                "right": 538,
+                "bottom": 2832
+            }
+        },
+        {
+            "text": "tE o CÂYCO), 1equlador de acidez",
+            "box": {
+                "left": 12,
+                "top": 2887,
+                "right": 567,
+                "bottom": 3072
+            }
+        },
+        {
+            "text": "rentemente antes del:",
+            "box": {
+                "left": -5,
+                "top": 3598,
+                "right": 331,
+                "bottom": 3733
+            }
+        },
+        {
+            "text": "eferencia antes de",
+            "box": {
+                "left": -5,
+                "top": 3657,
+                "right": 281,
+                "bottom": 3775
+            }
+        },
+        {
+            "text": "Gd e calco), gelficante (pectina),.",
+            "box": {
+                "left": 93,
+                "top": 2968,
+                "right": 580,
+                "bottom": 3146
+            }
+        },
+        {
+            "text": "dos de casca va.",
+            "box": {
+                "left": 29,
+                "top": 3016,
+                "right": 277,
+                "bottom": 3140
+            }
+        },
+        {
+            "text": "Valor",
+            "box": {
+                "left": 1082,
+                "top": 1547,
+                "right": 1196,
+                "bottom": 1602
+            }
+        },
+        {
+            "text": "Energético/Energia 516 kcal",
+            "box": {
+                "left": 1094,
+                "top": 1600,
+                "right": 1976,
+                "bottom": 1689
+            }
+        },
+        {
+            "text": "Grasas/Lipidos",
+            "box": {
+                "left": 1092,
+                "top": 1672,
+                "right": 1501,
+                "bottom": 1753
+            }
+        },
+        {
+            "text": "de las cuales/dos quais:",
+            "box": {
+                "left": 1107,
+                "top": 1746,
+                "right": 1575,
+                "bottom": 1811
+            }
+        },
+        {
+            "text": "- Saturadas/Saturados",
+            "box": {
+                "left": 1152,
+                "top": 1808,
+                "right": 1737,
+                "bottom": 1863
+            }
+        },
+        {
+            "text": "Hidratos de Carbono",
+            "box": {
+                "left": 1092,
+                "top": 1871,
+                "right": 1634,
+                "bottom": 1937
+            }
+        },
+        {
+            "text": "de los cuales/dos quais:",
+            "box": {
+                "left": 1106,
+                "top": 1945,
+                "right": 1571,
+                "bottom": 1998
+            }
+        },
+        {
+            "text": "- Azúcares/Açúcares",
+            "box": {
+                "left": 1148,
+                "top": 1998,
+                "right": 1676,
+                "bottom": 2054
+            }
+        },
+        {
+            "text": "Proteínas",
+            "box": {
+                "left": 1093,
+                "top": 2058,
+                "right": 1349,
+                "bottom": 2106
+            }
+        },
+        {
+            "text": "Sal",
+            "box": {
+                "left": 1102,
+                "top": 2138,
+                "right": 1181,
+                "bottom": 2182
+            }
+        },
+        {
+            "text": "Peso Neto/Liquido:",
+            "box": {
+                "left": 1251,
+                "top": 2359,
+                "right": 1615,
+                "bottom": 2421
+            }
+        },
+        {
+            "text": "100 g",
+            "box": {
+                "left": 1783,
+                "top": 1499,
+                "right": 1905,
+                "bottom": 1547
+            }
+        },
+        {
+            "text": "2155 kJ",
+            "box": {
+                "left": 1820,
+                "top": 1569,
+                "right": 1981,
+                "bottom": 1621
+            }
+        },
+        {
+            "text": "500 ge",
+            "box": {
+                "left": 1244,
+                "top": 2425,
+                "right": 1796,
+                "bottom": 2600
+            }
+        },
+        {
+            "text": "Fabricado por",
+            "box": {
+                "left": 1035,
+                "top": 3428,
+                "right": 1303,
+                "bottom": 3493
+            }
+        },
+        {
+            "text": "MERCADONA",
+            "box": {
+                "left": 1182,
+                "top": 3154,
+                "right": 1602,
+                "bottom": 3278
+            }
+        },
+        {
+            "text": "800 500 220 CÀ",
+            "box": {
+                "left": 1182,
+                "top": 3188,
+                "right": 1848,
+                "bottom": 3344
+            }
+        },
+        {
+            "text": "VERDENER KEKS: UND WAFFELFABRIK",
+            "box": {
+                "left": 1032,
+                "top": 3445,
+                "right": 1791,
+                "bottom": 3560
+            }
+        },
+        {
+            "text": "HANS FREITAG GMBH |& CO KG",
+            "box": {
+                "left": 1055,
+                "top": 3514,
+                "right": 1644,
+                "bottom": 3635
+            }
+        },
+        {
+            "text": "DE-27263 Verden",
+            "box": {
+                "left": 1038,
+                "top": 3618,
+                "right": 1382,
+                "bottom": 3671
+            }
+        },
+        {
+            "text": "Alemania/ Alemanha",
+            "box": {
+                "left": 1038,
+                "top": 3674,
+                "right": 1449,
+                "bottom": 3737
+            }
+        },
+        {
+            "text": "28 g",
+            "box": {
+                "left": 1854,
+                "top": 1691,
+                "right": 1968,
+                "bottom": 1751
+            }
+        },
+        {
+            "text": "cONSERVACION/CONSERVAÇÃO",
+            "box": {
+                "left": 1160,
+                "top": 2739,
+                "right": 1887,
+                "bottom": 2846
+            }
+        },
+        {
+            "text": "Conservar en lugar fresco y seco.",
+            "box": {
+                "left": 1108,
+                "top": 2824,
+                "right": 1741,
+                "bottom": 2936
+            }
+        },
+        {
+            "text": "Conservar em local fresco e seco,",
+            "box": {
+                "left": 1107,
+                "top": 2915,
+                "right": 1741,
+                "bottom": 3031
+            }
+        },
+        {
+            "text": "15g",
+            "box": {
+                "left": 1870,
+                "top": 1817,
+                "right": 1958,
+                "bottom": 1869
+            }
+        },
+        {
+            "text": "60 g",
+            "box": {
+                "left": 1856,
+                "top": 1884,
+                "right": 1948,
+                "bottom": 1933
+            }
+        },
+        {
+            "text": "31 g",
+            "box": {
+                "left": 1867,
+                "top": 1994,
+                "right": 1941,
+                "bottom": 2045
+            }
+        },
+        {
+            "text": "4,8 g",
+            "box": {
+                "left": 1825,
+                "top": 2059,
+                "right": 1941,
+                "bottom": 2111
+            }
+        },
+        {
+            "text": "0,38 g",
+            "box": {
+                "left": 1789,
+                "top": 2131,
+                "right": 1940,
+                "bottom": 2186
+            }
+        }
+    ]
+}

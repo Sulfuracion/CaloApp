@@ -5,10 +5,11 @@ import com.controlcal.core.model.DailyLog
 import com.controlcal.core.model.DayType
 import com.controlcal.core.model.GoalOrigin
 import com.controlcal.core.model.GoalProfile
-import com.controlcal.core.model.Meal
+import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
 import com.controlcal.core.model.ProductSource
+import com.controlcal.core.model.WeightEntry
 import com.controlcal.core.nutrition.GetDayTotalsUseCase
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -25,13 +26,15 @@ class RepositoryMappingTest : DaoTestBase() {
     private lateinit var mealEntryRepo: MealEntryRepositoryImpl
     private lateinit var dailyLogRepo: DailyLogRepositoryImpl
     private lateinit var goalProfileRepo: GoalProfileRepositoryImpl
+    private lateinit var weightEntryRepo: WeightEntryRepositoryImpl
 
     @Before
     fun initRepos() {
         productRepo = ProductRepositoryImpl(db.productDao(), db.mealEntryDao())
-        mealEntryRepo = MealEntryRepositoryImpl(db.mealEntryDao())
+        mealEntryRepo = MealEntryRepositoryImpl(db.mealEntryDao(), db.dailyLogDao())
         dailyLogRepo = DailyLogRepositoryImpl(db.dailyLogDao())
         goalProfileRepo = GoalProfileRepositoryImpl(db.goalProfileDao())
+        weightEntryRepo = WeightEntryRepositoryImpl(db.weightEntryDao())
     }
 
     @Test
@@ -69,6 +72,48 @@ class RepositoryMappingTest : DaoTestBase() {
     }
 
     @Test
+    fun productRepositoryPantryManagement() = runBlocking {
+        val prodId = productRepo.insert(
+            Product(
+                name = "Huevos camperos",
+                kcal100g = 143.0,
+                protein100g = 13.0,
+                carbs100g = 0.7,
+                fat100g = 9.5,
+                inPantry = false,
+                createdAt = 1000L,
+                updatedAt = 1000L,
+            )
+        )
+
+        assertEquals(0, productRepo.getPantryProducts().size)
+
+        // Toggle in pantry
+        productRepo.setInPantry(prodId, true)
+        val inPantryList = productRepo.getPantryProducts()
+        assertEquals(1, inPantryList.size)
+        assertEquals(prodId, inPantryList.first().id)
+        assertTrue(inPantryList.first().inPantry)
+
+        // Update pantry config (limits & unit)
+        productRepo.updatePantryConfig(
+            id = prodId,
+            inPantry = true,
+            minG = 55.0,
+            maxG = 165.0,
+            unitName = "huevo",
+            unitG = 55.0,
+        )
+
+        val updated = productRepo.getById(prodId)!!
+        assertTrue(updated.inPantry)
+        assertEquals(55.0, updated.minG!!, 0.001)
+        assertEquals(165.0, updated.maxG!!, 0.001)
+        assertEquals("huevo", updated.unitName)
+        assertEquals(55.0, updated.unitG!!, 0.001)
+    }
+
+    @Test
     fun mealEntryRepositoryRoundTripAndTotalsIntegration() = runBlocking {
         // Need parent daily log and product due to foreign keys
         dailyLogRepo.insert(DailyLog(date = "2026-10-06", dayType = DayType.TRAINING))
@@ -86,7 +131,7 @@ class RepositoryMappingTest : DaoTestBase() {
 
         val entry = MealEntry(
             date = "2026-10-06",
-            meal = Meal.BREAKFAST,
+            meal = DefaultMealIds.BREAKFAST,
             productId = prodId,
             productName = "Yogur",
             grams = 125.0,
@@ -111,7 +156,7 @@ class RepositoryMappingTest : DaoTestBase() {
 
         assertEquals(75.0, dayTotals.totals.kcal, 0.001)
         assertEquals(5.0, dayTotals.totals.protein, 0.001)
-        assertEquals(1, dayTotals.byMeal[Meal.BREAKFAST]?.entries?.size)
+        assertEquals(1, dayTotals.byMeal[DefaultMealIds.BREAKFAST]?.entries?.size)
 
         // Delete entry
         mealEntryRepo.delete(entries.first())
@@ -136,6 +181,14 @@ class RepositoryMappingTest : DaoTestBase() {
         loaded = dailyLogRepo.getByDate("2026-10-06")
         assertEquals(1250, loaded!!.waterMl)
         assertEquals(DayType.TRAINING, loaded.dayType)
+    }
+
+    @Test
+    fun dailyLogRepositorySetDayTypeCreatesEntryIfNotExists() = runBlocking {
+        dailyLogRepo.setDayType("2026-10-18", DayType.TRAINING)
+        val loaded = dailyLogRepo.getByDate("2026-10-18")
+        assertNotNull(loaded)
+        assertEquals(DayType.TRAINING, loaded!!.dayType)
     }
 
     @Test
@@ -179,4 +232,31 @@ class RepositoryMappingTest : DaoTestBase() {
         val profilesUpTo = goalProfileRepo.getProfilesForDayTypeUpTo(DayType.TRAINING, "2026-10-06")
         assertEquals(2, profilesUpTo.size)
     }
+
+    @Test
+    fun weightEntryRepositoryRoundTripAndList() = runBlocking {
+        val entry1 = WeightEntry(date = "2026-10-01", weightKg = 79.5)
+        val entry2 = WeightEntry(date = "2026-10-02", weightKg = 79.2)
+
+        weightEntryRepo.upsert(entry1)
+        weightEntryRepo.upsert(entry2)
+
+        val loaded = weightEntryRepo.getByDate("2026-10-01")
+        assertNotNull(loaded)
+        assertEquals(79.5, loaded!!.weightKg, 0.001)
+
+        val all = weightEntryRepo.getAll()
+        assertEquals(2, all.size)
+        assertEquals("2026-10-01", all[0].date)
+        assertEquals("2026-10-02", all[1].date)
+
+        val between = weightEntryRepo.getBetween("2026-10-02", "2026-10-03")
+        assertEquals(1, between.size)
+        assertEquals("2026-10-02", between[0].date)
+
+        weightEntryRepo.deleteByDate("2026-10-01")
+        assertNull(weightEntryRepo.getByDate("2026-10-01"))
+        assertEquals(1, weightEntryRepo.getAll().size)
+    }
 }
+

@@ -3,12 +3,13 @@ package com.controlcal.app.ui.confirm
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.controlcal.app.data.off.OffProduct
-import com.controlcal.core.model.Meal
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
 import com.controlcal.core.model.ProductSource
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.nutrition.NutritionCalculator
+import com.controlcal.core.ocr.LabelValidator
+import com.controlcal.core.ocr.model.OcrParsedNutrients
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,22 +17,77 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.controlcal.core.model.DefaultMealIds
+import com.controlcal.core.nutrition.MealClassifier
+import com.controlcal.core.repo.MealConfigRepository
 import kotlinx.coroutines.launch
+import java.io.File
+import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
 class ProductConfirmationViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val mealEntryRepository: MealEntryRepository,
+    private val mealConfigRepository: MealConfigRepository,
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProductConfirmationUiState())
     val uiState: StateFlow<ProductConfirmationUiState> = _uiState.asStateFlow()
 
-    fun initialize(offProduct: OffProduct) {
+    init {
+        loadMealConfig()
+    }
+
+    private fun loadMealConfig() {
+        viewModelScope.launch {
+            val meals = mealConfigRepository.getMealConfigs()
+            val active = meals.filter { it.isActive }.sortedBy { it.startTime }
+            val suggested = MealClassifier.suggestMeal(active, LocalTime.now(clock))?.id
+                ?: active.firstOrNull()?.id
+                ?: DefaultMealIds.BREAKFAST
+            _uiState.update {
+                it.copy(
+                    availableMeals = active,
+                    selectedMeal = suggested,
+                )
+            }
+        }
+    }
+
+    fun initialize(offProduct: OffProduct, targetDate: LocalDate? = null, targetMeal: String? = null) {
+        val activeMeals = _uiState.value.availableMeals
+        val selected = targetMeal ?: _uiState.value.selectedMeal
+        val date = targetDate ?: LocalDate.now(clock)
         _uiState.update {
-            val state = offProduct.toConfirmationUiState()
+            val state = offProduct.toConfirmationUiState().copy(
+                availableMeals = activeMeals,
+                selectedMeal = selected,
+                targetDate = date,
+            )
+            recalculatePortion(state)
+        }
+    }
+
+    fun initializeFromOcr(
+        photoFile: File,
+        parsedNutrients: OcrParsedNutrients,
+        barcode: String? = null,
+        targetDate: LocalDate? = null,
+        targetMeal: String? = null,
+    ) {
+        val activeMeals = _uiState.value.availableMeals
+        val selected = targetMeal ?: _uiState.value.selectedMeal
+        val date = targetDate ?: LocalDate.now(clock)
+        _uiState.update {
+            val state = toConfirmationUiStateFromOcr(photoFile, parsedNutrients, barcode).copy(
+                availableMeals = activeMeals,
+                selectedMeal = selected,
+                targetDate = date,
+            )
             recalculatePortion(state)
         }
     }
@@ -111,7 +167,8 @@ class ProductConfirmationViewModel @Inject constructor(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
-            current.copy(fiber100g = value, fiberError = error)
+            val updated = current.copy(fiber100g = value, fiberError = error)
+            revalidateOcr(updated)
         }
     }
 
@@ -119,7 +176,8 @@ class ProductConfirmationViewModel @Inject constructor(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
-            current.copy(sugars100g = value, sugarsError = error)
+            val updated = current.copy(sugars100g = value, sugarsError = error)
+            revalidateOcr(updated)
         }
     }
 
@@ -127,7 +185,8 @@ class ProductConfirmationViewModel @Inject constructor(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
-            current.copy(satFat100g = value, satFatError = error)
+            val updated = current.copy(satFat100g = value, satFatError = error)
+            revalidateOcr(updated)
         }
     }
 
@@ -135,7 +194,8 @@ class ProductConfirmationViewModel @Inject constructor(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
-            current.copy(salt100g = value, saltError = error)
+            val updated = current.copy(salt100g = value, saltError = error)
+            revalidateOcr(updated)
         }
     }
 
@@ -167,7 +227,7 @@ class ProductConfirmationViewModel @Inject constructor(
         _uiState.update { it.copy(addToDiary = value) }
     }
 
-    fun onMealSelected(meal: Meal) {
+    fun onMealSelected(meal: String) {
         _uiState.update { it.copy(selectedMeal = meal) }
     }
 
@@ -185,6 +245,27 @@ class ProductConfirmationViewModel @Inject constructor(
         }
     }
 
+    private fun revalidateOcr(state: ProductConfirmationUiState): ProductConfirmationUiState {
+        if (state.source != ProductSource.OCR) return state
+        val parsed = state.toParsedNutrients()
+        val validationResult = LabelValidator.validate(parsed)
+        val validationMap = mutableMapOf<String, String>()
+        val generalIssues = mutableListOf<String>()
+
+        for (issue in validationResult.issues) {
+            val field = issue.field
+            if (field != null) {
+                validationMap[field] = issue.message
+            } else {
+                generalIssues.add(issue.message)
+            }
+        }
+        return state.copy(
+            validationIssues = validationMap,
+            generalValidationIssues = generalIssues
+        )
+    }
+
     private fun recalculatePortion(state: ProductConfirmationUiState): ProductConfirmationUiState {
         val grams = NumberFormatHelper.parseDecimal(state.diaryGrams) ?: 0.0
         val kcal = NumberFormatHelper.parseDecimal(state.kcal100g) ?: 0.0
@@ -198,15 +279,25 @@ class ProductConfirmationViewModel @Inject constructor(
             protein100g = p,
             carbs100g = c,
             fat100g = f,
-            source = ProductSource.OFF
+            source = state.source
         )
         val portion = NutritionCalculator.calculatePortionMacros(tempProduct, grams)
-        return state.copy(
+        val updated = state.copy(
             portionKcal = portion.kcal,
             portionProtein = portion.protein,
             portionCarbs = portion.carbs,
             portionFat = portion.fat,
         )
+        return revalidateOcr(updated)
+    }
+
+    fun onDiscard(onFinish: () -> Unit) {
+        _uiState.value.photoFile?.let { file ->
+            if (file.exists()) {
+                file.delete()
+            }
+        }
+        onFinish()
     }
 
     fun onConfirmAndSave(onSuccess: () -> Unit) {
@@ -256,7 +347,7 @@ class ProductConfirmationViewModel @Inject constructor(
                 unitName = state.unitName.trim().takeIf { it.isNotEmpty() },
                 unitG = NumberFormatHelper.parseDecimal(state.unitG),
                 servingG = NumberFormatHelper.parseDecimal(state.servingG),
-                source = ProductSource.OFF,
+                source = state.source,
                 createdAt = now,
                 updatedAt = now,
             )
@@ -266,9 +357,19 @@ class ProductConfirmationViewModel @Inject constructor(
             if (state.addToDiary) {
                 val grams = NumberFormatHelper.parseDecimal(state.diaryGrams) ?: 100.0
                 val portion = NutritionCalculator.calculatePortionMacros(product, grams)
+                val targetDate = state.targetDate
+                val existingEntries = mealEntryRepository.getByDateAndMeal(targetDate.toString(), state.selectedMeal)
+                val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == state.selectedMeal }?.startTime
+                val loggedAt = com.controlcal.core.nutrition.MealTimeCalculator.calculateLoggedAt(
+                    date = targetDate,
+                    existingEntries = existingEntries,
+                    configuredStartTime = configuredStartTime,
+                    zoneId = clock.zone,
+                    clock = clock,
+                )
                 val entry = MealEntry(
                     id = 0L,
-                    date = LocalDate.now().toString(),
+                    date = targetDate.toString(),
                     meal = state.selectedMeal,
                     productId = insertedId,
                     productName = product.name,
@@ -277,9 +378,16 @@ class ProductConfirmationViewModel @Inject constructor(
                     protein = portion.protein,
                     carbs = portion.carbs,
                     fat = portion.fat,
-                    loggedAt = now,
+                    loggedAt = loggedAt,
                 )
                 mealEntryRepository.insert(entry)
+            }
+
+            // Delete temporary photo file after successful save
+            state.photoFile?.let { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
             }
 
             _uiState.update { it.copy(isSaving = false, isSaved = true) }
