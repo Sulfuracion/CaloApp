@@ -48,8 +48,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,7 +83,7 @@ data class OcrConfirmationData(
 @Composable
 fun ProductConfirmationRoute(
     viewModel: ProductConfirmationViewModel,
-    onConfirmed: () -> Unit,
+    onConfirmed: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {},
     onDiscard: () -> Unit,
     offProduct: OffProduct? = null,
     ocrData: OcrConfirmationData? = null,
@@ -720,11 +723,14 @@ private fun CapturedPhotoCard(
     modifier: Modifier = Modifier
 ) {
     var showEnlargedDialog by remember { mutableStateOf(false) }
-    val bitmap = remember(photoFile) {
-        loadBitmapUpright(photoFile)
+    val bitmap by produceState<Bitmap?>(initialValue = null, photoFile) {
+        value = withContext(Dispatchers.IO) {
+            loadBitmapUpright(photoFile)
+        }
     }
 
-    if (bitmap != null) {
+    val currentBitmap = bitmap
+    if (currentBitmap != null) {
         Card(
             modifier = modifier
                 .fillMaxWidth()
@@ -756,7 +762,7 @@ private fun CapturedPhotoCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Image(
-                    bitmap = bitmap.asImageBitmap(),
+                    bitmap = currentBitmap.asImageBitmap(),
                     contentDescription = stringResource(R.string.confirm_product_photo_preview_title),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -780,7 +786,7 @@ private fun CapturedPhotoCard(
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         Image(
-                            bitmap = bitmap.asImageBitmap(),
+                            bitmap = currentBitmap.asImageBitmap(),
                             contentDescription = stringResource(R.string.confirm_product_photo_preview_title),
                             modifier = Modifier
                                 .fillMaxSize()

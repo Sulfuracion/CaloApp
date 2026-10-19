@@ -47,5 +47,7 @@ data class MealDetailUiState(
     val quickAtwaterWarning: String? = null,
     val isQuickCaloriesSaveEnabled: Boolean = false,
     val recentlyDeletedEntry: MealEntry? = null,
+    val recentlyMergedPreviousEntry: MealEntry? = null,
+    val isSaving: Boolean = false,
     val userMessage: String? = null,
 )

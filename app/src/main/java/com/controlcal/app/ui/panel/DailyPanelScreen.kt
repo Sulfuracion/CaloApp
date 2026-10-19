@@ -22,7 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.Role
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -36,8 +40,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -74,6 +80,7 @@ import com.controlcal.core.model.MealEntry
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.suggest.QuickLogSuggestion
 import com.controlcal.core.tdee.TdeeGoalProposal
+import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import java.time.LocalDate
 
 @Composable
@@ -91,12 +98,10 @@ fun DailyPanelRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.message) {
-        uiState.message?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
-            viewModel.onMessageConsumed()
-        }
-    }
+    HandleFeedbackEvents(
+        events = viewModel.feedbackEvents,
+        snackbarHostState = snackbarHostState,
+    )
 
     DailyPanelScreen(
         uiState = uiState,
@@ -154,6 +159,8 @@ fun DailyPanelScreen(
     onRejectTdeeProposal: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showOptionsMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -185,14 +192,6 @@ fun DailyPanelScreen(
                         )
                     }
                     IconButton(
-                        onClick = onNavigateToPantry,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_pantry),
-                            contentDescription = stringResource(R.string.pantry_action),
-                        )
-                    }
-                    IconButton(
                         onClick = onNavigateToWeight,
                     ) {
                         Icon(
@@ -200,21 +199,60 @@ fun DailyPanelScreen(
                             contentDescription = stringResource(R.string.weight_navigate_action),
                         )
                     }
-                    IconButton(
-                        onClick = onCopyYesterday,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_copy),
-                            contentDescription = stringResource(R.string.daily_panel_copy_yesterday_action),
-                        )
-                    }
-                    IconButton(
-                        onClick = onNavigateToSettings,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_settings),
-                            contentDescription = stringResource(R.string.settings_action),
-                        )
+                    Box {
+                        IconButton(onClick = { showOptionsMenu = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_more_vert),
+                                contentDescription = stringResource(R.string.meal_detail_options_menu),
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showOptionsMenu,
+                            onDismissRequest = { showOptionsMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.pantry_action)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_pantry),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    onNavigateToPantry()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.daily_panel_copy_yesterday_action)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_copy),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    onCopyYesterday()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.settings_action)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_settings),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    onNavigateToSettings()
+                                },
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -318,6 +356,7 @@ fun DailyPanelScreen(
             portionProtein = uiState.portionPreviewProtein,
             portionCarbs = uiState.portionPreviewCarbs,
             portionFat = uiState.portionPreviewFat,
+            isSaving = uiState.isSaving,
             onGramsChanged = onEditingGramsChanged,
             onConfirm = onConfirmQuickLog,
             onDismiss = onDismissEditDialog,
@@ -357,36 +396,38 @@ private fun DateNavigator(
     ) {
         IconButton(
             onClick = onPreviousDay,
-            modifier = Modifier.size(28.dp),
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_left),
                 contentDescription = stringResource(R.string.daily_panel_previous_day),
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
             )
         }
         Text(
             text = dateText,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.clickable(onClick = { showDatePicker = true }),
+            modifier = Modifier.clickable(
+                role = Role.Button,
+                onClickLabel = stringResource(R.string.date_picker_select_date),
+                onClick = { showDatePicker = true },
+            ),
         )
         IconButton(
             onClick = onNextDay,
-            modifier = Modifier.size(28.dp),
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_right),
                 contentDescription = stringResource(R.string.daily_panel_next_day),
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(20.dp),
             )
         }
         if (!isToday) {
             Spacer(modifier = Modifier.width(4.dp))
             TextButton(
                 onClick = onSelectToday,
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
-                modifier = Modifier.height(28.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.heightIn(min = 48.dp),
             ) {
                 Text(
                     text = stringResource(R.string.daily_panel_today),
@@ -777,12 +818,12 @@ private fun MealCard(
 
             FilledTonalIconButton(
                 onClick = onAddFoodClick,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_add),
                     contentDescription = stringResource(R.string.daily_panel_meal_add_food_description, mealTitle),
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }

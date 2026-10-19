@@ -363,7 +363,10 @@ private class FakeMealEntryRepository : MealEntryRepository {
     override suspend fun insertAll(entries: List<MealEntry>): List<Long> {
         return entries.map { insert(it) }
     }
-    override suspend fun update(entry: MealEntry) {}
+    override suspend fun update(entry: MealEntry) {
+        val idx = entries.indexOfFirst { it.id == entry.id }
+        if (idx >= 0) entries[idx] = entry
+    }
     override suspend fun delete(entry: MealEntry) {}
     override suspend fun getByDate(date: String): List<MealEntry> = entries.filter { it.date == date }
     override suspend fun getByDateAndMeal(date: String, meal: String): List<MealEntry> = entries.filter { it.date == date && it.meal == meal }

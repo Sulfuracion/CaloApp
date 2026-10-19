@@ -38,6 +38,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOffRateLimiter(clock: java.time.Clock): com.controlcal.app.data.off.OffRateLimiter =
+        com.controlcal.app.data.off.OffRateLimiter(clock)
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(OFF_TIMEOUT_SECONDS, TimeUnit.SECONDS)

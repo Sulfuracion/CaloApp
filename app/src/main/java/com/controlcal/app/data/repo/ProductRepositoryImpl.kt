@@ -22,6 +22,9 @@ class ProductRepositoryImpl @Inject constructor(
     override suspend fun searchByName(prefix: String): List<Product> =
         productDao.searchByName(prefix).map { it.toDomain() }
 
+    override suspend fun search(query: String): List<Product> =
+        productDao.search(query).map { it.toDomain() }
+
     override suspend fun getActiveProducts(): List<Product> =
         productDao.activeProducts().map { it.toDomain() }
 

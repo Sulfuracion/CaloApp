@@ -19,10 +19,17 @@ import com.controlcal.core.repo.GoalProfileRepository
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.UserSettingsRepository
+import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.UiFeedbackEvent
+import com.controlcal.app.ui.feedback.UiText
+import com.controlcal.core.nutrition.GoalProfileValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -48,6 +55,9 @@ class SettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    private val _feedbackEvents = Channel<UiFeedbackEvent>(Channel.BUFFERED)
+    val feedbackEvents: Flow<UiFeedbackEvent> = _feedbackEvents.receiveAsFlow()
 
     init {
         loadSettings()
@@ -87,102 +97,185 @@ class SettingsViewModel @Inject constructor(
             val updated = _uiState.value.weeklyPattern.withDayType(dayOfWeek, dayType)
             userSettingsRepository.setWeeklyPattern(updated)
             _uiState.update { it.copy(weeklyPattern = updated) }
+            val dayName = when (dayOfWeek) {
+                DayOfWeek.MONDAY -> "Lunes"
+                DayOfWeek.TUESDAY -> "Martes"
+                DayOfWeek.WEDNESDAY -> "Miércoles"
+                DayOfWeek.THURSDAY -> "Jueves"
+                DayOfWeek.FRIDAY -> "Viernes"
+                DayOfWeek.SATURDAY -> "Sábado"
+                DayOfWeek.SUNDAY -> "Domingo"
+            }
+            val typeName = if (dayType == DayType.TRAINING) "Entrenamiento" else "Descanso"
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(R.string.feedback_weekly_pattern_saved, dayName, typeName)
+                )
+            )
         }
     }
 
     fun onTrainingKcalChanged(value: String) {
-        _uiState.update { it.copy(trainingKcalText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateKcal(value) -> "Debe ser mayor que 0"
+            else -> null
+        }
+        _uiState.update { it.copy(trainingKcalText = value, trainingKcalError = error, errorMessage = null) }
     }
 
     fun onTrainingProteinChanged(value: String) {
-        _uiState.update { it.copy(trainingProteinText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMacro(value) -> "No puede ser negativo"
+            else -> null
+        }
+        _uiState.update { it.copy(trainingProteinText = value, trainingProteinError = error, errorMessage = null) }
     }
 
     fun onTrainingCarbsChanged(value: String) {
-        _uiState.update { it.copy(trainingCarbsText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMacro(value) -> "No puede ser negativo"
+            else -> null
+        }
+        _uiState.update { it.copy(trainingCarbsText = value, trainingCarbsError = error, errorMessage = null) }
     }
 
     fun onTrainingFatChanged(value: String) {
-        _uiState.update { it.copy(trainingFatText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMacro(value) -> "No puede ser negativo"
+            else -> null
+        }
+        _uiState.update { it.copy(trainingFatText = value, trainingFatError = error, errorMessage = null) }
     }
 
     fun onRestKcalChanged(value: String) {
-        _uiState.update { it.copy(restKcalText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateKcal(value) -> "Debe ser mayor que 0"
+            else -> null
+        }
+        _uiState.update { it.copy(restKcalText = value, restKcalError = error, errorMessage = null) }
     }
 
     fun onRestProteinChanged(value: String) {
-        _uiState.update { it.copy(restProteinText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMacro(value) -> "No puede ser negativo"
+            else -> null
+        }
+        _uiState.update { it.copy(restProteinText = value, restProteinError = error, errorMessage = null) }
     }
 
     fun onRestCarbsChanged(value: String) {
-        _uiState.update { it.copy(restCarbsText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMacro(value) -> "No puede ser negativo"
+            else -> null
+        }
+        _uiState.update { it.copy(restCarbsText = value, restCarbsError = error, errorMessage = null) }
     }
 
     fun onRestFatChanged(value: String) {
-        _uiState.update { it.copy(restFatText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMacro(value) -> "No puede ser negativo"
+            else -> null
+        }
+        _uiState.update { it.copy(restFatText = value, restFatError = error, errorMessage = null) }
     }
 
     fun onMinKcalChanged(value: String) {
-        _uiState.update { it.copy(minKcalText = value, errorMessage = null) }
+        val error = when {
+            value.isBlank() -> "Campo obligatorio"
+            !GoalProfileValidator.validateMinKcal(value) -> "Debe ser mayor que 0"
+            else -> null
+        }
+        _uiState.update { it.copy(minKcalText = value, minKcalError = error, errorMessage = null) }
     }
 
     fun onSaveGoals() {
         val state = _uiState.value
-        val minKcal = NumberFormatHelper.parseDecimal(state.minKcalText)
-        val tKcal = NumberFormatHelper.parseDecimal(state.trainingKcalText)
-        val tProtein = NumberFormatHelper.parseDecimal(state.trainingProteinText)
-        val tCarbs = NumberFormatHelper.parseDecimal(state.trainingCarbsText)
-        val tFat = NumberFormatHelper.parseDecimal(state.trainingFatText)
+        val minKcalValid = GoalProfileValidator.validateMinKcal(state.minKcalText)
+        val tKcalValid = GoalProfileValidator.validateKcal(state.trainingKcalText)
+        val tProteinValid = GoalProfileValidator.validateMacro(state.trainingProteinText)
+        val tCarbsValid = GoalProfileValidator.validateMacro(state.trainingCarbsText)
+        val tFatValid = GoalProfileValidator.validateMacro(state.trainingFatText)
+        val rKcalValid = GoalProfileValidator.validateKcal(state.restKcalText)
+        val rProteinValid = GoalProfileValidator.validateMacro(state.restProteinText)
+        val rCarbsValid = GoalProfileValidator.validateMacro(state.restCarbsText)
+        val rFatValid = GoalProfileValidator.validateMacro(state.restFatText)
 
-        val rKcal = NumberFormatHelper.parseDecimal(state.restKcalText)
-        val rProtein = NumberFormatHelper.parseDecimal(state.restProteinText)
-        val rCarbs = NumberFormatHelper.parseDecimal(state.restCarbsText)
-        val rFat = NumberFormatHelper.parseDecimal(state.restFatText)
-
-        if (minKcal == null || minKcal <= 0 ||
-            tKcal == null || tKcal <= 0 ||
-            tProtein == null || tProtein < 0 ||
-            tCarbs == null || tCarbs < 0 ||
-            tFat == null || tFat < 0 ||
-            rKcal == null || rKcal <= 0 ||
-            rProtein == null || rProtein < 0 ||
-            rCarbs == null || rCarbs < 0 ||
-            rFat == null || rFat < 0
+        if (!minKcalValid || !tKcalValid || !tProteinValid || !tCarbsValid || !tFatValid ||
+            !rKcalValid || !rProteinValid || !rCarbsValid || !rFatValid
         ) {
-            _uiState.update { it.copy(errorMessage = "Comprueba que todos los valores sean números válidos") }
+            _uiState.update {
+                it.copy(
+                    minKcalError = if (!minKcalValid) "Introduce un valor mayor que 0" else null,
+                    trainingKcalError = if (!tKcalValid) "Introduce un valor mayor que 0" else null,
+                    trainingProteinError = if (!tProteinValid) "Introduce un valor no negativo" else null,
+                    trainingCarbsError = if (!tCarbsValid) "Introduce un valor no negativo" else null,
+                    trainingFatError = if (!tFatValid) "Introduce un valor no negativo" else null,
+                    restKcalError = if (!rKcalValid) "Introduce un valor mayor que 0" else null,
+                    restProteinError = if (!rProteinValid) "Introduce un valor no negativo" else null,
+                    restCarbsError = if (!rCarbsValid) "Introduce un valor no negativo" else null,
+                    restFatError = if (!rFatValid) "Introduce un valor no negativo" else null,
+                    errorMessage = "Comprueba que todos los valores sean números válidos",
+                )
+            }
             return
         }
 
+        val minKcal = NumberFormatHelper.parseDecimal(state.minKcalText) ?: return
+        val tKcal = NumberFormatHelper.parseDecimal(state.trainingKcalText) ?: return
+        val tProtein = NumberFormatHelper.parseDecimal(state.trainingProteinText) ?: return
+        val tCarbs = NumberFormatHelper.parseDecimal(state.trainingCarbsText) ?: return
+        val tFat = NumberFormatHelper.parseDecimal(state.trainingFatText) ?: return
+        val rKcal = NumberFormatHelper.parseDecimal(state.restKcalText) ?: return
+        val rProtein = NumberFormatHelper.parseDecimal(state.restProteinText) ?: return
+        val rCarbs = NumberFormatHelper.parseDecimal(state.restCarbsText) ?: return
+        val rFat = NumberFormatHelper.parseDecimal(state.restFatText) ?: return
+
         viewModelScope.launch {
-            userSettingsRepository.setMinKcalLimit(minKcal)
-            val todayStr = LocalDate.now().toString()
-            val newTrainingProfile = GoalProfile(
-                dayType = DayType.TRAINING,
-                kcal = tKcal,
-                proteinG = tProtein,
-                carbsG = tCarbs,
-                fatG = tFat,
-                validFrom = todayStr,
-                origin = GoalOrigin.MANUAL,
-            )
-            val newRestProfile = GoalProfile(
-                dayType = DayType.REST,
-                kcal = rKcal,
-                proteinG = rProtein,
-                carbsG = rCarbs,
-                fatG = rFat,
-                validFrom = todayStr,
-                origin = GoalOrigin.MANUAL,
-            )
-
-            goalProfileRepository.insert(newTrainingProfile)
-            goalProfileRepository.insert(newRestProfile)
-
-            _uiState.update {
-                it.copy(
-                    infoMessage = "Objetivos guardados para hoy y días posteriores",
-                    errorMessage = null,
+            _uiState.update { it.copy(isSavingGoals = true) }
+            try {
+                userSettingsRepository.setMinKcalLimit(minKcal)
+                val todayStr = LocalDate.now().toString()
+                val newTrainingProfile = GoalProfile(
+                    dayType = DayType.TRAINING,
+                    kcal = tKcal,
+                    proteinG = tProtein,
+                    carbsG = tCarbs,
+                    fatG = tFat,
+                    validFrom = todayStr,
+                    origin = GoalOrigin.MANUAL,
                 )
+                val newRestProfile = GoalProfile(
+                    dayType = DayType.REST,
+                    kcal = rKcal,
+                    proteinG = rProtein,
+                    carbsG = rCarbs,
+                    fatG = rFat,
+                    validFrom = todayStr,
+                    origin = GoalOrigin.MANUAL,
+                )
+
+                goalProfileRepository.insert(newTrainingProfile)
+                goalProfileRepository.insert(newRestProfile)
+
+                _uiState.update {
+                    it.copy(
+                        isSavingGoals = false,
+                        infoMessage = "Objetivos guardados para hoy y días posteriores",
+                        errorMessage = null,
+                    )
+                }
+                _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_goals_saved)))
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSavingGoals = false) }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.feedback_save_error)))
             }
         }
     }
@@ -197,6 +290,7 @@ class SettingsViewModel @Inject constructor(
 
     fun onConfirmAddMeal(name: String, startTime: LocalTime) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isSavingMeal = true) }
             val currentMeals = _uiState.value.configuredMeals
             when (val result = addMealConfigUseCase(currentMeals, name, startTime, isActive = true)) {
                 is MealConfigResult.Success -> {
@@ -206,13 +300,16 @@ class SettingsViewModel @Inject constructor(
                         it.copy(
                             configuredMeals = sorted,
                             showAddMealDialog = false,
+                            isSavingMeal = false,
                             infoMessage = "Comida «$name» añadida",
                             errorMessage = null,
                         )
                     }
+                    _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_meal_added, name)))
                 }
                 is MealConfigResult.Failure -> {
-                    _uiState.update { it.copy(errorMessage = result.message) }
+                    _uiState.update { it.copy(isSavingMeal = false, errorMessage = result.message) }
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(result.message)))
                 }
             }
         }
@@ -228,6 +325,7 @@ class SettingsViewModel @Inject constructor(
 
     fun onConfirmRenameMeal(mealId: String, newName: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isSavingMeal = true) }
             val currentMeals = _uiState.value.configuredMeals
             when (val result = renameMealConfigUseCase(currentMeals, mealId, newName)) {
                 is MealConfigResult.Success -> {
@@ -237,13 +335,16 @@ class SettingsViewModel @Inject constructor(
                         it.copy(
                             configuredMeals = sorted,
                             editingMeal = null,
+                            isSavingMeal = false,
                             infoMessage = "Comida renombrada a «$newName»",
                             errorMessage = null,
                         )
                     }
+                    _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_meal_renamed, newName)))
                 }
                 is MealConfigResult.Failure -> {
-                    _uiState.update { it.copy(errorMessage = result.message) }
+                    _uiState.update { it.copy(isSavingMeal = false, errorMessage = result.message) }
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(result.message)))
                 }
             }
         }
@@ -259,6 +360,7 @@ class SettingsViewModel @Inject constructor(
 
     fun onConfirmChangeStartTime(mealId: String, newStartTime: LocalTime) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isSavingMeal = true) }
             val currentMeals = _uiState.value.configuredMeals
             val meal = currentMeals.find { it.id == mealId }
             val mealName = meal?.name ?: ""
@@ -270,13 +372,17 @@ class SettingsViewModel @Inject constructor(
                         it.copy(
                             configuredMeals = sorted,
                             changingTimeMeal = null,
+                            isSavingMeal = false,
                             infoMessage = "Hora de «$mealName» actualizada",
                             errorMessage = null,
                         )
                     }
+                    val formattedTime = String.format("%02d:%02d", newStartTime.hour, newStartTime.minute)
+                    _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_meal_time_updated, formattedTime)))
                 }
                 is MealConfigResult.Failure -> {
-                    _uiState.update { it.copy(errorMessage = result.message) }
+                    _uiState.update { it.copy(isSavingMeal = false, errorMessage = result.message) }
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(result.message)))
                 }
             }
         }
@@ -299,9 +405,11 @@ class SettingsViewModel @Inject constructor(
                             errorMessage = null,
                         )
                     }
+                    _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_meal_deactivated, mealName)))
                 }
                 is MealConfigResult.Failure -> {
                     _uiState.update { it.copy(errorMessage = result.message) }
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(result.message)))
                 }
             }
         }
@@ -323,9 +431,11 @@ class SettingsViewModel @Inject constructor(
                             errorMessage = null,
                         )
                     }
+                    _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_meal_reactivated, mealName)))
                 }
                 is MealConfigResult.Failure -> {
                     _uiState.update { it.copy(errorMessage = result.message) }
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(result.message)))
                 }
             }
         }
@@ -360,6 +470,7 @@ class SettingsViewModel @Inject constructor(
                             errorMessage = null,
                         )
                     }
+                    _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_meal_deleted, mealName)))
                 }
                 is MealConfigResult.Failure -> {
                     _uiState.update {
@@ -368,6 +479,7 @@ class SettingsViewModel @Inject constructor(
                             errorMessage = result.message,
                         )
                     }
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(result.message)))
                 }
             }
         }

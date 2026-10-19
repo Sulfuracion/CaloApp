@@ -14,13 +14,19 @@ import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.nutrition.NutritionCalculator
 import com.controlcal.core.nutrition.QuickCaloriesValidator
 import com.controlcal.core.nutrition.RepeatMealUseCase
+import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.UiFeedbackEvent
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -45,6 +51,15 @@ class MealDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MealDetailUiState())
     val uiState: StateFlow<MealDetailUiState> = _uiState.asStateFlow()
 
+    private val _feedbackEvents = Channel<UiFeedbackEvent>(Channel.BUFFERED)
+    val feedbackEvents: Flow<UiFeedbackEvent> = _feedbackEvents.receiveAsFlow()
+
+    fun sendFeedback(event: UiFeedbackEvent) {
+        viewModelScope.launch {
+            _feedbackEvents.send(event)
+        }
+    }
+
     fun initialize(date: LocalDate, initialMealId: String) {
         viewModelScope.launch {
             _uiState.update {
@@ -52,6 +67,7 @@ class MealDetailViewModel @Inject constructor(
                     date = date,
                     isLoading = true,
                     recentlyDeletedEntry = null,
+                    recentlyMergedPreviousEntry = null,
                     userMessage = null,
                     customMealTime = null,
                 )
@@ -179,6 +195,20 @@ class MealDetailViewModel @Inject constructor(
             val updated = MealPortionCalculator.increaseQuantity(entry, step)
             mealEntryRepository.update(updated)
             loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            val formattedQuantity = FoodPortionFormatter.formatQuantity(
+                grams = updated.grams,
+                unitG = product?.unitG,
+                unitName = product?.unitName,
+            )
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(
+                        R.string.feedback_portion_adjusted,
+                        updated.productName,
+                        formattedQuantity,
+                    )
+                )
+            )
         }
     }
 
@@ -191,6 +221,20 @@ class MealDetailViewModel @Inject constructor(
             val updated = MealPortionCalculator.decreaseQuantity(entry, step)
             mealEntryRepository.update(updated)
             loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            val formattedQuantity = FoodPortionFormatter.formatQuantity(
+                grams = updated.grams,
+                unitG = product?.unitG,
+                unitName = product?.unitName,
+            )
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(
+                        R.string.feedback_portion_adjusted,
+                        updated.productName,
+                        formattedQuantity,
+                    )
+                )
+            )
         }
     }
 
@@ -217,10 +261,15 @@ class MealDetailViewModel @Inject constructor(
                     formattedMealTime = formatted,
                     customMealTime = newTime,
                     showTimePickerDialog = false,
-                    userMessage = "Hora de la comida actualizada a las $formatted",
+                    userMessage = null,
                 )
             }
             loadMealInternal(date, mealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(R.string.feedback_meal_time_updated, formatted)
+                )
+            )
         }
     }
 
@@ -230,24 +279,105 @@ class MealDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     recentlyDeletedEntry = entry,
-                    userMessage = "«${entry.productName}» eliminado",
+                    userMessage = null,
                 )
             }
             loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.DynamicString("«${entry.productName}» eliminado"),
+                    actionLabel = UiText.StringResource(R.string.feedback_action_undo),
+                    onAction = { onUndoDelete() },
+                )
+            )
         }
     }
 
     fun onUndoDelete() {
         val entryToRestore = _uiState.value.recentlyDeletedEntry ?: return
         viewModelScope.launch {
-            mealEntryRepository.insert(entryToRestore)
+            mealEntryRepository.save(entryToRestore)
             _uiState.update {
                 it.copy(
                     recentlyDeletedEntry = null,
-                    userMessage = "Alimento restaurado",
+                    userMessage = null,
                 )
             }
             loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.DynamicString("Alimento restaurado")
+                )
+            )
+        }
+    }
+
+    fun notifyAdded(entry: MealEntry) {
+        viewModelScope.launch {
+            val product = entry.productId?.let { productRepository.getById(it) }
+            val formattedQuantity = com.controlcal.core.nutrition.FoodPortionFormatter.formatQuantity(
+                grams = entry.grams,
+                unitG = product?.unitG,
+                unitName = product?.unitName,
+            )
+            loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.StringResource(
+                        R.string.feedback_food_added,
+                        entry.productName,
+                        formattedQuantity,
+                    )
+                )
+            )
+        }
+    }
+
+    fun notifyMerged(mergedEntry: MealEntry, previousEntry: MealEntry) {
+        viewModelScope.launch {
+            val product = mergedEntry.productId?.let { productRepository.getById(it) }
+            val formattedQuantity = com.controlcal.core.nutrition.FoodPortionFormatter.formatQuantity(
+                grams = mergedEntry.grams,
+                unitG = product?.unitG,
+                unitName = product?.unitName,
+            )
+            _uiState.update {
+                it.copy(
+                    recentlyMergedPreviousEntry = previousEntry,
+                    userMessage = null,
+                )
+            }
+            loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.StringResource(
+                        R.string.meal_entry_merged_snackbar,
+                        mergedEntry.productName,
+                        formattedQuantity,
+                    ),
+                    actionLabel = UiText.StringResource(R.string.feedback_action_undo),
+                    onAction = { onUndoMerge() },
+                )
+            )
+        }
+    }
+
+    fun onUndoMerge() {
+        val previous = _uiState.value.recentlyMergedPreviousEntry ?: return
+        viewModelScope.launch {
+            mealEntryRepository.update(previous)
+            _uiState.update {
+                it.copy(
+                    recentlyMergedPreviousEntry = null,
+                    userMessage = null,
+                )
+            }
+            loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.DynamicString("Acción deshecha")
+                )
+            )
         }
     }
 
@@ -316,29 +446,50 @@ class MealDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val newLoggedAt = MealTimeCalculator.calculateLoggedAt(
-                date = state.date,
-                mealTime = state.mealTime,
-                zoneId = clock.zone,
-            )
-            val tareEntry = createTareEntryUseCase(
-                product = product,
-                leftoverGrams = parsedGrams,
-                date = state.date.toString(),
-                meal = state.currentMealId,
-                loggedAt = newLoggedAt,
-            )
+            _uiState.update { it.copy(isSaving = true) }
+            try {
+                val newLoggedAt = MealTimeCalculator.calculateLoggedAt(
+                    date = state.date,
+                    mealTime = state.mealTime,
+                    zoneId = clock.zone,
+                )
+                val tareEntry = createTareEntryUseCase(
+                    product = product,
+                    leftoverGrams = parsedGrams,
+                    date = state.date.toString(),
+                    meal = state.currentMealId,
+                    loggedAt = newLoggedAt,
+                )
 
-            mealEntryRepository.insert(tareEntry)
-            _uiState.update {
-                it.copy(
-                    showTareDialog = false,
-                    selectedTareProduct = null,
-                    tareGramsText = "",
-                    userMessage = "Se han restado ${NumberFormatHelper.formatDecimal(parsedGrams)} g de sobras de «${product.name}»",
+                mealEntryRepository.save(tareEntry)
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        showTareDialog = false,
+                        selectedTareProduct = null,
+                        tareGramsText = "",
+                        tareGramsError = null,
+                        userMessage = null,
+                    )
+                }
+                loadMealInternal(state.date, state.currentMealId)
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Success(
+                        UiText.StringResource(
+                            R.string.feedback_leftovers_subtracted,
+                            NumberFormatHelper.formatDecimal(parsedGrams) + " g",
+                            product.name,
+                        )
+                    )
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false) }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.feedback_save_error)
+                    )
                 )
             }
-            loadMealInternal(state.date, state.currentMealId)
         }
     }
 
@@ -362,10 +513,15 @@ class MealDetailViewModel @Inject constructor(
             if (latestDate == null) {
                 _uiState.update {
                     it.copy(
-                        userMessage = "No hay registros anteriores de esta comida",
+                        userMessage = null,
                         isOptionsMenuExpanded = false,
                     )
                 }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.daily_panel_repeat_meal_empty)
+                    )
+                )
                 return@launch
             }
 
@@ -373,22 +529,32 @@ class MealDetailViewModel @Inject constructor(
             if (sourceEntries.isEmpty()) {
                 _uiState.update {
                     it.copy(
-                        userMessage = "No hay registros anteriores de esta comida",
+                        userMessage = null,
                         isOptionsMenuExpanded = false,
                     )
                 }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.daily_panel_repeat_meal_empty)
+                    )
+                )
                 return@launch
             }
 
             val cloned = repeatMealUseCase(sourceEntries, dateStr, meal, clock.zone)
-            mealEntryRepository.insertAll(cloned)
+            mealEntryRepository.saveAll(cloned)
             loadMealInternal(_uiState.value.date, meal)
             _uiState.update {
                 it.copy(
-                    userMessage = "Comida repetida (${cloned.size} alimentos)",
                     isOptionsMenuExpanded = false,
+                    userMessage = null,
                 )
             }
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(R.string.daily_panel_repeat_meal_success)
+                )
+            )
         }
     }
 
@@ -400,23 +566,33 @@ class MealDetailViewModel @Inject constructor(
             if (sourceEntries.isEmpty()) {
                 _uiState.update {
                     it.copy(
-                        userMessage = "No hay registros en el día de ayer",
+                        userMessage = null,
                         isOptionsMenuExpanded = false,
                     )
                 }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.daily_panel_copy_yesterday_empty)
+                    )
+                )
                 return@launch
             }
 
             val targetDateStr = _uiState.value.date.toString()
             val cloned = copyDayUseCase(sourceEntries, targetDateStr, clock.zone)
-            mealEntryRepository.insertAll(cloned)
+            mealEntryRepository.saveAll(cloned)
             loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
             _uiState.update {
                 it.copy(
-                    userMessage = "Se han copiado las comidas de ayer (${cloned.size} alimentos)",
                     isOptionsMenuExpanded = false,
+                    userMessage = null,
                 )
             }
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(R.string.daily_panel_copy_yesterday_success)
+                )
+            )
         }
     }
 
@@ -558,52 +734,81 @@ class MealDetailViewModel @Inject constructor(
         val description = QuickCaloriesValidator.sanitizeDescription(state.quickDescriptionText)
 
         viewModelScope.launch {
-            val editing = state.editingQuickCaloriesEntry
-            if (editing != null) {
-                val updated = editing.copy(
-                    productName = description,
-                    kcal = parsedKcal,
-                    protein = parsedProtein,
-                    carbs = parsedCarbs,
-                    fat = parsedFat,
-                )
-                mealEntryRepository.update(updated)
-                _uiState.update {
-                    it.copy(
-                        showQuickCaloriesDialog = false,
-                        editingQuickCaloriesEntry = null,
-                        userMessage = "Actualizado «$description»",
+            _uiState.update { it.copy(isSaving = true) }
+            try {
+                val editing = state.editingQuickCaloriesEntry
+                if (editing != null) {
+                    val updated = editing.copy(
+                        productName = description,
+                        kcal = parsedKcal,
+                        protein = parsedProtein,
+                        carbs = parsedCarbs,
+                        fat = parsedFat,
+                    )
+                    mealEntryRepository.update(updated)
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            showQuickCaloriesDialog = false,
+                            editingQuickCaloriesEntry = null,
+                            userMessage = null,
+                        )
+                    }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Success(
+                            UiText.StringResource(
+                                R.string.feedback_quick_calories_updated,
+                                NumberFormatHelper.formatDecimal(parsedKcal),
+                            )
+                        )
+                    )
+                } else {
+                    val newLoggedAt = MealTimeCalculator.calculateLoggedAt(
+                        date = state.date,
+                        mealTime = state.mealTime,
+                        zoneId = clock.zone,
+                    )
+                    val newEntry = MealEntry(
+                        id = 0L,
+                        date = state.date.toString(),
+                        meal = state.currentMealId,
+                        productId = null,
+                        productName = description,
+                        grams = 0.0,
+                        kcal = parsedKcal,
+                        protein = parsedProtein,
+                        carbs = parsedCarbs,
+                        fat = parsedFat,
+                        loggedAt = newLoggedAt,
+                    )
+                    mealEntryRepository.save(newEntry)
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            showQuickCaloriesDialog = false,
+                            editingQuickCaloriesEntry = null,
+                            userMessage = null,
+                        )
+                    }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Success(
+                            UiText.StringResource(
+                                R.string.feedback_quick_calories_added,
+                                NumberFormatHelper.formatDecimal(parsedKcal),
+                                state.currentMealName,
+                            )
+                        )
                     )
                 }
-            } else {
-                val newLoggedAt = MealTimeCalculator.calculateLoggedAt(
-                    date = state.date,
-                    mealTime = state.mealTime,
-                    zoneId = clock.zone,
-                )
-                val newEntry = MealEntry(
-                    id = 0L,
-                    date = state.date.toString(),
-                    meal = state.currentMealId,
-                    productId = null,
-                    productName = description,
-                    grams = 0.0,
-                    kcal = parsedKcal,
-                    protein = parsedProtein,
-                    carbs = parsedCarbs,
-                    fat = parsedFat,
-                    loggedAt = newLoggedAt,
-                )
-                mealEntryRepository.insert(newEntry)
-                _uiState.update {
-                    it.copy(
-                        showQuickCaloriesDialog = false,
-                        editingQuickCaloriesEntry = null,
-                        userMessage = "Añadido «$description» a ${state.currentMealName}",
+                loadMealInternal(state.date, state.currentMealId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false) }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.feedback_save_error)
                     )
-                }
+                )
             }
-            loadMealInternal(state.date, state.currentMealId)
         }
     }
 

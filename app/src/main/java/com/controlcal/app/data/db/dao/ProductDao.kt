@@ -22,8 +22,26 @@ interface ProductDao {
     suspend fun getByBarcode(barcode: String): ProductEntity?
 
     /** Prefix search from the first letter; used by the diary search box. */
-    @Query("SELECT * FROM products WHERE name LIKE :prefix || '%' ORDER BY name")
+    @Query("SELECT * FROM products WHERE archived = 0 AND name LIKE :prefix || '%' ORDER BY name")
     suspend fun searchByName(prefix: String): List<ProductEntity>
+
+    /**
+     * Search products in SQLite matching by name, brand or barcode (if query has 8+ digits).
+     * Only returns non-archived products (section 4 & 5.1 of docs/PLAN.md).
+     */
+    @Query(
+        """
+        SELECT * FROM products 
+        WHERE archived = 0 
+          AND (
+              name LIKE '%' || :query || '%' 
+              OR (brand IS NOT NULL AND brand LIKE '%' || :query || '%')
+              OR (length(:query) >= 8 AND barcode IS NOT NULL AND barcode LIKE :query || '%')
+          )
+        ORDER BY name
+        """
+    )
+    suspend fun search(query: String): List<ProductEntity>
 
     /**
      * Products with entries are never deleted: they are archived

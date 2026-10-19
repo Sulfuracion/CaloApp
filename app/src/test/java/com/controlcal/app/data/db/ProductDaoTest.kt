@@ -94,6 +94,64 @@ class ProductDaoTest : DaoTestBase() {
     }
 
     @Test
+    fun searchReturnsProductsFromAllSourcesManualOffOcr() = runTest {
+        productDao.insert(TestData.product(barcode = null, name = "Leche desnatada", source = ProductSource.MANUAL))
+        productDao.insert(TestData.product(barcode = null, name = "Leche entera", source = ProductSource.OFF))
+        productDao.insert(TestData.product(barcode = null, name = "Leche semidesnatada", source = ProductSource.OCR))
+
+        val results = productDao.search("Leche")
+        assertEquals(3, results.size)
+        assertTrue(results.any { it.source == ProductSource.MANUAL })
+        assertTrue(results.any { it.source == ProductSource.OFF })
+        assertTrue(results.any { it.source == ProductSource.OCR })
+    }
+
+    @Test
+    fun searchExcludesArchivedProducts() = runTest {
+        val activeId = productDao.insert(TestData.product(barcode = null, name = "Avena suave", archived = false))
+        val archivedId = productDao.insert(TestData.product(barcode = null, name = "Avena copos", archived = true))
+
+        val results = productDao.search("Avena")
+        assertEquals(1, results.size)
+        assertEquals(activeId, results[0].id)
+        assertEquals("Avena suave", results[0].name)
+
+        val prefixResults = productDao.searchByName("Ave")
+        assertEquals(1, prefixResults.size)
+        assertEquals(activeId, prefixResults[0].id)
+    }
+
+    @Test
+    fun searchFindsByBrand() = runTest {
+        productDao.insert(TestData.product(barcode = null, name = "Leche semidesnatada", brand = "Pascual"))
+        productDao.insert(TestData.product(barcode = null, name = "Yogur natural", brand = "Danone"))
+
+        val results = productDao.search("Pascual")
+        assertEquals(1, results.size)
+        assertEquals("Leche semidesnatada", results[0].name)
+        assertEquals("Pascual", results[0].brand)
+    }
+
+    @Test
+    fun searchFindsByBarcodeExactAndPrefixWhenEightOrMoreDigits() = runTest {
+        productDao.insert(TestData.product(barcode = "8412345678901", name = "Galletas María"))
+        productDao.insert(TestData.product(barcode = "8412345600000", name = "Barrita cereales"))
+
+        // Exact 13 digits
+        val exact = productDao.search("8412345678901")
+        assertEquals(1, exact.size)
+        assertEquals("Galletas María", exact[0].name)
+
+        // Prefix 8 digits
+        val prefix = productDao.search("84123456")
+        assertEquals(2, prefix.size)
+
+        // Less than 8 digits does not match barcode
+        val shortQuery = productDao.search("8412")
+        assertTrue(shortQuery.isEmpty())
+    }
+
+    @Test
     fun archiveProductKeepsEntriesReadable() = runTest {
         val productId = productDao.insert(TestData.product(name = "Yogur natural"))
         db.dailyLogDao().insert(TestData.dailyLog())

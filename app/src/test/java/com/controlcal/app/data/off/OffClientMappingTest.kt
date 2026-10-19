@@ -232,6 +232,147 @@ class OffClientMappingTest {
         OffClientImpl(mockClient, mapper, baseUrl = "http://world.openfoodfacts.org")
     }
 
+    @Test
+    fun parseSearchComplete_mapsAllItemsAndFieldsCorrectly() {
+        val json = readFixture("search_complete.json")
+        val result = mapper.parseSearchResponse(json)
+
+        assertTrue(result is OffSearchByNameResult.Success)
+        val items = (result as OffSearchByNameResult.Success).items
+        assertEquals(2, items.size)
+
+        val first = items[0]
+        assertEquals("8410000000001", first.code)
+        assertEquals("Copos de avena integrales", first.name)
+        assertEquals("ControlBio", first.brand)
+        assertEquals(375.0, first.kcal100g ?: 0.0, 0.001)
+
+        val second = items[1]
+        assertEquals("8410000000002", second.code)
+        assertEquals("Avena suave", second.name)
+        assertEquals("Hacendado", second.brand)
+        assertEquals(360.0, second.kcal100g ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun parseSearchNoKcal_mapsProductWithNullKcal() {
+        val json = readFixture("search_no_kcal.json")
+        val result = mapper.parseSearchResponse(json)
+
+        assertTrue(result is OffSearchByNameResult.Success)
+        val items = (result as OffSearchByNameResult.Success).items
+        assertEquals(1, items.size)
+
+        val item = items[0]
+        assertEquals("8410000000003", item.code)
+        assertEquals("Infusión de manzanilla", item.name)
+        assertEquals("Herbalia", item.brand)
+        assertNull(item.kcal100g)
+    }
+
+    @Test
+    fun parseSearchKjOnly_convertsKjToKcalDividingBy4184() {
+        val json = readFixture("search_kj_only.json")
+        val result = mapper.parseSearchResponse(json)
+
+        assertTrue(result is OffSearchByNameResult.Success)
+        val items = (result as OffSearchByNameResult.Success).items
+        assertEquals(1, items.size)
+
+        val item = items[0]
+        assertEquals("8410000000004", item.code)
+        assertEquals("Bebida isotónica limón", item.name)
+        // 418.4 kJ / 4.184 = 100.0 kcal
+        assertEquals(100.0, item.kcal100g ?: 0.0, 0.05)
+    }
+
+    @Test
+    fun parseSearchEmpty_returnsEmptyResult() {
+        val json = readFixture("search_empty.json")
+        val result = mapper.parseSearchResponse(json)
+
+        assertTrue(result is OffSearchByNameResult.Empty)
+    }
+
+    @Test
+    fun parseSearchInvalidJson_returnsError() {
+        val result = mapper.parseSearchResponse("{\"malformed\": [}")
+        assertTrue(result is OffSearchByNameResult.Error)
+    }
+
+    @Test
+    fun offClient_searchProductsByName_sendsCorrectParamsAndUserAgent() = runBlocking {
+        var recordedUrl: String? = null
+        var recordedUserAgent: String? = null
+        val completeJson = readFixture("search_complete.json")
+
+        val mockClient = createMockOkHttpClient { chain ->
+            val request = chain.request()
+            recordedUrl = request.url.toString()
+            recordedUserAgent = request.header("User-Agent")
+            Response.Builder()
+                .request(request)
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body(completeJson.toResponseBody("application/json".toMediaType()))
+                .build()
+        }
+        val offClient = OffClientImpl(mockClient, mapper)
+
+        val result = offClient.searchProductsByName("avena integral")
+        assertTrue(result is OffSearchByNameResult.Success)
+        val items = (result as OffSearchByNameResult.Success).items
+        assertEquals(2, items.size)
+
+        assertEquals("ControlCal/1.0 (cambiar@gmail.com)", recordedUserAgent)
+        assertNotNull(recordedUrl)
+        assertTrue(recordedUrl!!.contains("search_terms=avena+integral"))
+        assertTrue(recordedUrl!!.contains("fields=code%2Cproduct_name%2Cbrands%2Cnutriments%2Cquantity%2Cserving_size") || recordedUrl!!.contains("fields=code,product_name,brands,nutriments,quantity,serving_size"))
+        assertTrue(recordedUrl!!.contains("page_size=20"))
+        assertTrue(recordedUrl!!.contains("tagtype_0=countries&tag_contains_0=contains&tag_0=spain"))
+    }
+
+    @Test
+    fun offClient_searchProductsByName_whenRateLimited_returnsRateLimitedWithoutCallingNetwork() = runBlocking {
+        var networkCallCount = 0
+        val mockClient = createMockOkHttpClient { chain ->
+            networkCallCount++
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body(readFixture("search_empty.json").toResponseBody("application/json".toMediaType()))
+                .build()
+        }
+
+        val rateLimiter = OffRateLimiter(maxRequests = 1, windowMillis = 60_000L)
+        val offClient = OffClientImpl(mockClient, mapper, rateLimiter = rateLimiter)
+
+        // First call succeeds
+        val firstResult = offClient.searchProductsByName("avena")
+        assertTrue(firstResult is OffSearchByNameResult.Empty)
+        assertEquals(1, networkCallCount)
+
+        // Second call is immediately rate limited
+        val secondResult = offClient.searchProductsByName("avena")
+        assertTrue(secondResult is OffSearchByNameResult.RateLimited)
+        // Network was NOT called again
+        assertEquals(1, networkCallCount)
+    }
+
+    @Test
+    fun offClient_searchProductsByName_whenOffline_returnsOffline() = runBlocking {
+        val mockClient = createMockOkHttpClient {
+            throw UnknownHostException("No address associated with hostname")
+        }
+        val offClient = OffClientImpl(mockClient, mapper)
+
+        val result = offClient.searchProductsByName("avena")
+        assertTrue(result is OffSearchByNameResult.Offline)
+    }
+
     private fun createMockOkHttpClient(interceptorAction: (Interceptor.Chain) -> Response): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor { chain -> interceptorAction(chain) }

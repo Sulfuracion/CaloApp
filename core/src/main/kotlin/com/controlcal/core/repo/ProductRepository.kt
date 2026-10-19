@@ -6,6 +6,7 @@ interface ProductRepository {
     suspend fun getById(id: Long): Product?
     suspend fun getByBarcode(barcode: String): Product?
     suspend fun searchByName(prefix: String): List<Product>
+    suspend fun search(query: String): List<Product> = searchByName(query)
     suspend fun getActiveProducts(): List<Product>
     suspend fun getPantryProducts(): List<Product>
     suspend fun setInPantry(id: Long, inPantry: Boolean)

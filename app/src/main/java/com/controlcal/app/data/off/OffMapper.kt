@@ -19,6 +19,7 @@ class OffMapper @Inject constructor(
         }
 
         private const val KJ_TO_KCAL = 4.184
+        private const val MAX_SEARCH_RESULTS = 20
     }
 
     fun parseResponse(barcode: String, jsonString: String): OffSearchResult {
@@ -37,7 +38,41 @@ class OffMapper @Inject constructor(
             return OffSearchResult.NotFound
         }
 
-        val productDto = apiResponse.product
+        val product = mapDtoToOffProduct(barcode, apiResponse.product)
+        return OffSearchResult.Success(product)
+    }
+
+    fun parseSearchResponse(jsonString: String): OffSearchByNameResult {
+        val searchResponse = try {
+            json.decodeFromString<OffSearchResponseDto>(jsonString)
+        } catch (e: Exception) {
+            return OffSearchByNameResult.Error("Error al procesar la búsqueda en Open Food Facts", e)
+        }
+
+        if (searchResponse.products.isEmpty()) {
+            return OffSearchByNameResult.Empty
+        }
+
+        val items = searchResponse.products.take(MAX_SEARCH_RESULTS).map { dto ->
+            val barcode = dto.code?.trim().orEmpty()
+            val offProduct = mapDtoToOffProduct(barcode, dto)
+            OffSearchItem(
+                code = barcode.takeIf { it.isNotEmpty() },
+                name = offProduct.name,
+                brand = offProduct.brand,
+                kcal100g = offProduct.kcal100g,
+                offProduct = offProduct,
+            )
+        }
+
+        return if (items.isEmpty()) {
+            OffSearchByNameResult.Empty
+        } else {
+            OffSearchByNameResult.Success(items)
+        }
+    }
+
+    internal fun mapDtoToOffProduct(barcode: String, productDto: OffProductDto): OffProduct {
         val nutriments = productDto.nutriments
 
         val energyKcal = nutriments?.getDoubleOrNull("energy-kcal_100g")
@@ -46,7 +81,7 @@ class OffMapper @Inject constructor(
 
         val kcal = energyKcal ?: energyKj?.let { it / KJ_TO_KCAL }
 
-        val product = OffProduct(
+        return OffProduct(
             barcode = barcode,
             name = productDto.productName?.trim()?.takeIf { it.isNotEmpty() },
             brand = productDto.brands?.trim()?.takeIf { it.isNotEmpty() },
@@ -61,8 +96,6 @@ class OffMapper @Inject constructor(
             servingG = parseServingGrams(productDto.servingSize),
             isLiquid = parseIsLiquid(productDto.servingSize, productDto.quantity)
         )
-
-        return OffSearchResult.Success(product)
     }
 
     private fun JsonObject.getDoubleOrNull(key: String): Double? {

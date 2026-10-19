@@ -51,6 +51,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import com.controlcal.core.model.Product
 import com.controlcal.core.nutrition.NumberFormatHelper
 
@@ -63,12 +64,10 @@ fun PantryRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.snackbarMessage) {
-        uiState.snackbarMessage?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
-            viewModel.onSnackbarMessageConsumed()
-        }
-    }
+    HandleFeedbackEvents(
+        events = viewModel.feedbackEvents,
+        snackbarHostState = snackbarHostState,
+    )
 
     PantryScreen(
         uiState = uiState,
@@ -248,6 +247,7 @@ fun PantryScreen(
             maxGError = uiState.editMaxGError,
             unitNameError = uiState.editUnitNameError,
             unitGError = uiState.editUnitGError,
+            isSaving = uiState.isSaving,
             onInPantryChanged = onEditInPantryChanged,
             onMinGChanged = onEditMinGChanged,
             onMaxGChanged = onEditMaxGChanged,
@@ -438,6 +438,7 @@ fun PantryEditDialog(
     maxGError: String?,
     unitNameError: String?,
     unitGError: String?,
+    isSaving: Boolean = false,
     onInPantryChanged: (Boolean) -> Unit,
     onMinGChanged: (String) -> Unit,
     onMaxGChanged: (String) -> Unit,
@@ -448,7 +449,7 @@ fun PantryEditDialog(
     modifier: Modifier = Modifier,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         modifier = modifier,
         title = {
             Text(
@@ -571,12 +572,16 @@ fun PantryEditDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onSave) {
+            val hasErrors = minGError != null || maxGError != null || unitNameError != null || unitGError != null
+            Button(
+                onClick = onSave,
+                enabled = !hasErrors && !isSaving,
+            ) {
                 Text(stringResource(R.string.pantry_dialog_save_action))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(stringResource(R.string.pantry_dialog_cancel_action))
             }
         },

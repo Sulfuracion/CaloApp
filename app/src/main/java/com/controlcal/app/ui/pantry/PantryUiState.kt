@@ -19,5 +19,6 @@ data class PantryUiState(
     val editMaxGError: String? = null,
     val editUnitNameError: String? = null,
     val editUnitGError: String? = null,
+    val isSaving: Boolean = false,
     val snackbarMessage: String? = null,
 )

@@ -1,7 +1,11 @@
 # Plan del proyecto — ControlCal
 
-Conversión a Markdown de las secciones 3 a 10 de la especificación
+Conversión a Markdown de las secciones 1 y 3 a 10 de la especificación
 «App de nutrición local-first · Instrucciones para Antigravity» (versión del 5 de octubre de 2026).
+
+## 1. Principios
+
+- Principio 4 (Sin conexión): la app funciona completa sin conexión. Como excepción, la búsqueda por nombre en Open Food Facts se conecta a internet únicamente cuando el usuario la solicita de forma explícita.
 
 ## 3. Arquitectura
 
@@ -52,6 +56,7 @@ Dos módulos Gradle. `:core` es Kotlin puro (JVM) y contiene modelos de dominio,
 - Desde la tarea M.6, meal_entries.product_id admite NULL: una entrada sin producto es de calorías rápidas (kcal, macros opcionales y grams = 0).
 - La configuración de comidas vive en DataStore: lista de id, nombre, hora de inicio y activa.
 - Una entrada con un id de comida desconocido se muestra en «Sin asignar» y cuenta en el total.
+- Al sumar dos entradas del mismo alimento en la misma comida y día (M.9), grams, kcal y macros de la entrada existente se incrementan con los de la nueva, calculados como siempre al guardar. Se conservan el id y el logged_at más temprano. La parte existente no se recalcula.
 
 ## 5. Especificación de cada función
 
@@ -61,6 +66,10 @@ Dos módulos Gradle. `:core` es Kotlin puro (JVM) y contiene modelos de dominio,
 - Las comidas dejan de ser fijas. El usuario decide en Ajustes cuántas hay, su nombre y su hora de inicio; por defecto, Desayuno, Almuerzo, Merienda y Cena. El orden y la comida preseleccionada salen de la hora de inicio; antes de la primera, se preselecciona la última del día. Una comida con entradas no se borra: se desactiva.
 - Detalle de comida: selector de comida en la cabecera, hora de la comida, resumen de kcal y macros, lista con [-] y [+], «Añadir alimento», «Añadir calorías», «Restar sobras», «Repetir esta comida» y «Hecho». Los cambios se guardan al momento.
 - Añadir entrada: buscador con resultados desde la primera letra (productos recientes primero), cantidad en gramos o en unidades si el producto tiene unit_g, y comida preseleccionada según la hora.
+- El buscador busca en todos los productos locales, sea cual sea su origen (MANUAL, OFF, OCR), por nombre, marca o código de barras, sin distinguir mayúsculas ni tildes. Los archivados no salen.
+- Al final de los resultados, «Buscar en Open Food Facts» lanza una búsqueda por nombre. Nunca es automática mientras se escribe. El producto elegido pasa por la confirmación de la 2.5 antes de guardarse.
+- Al añadir un producto que ya está en esa comida y ese día, se suma a la entrada existente en vez de crear otra, si las dos cantidades son positivas. Las entradas de tara y las de calorías rápidas no se suman.
+- Todo formulario responde al guardar: confirmación visible, campo vacío o diálogo cerrado, y errores junto al campo.
 - Modo tara: en el detalle de una comida, «Restar sobras» crea una entrada negativa del mismo producto.
 - Objetivo del día = perfil de goal_profiles vigente para el day_type de ese día.
 
@@ -73,6 +82,7 @@ Dos módulos Gradle. `:core` es Kotlin puro (JVM) y contiene modelos de dominio,
 - Campos de nutriments: energy-kcal_100g, proteins_100g, carbohydrates_100g, fat_100g, fiber_100g, sugars_100g, saturated-fat_100g, salt_100g. Cualquiera puede faltar o venir como texto.
 - Si faltan kcal pero hay energy_100g en kJ, convierte dividiendo entre 4,184. Si falta algún macro obligatorio, abre la confirmación con ese campo vacío y marcado.
 - Tiempo de espera de 5 s. Sin red: mensaje claro y acceso directo al alta manual.
+- Búsqueda por nombre en Open Food Facts: petición `GET https://world.openfoodfacts.org/cgi/search.pl?search_terms={query}&search_simple=1&action=process&json=1&page_size=20&fields=code,product_name,brands,nutriments,quantity,serving_size&tagtype_0=countries&tag_contains_0=contains&tag_0=spain`. Cabecera obligatoria `User-Agent: ControlCal/1.0 (cambiar@gmail.com)`, tiempo de espera de 5 s y límite en cliente de 10 peticiones por minuto en ventana móvil de 60 s (sin autocompletado al escribir). Sin red: mensaje claro manteniendo resultados locales. Máximo 20 resultados mostrando nombre, marca y kcal/100 g.
 - Pantalla «Acerca de»: atribución a Open Food Facts y su licencia ODbL.
 
 ### 5.3 OCR de la tabla nutricional
@@ -123,7 +133,7 @@ Entrada: macros restantes del día b = (kcal, proteína, carbohidratos, grasa) y
 
 ### 5.8 Health Connect y copia de seguridad
 
-- Escribe NutritionRecord por entrada e HydrationRecord por agua, con un identificador de cliente estable para poder actualizar y borrar. Lectura de WeightRecord solo si el humano lo decide. Health Connect: el mealType de cada NutritionRecord sale de su comida: BREAKFAST, LUNCH, DINNER o SNACK para las cuatro por defecto y SNACK para las creadas por el usuario. Las calorías rápidas también se envían.
+- Escribe NutritionRecord por entrada e HydrationRecord por agua, con un identificador de cliente estable para poder actualizar y borrar. Una entrada sumada actualiza su NutritionRecord con el mismo identificador de cliente. Lectura de WeightRecord solo si el humano lo decide. Health Connect: el mealType de cada NutritionRecord sale de su comida: BREAKFAST, LUNCH, DINNER o SNACK para las cuatro por defecto y SNACK para las creadas por el usuario. Las calorías rápidas también se envían.
 - Pide permisos en contexto, la primera vez que el usuario activa la sincronización, con una pantalla que explica para qué. La app funciona completa sin ellos.
 - Exportar: un único archivo con todos los datos en JSON, cifrado con AES-256-GCM y clave derivada de una contraseña (PBKDF2 con muchas iteraciones o Argon2 si hay implementación fiable). Selector de archivos del sistema. Copia de seguridad: además de la base de datos, incluye la configuración de comidas y las preferencias que el usuario cambia en Ajustes. Nunca la clave de la base de datos ni el estado del dispositivo (sincronización con Health Connect, modelo descargado).
 - Importar: valida versión y esquema antes de tocar la base de datos; restaura dentro de una transacción. Al importar, DataStore se escribe solo después de que la transacción de Room termine bien.
@@ -190,7 +200,11 @@ Trabaja en orden. Una tarea por conversación. No abras una fase hasta que el hu
 | M.3 | Comidas del día en Ajustes y en el panel | Renombrar, añadir y desactivar sin perder entradas |
 | M.4 | Tarjetas de comida y detalle | 3 toques para un habitual |
 | M.5 | [-] y [+] y hora de la comida | Editar un producto no cambia el historial |
-| M.6 | Calorías rápidas. REVISION HUMANA | Fase M: datos intactos tras la migración |
+| M.6 | Calorías rápidas. REVISION HUMANA | Datos intactos tras la migración |
+| M.7 | Buscador sobre todos los productos locales | Encuentra un producto escaneado por nombre, marca y código |
+| M.8 | Búsqueda por nombre en Open Food Facts. REVISION HUMANA | Ningún resultado se guarda sin confirmar |
+| M.9 | Sumar el mismo alimento en la misma comida | Dos altas iguales dan una sola entrada |
+| M.10 | Respuesta en todos los formularios | Fase M: ningún guardado sin confirmación visible |
 | 6.1 | Informe comparativo de 3 modelos en el móvil | El humano elige modelo |
 | 6.2 | ModelDownloader con hash. REVISION HUMANA | Reanuda y verifica |
 | 6.3 | RecipeEngine, prompt, streaming y memoria | Cifras iguales a las del solver |

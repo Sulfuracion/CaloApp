@@ -2,6 +2,7 @@ package com.controlcal.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -41,6 +42,8 @@ import com.controlcal.app.ui.detail.MealDetailRoute
 import com.controlcal.app.ui.detail.MealDetailViewModel
 import com.controlcal.app.ui.entry.AddEntryRoute
 import com.controlcal.app.ui.entry.AddEntryViewModel
+import com.controlcal.app.ui.feedback.UiFeedbackEvent
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.app.ui.ocr.OcrCaptureRoute
 import com.controlcal.app.ui.ocr.OcrCaptureViewModel
 import com.controlcal.app.ui.panel.DailyPanelRoute
@@ -105,6 +108,80 @@ class MainActivity : ComponentActivity() {
                 var manualEntryBarcode by remember { mutableStateOf<String?>(null) }
                 var activeMealContext by remember { mutableStateOf<MealEntryContext?>(null) }
 
+                val navigateBack: () -> Unit = {
+                    when (currentDestination) {
+                        MainDestination.DAILY_PANEL -> {
+                            // En el panel diario el BackHandler está desactivado, el sistema gestiona la salida
+                        }
+                        MainDestination.MEAL_DETAIL -> {
+                            dailyPanelViewModel.loadDay(mealDetailViewModel.uiState.value.date)
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
+                        MainDestination.ADD_ENTRY -> {
+                            val ctx = activeMealContext
+                            if (ctx != null) {
+                                mealDetailViewModel.initialize(ctx.date, ctx.mealId)
+                                currentDestination = MainDestination.MEAL_DETAIL
+                            } else {
+                                dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                                currentDestination = MainDestination.DAILY_PANEL
+                            }
+                        }
+                        MainDestination.SCANNER -> {
+                            if (activeMealContext != null) {
+                                currentDestination = MainDestination.ADD_ENTRY
+                            } else {
+                                currentDestination = MainDestination.DAILY_PANEL
+                            }
+                        }
+                        MainDestination.OCR_CAPTURE -> {
+                            currentDestination = MainDestination.SCANNER
+                        }
+                        MainDestination.PRODUCT_CONFIRMATION -> {
+                            selectedOffProduct = null
+                            selectedOcrData = null
+                            val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
+                            val targetMeal = activeMealContext?.mealId
+                            dailyPanelViewModel.loadDay(targetDate)
+                            if (targetMeal != null) {
+                                mealDetailViewModel.initialize(targetDate, targetMeal)
+                                currentDestination = MainDestination.MEAL_DETAIL
+                            } else {
+                                currentDestination = MainDestination.DAILY_PANEL
+                            }
+                        }
+                        MainDestination.ABOUT -> {
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
+                        MainDestination.MANUAL_ENTRY -> {
+                            manualEntryBarcode = null
+                            currentDestination = MainDestination.SCANNER
+                        }
+                        MainDestination.DEBUG_OCR_COLLECTOR -> {
+                            currentDestination = MainDestination.SCANNER
+                        }
+                        MainDestination.WEIGHT -> {
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
+                        MainDestination.SETTINGS -> {
+                            dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
+                        MainDestination.PANTRY -> {
+                            dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
+                        MainDestination.MACRO_TETRIS -> {
+                            dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
+                    }
+                }
+
+                BackHandler(enabled = currentDestination != MainDestination.DAILY_PANEL) {
+                    navigateBack()
+                }
+
                 when (currentDestination) {
                     MainDestination.DAILY_PANEL -> {
                         DailyPanelRoute(
@@ -148,10 +225,7 @@ class MainActivity : ComponentActivity() {
                     MainDestination.MEAL_DETAIL -> {
                         MealDetailRoute(
                             viewModel = mealDetailViewModel,
-                            onBack = {
-                                dailyPanelViewModel.loadDay(mealDetailViewModel.uiState.value.date)
-                                currentDestination = MainDestination.DAILY_PANEL
-                            },
+                            onBack = navigateBack,
                             onNavigateToAddFood = { mealId ->
                                 val date = mealDetailViewModel.uiState.value.date
                                 activeMealContext = MealEntryContext(date, mealId)
@@ -164,16 +238,7 @@ class MainActivity : ComponentActivity() {
                     MainDestination.ADD_ENTRY -> {
                         AddEntryRoute(
                             viewModel = addEntryViewModel,
-                            onBack = {
-                                val ctx = activeMealContext
-                                if (ctx != null) {
-                                    mealDetailViewModel.initialize(ctx.date, ctx.mealId)
-                                    currentDestination = MainDestination.MEAL_DETAIL
-                                } else {
-                                    dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
-                                    currentDestination = MainDestination.DAILY_PANEL
-                                }
-                            },
+                            onBack = navigateBack,
                             onNavigateToScanner = {
                                 val ctx = activeMealContext
                                 if (ctx != null) {
@@ -189,14 +254,39 @@ class MainActivity : ComponentActivity() {
                                 manualEntryBarcode = null
                                 currentDestination = MainDestination.MANUAL_ENTRY
                             },
-                            onEntryAdded = {
+                            onNavigateToConfirmation = { offProduct ->
+                                selectedOffProduct = offProduct
+                                selectedOcrData = null
+                                val ctx = activeMealContext
+                                confirmationViewModel.initialize(offProduct, ctx?.date, ctx?.mealId)
+                                currentDestination = MainDestination.PRODUCT_CONFIRMATION
+                            },
+                            onEntryAdded = { saveResult ->
                                 val ctx = activeMealContext
                                 if (ctx != null) {
                                     mealDetailViewModel.initialize(ctx.date, ctx.mealId)
                                     dailyPanelViewModel.loadDay(ctx.date)
+                                    when (saveResult) {
+                                        is com.controlcal.core.nutrition.MealEntrySaveResult.Merged -> {
+                                            mealDetailViewModel.notifyMerged(saveResult.mergedEntry, saveResult.previousEntry)
+                                        }
+                                        is com.controlcal.core.nutrition.MealEntrySaveResult.Created -> {
+                                            mealDetailViewModel.notifyAdded(saveResult.entry)
+                                        }
+                                        null -> Unit
+                                    }
                                     currentDestination = MainDestination.MEAL_DETAIL
                                 } else {
                                     dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                                    when (saveResult) {
+                                        is com.controlcal.core.nutrition.MealEntrySaveResult.Merged -> {
+                                            dailyPanelViewModel.notifyMerged(saveResult.mergedEntry, saveResult.previousEntry)
+                                        }
+                                        is com.controlcal.core.nutrition.MealEntrySaveResult.Created -> {
+                                            dailyPanelViewModel.notifyAdded(saveResult.entry)
+                                        }
+                                        null -> Unit
+                                    }
                                     currentDestination = MainDestination.DAILY_PANEL
                                 }
                             },
@@ -206,13 +296,7 @@ class MainActivity : ComponentActivity() {
                     MainDestination.SCANNER -> {
                         ScannerRoute(
                             viewModel = scannerViewModel,
-                            onBack = {
-                                if (activeMealContext != null) {
-                                    currentDestination = MainDestination.ADD_ENTRY
-                                } else {
-                                    currentDestination = MainDestination.DAILY_PANEL
-                                }
-                            },
+                            onBack = navigateBack,
                             onNavigateToConfirmation = { offProduct ->
                                 selectedOffProduct = offProduct
                                 selectedOcrData = null
@@ -241,7 +325,7 @@ class MainActivity : ComponentActivity() {
                         OcrCaptureRoute(
                             viewModel = ocrCaptureViewModel,
                             targetBarcode = manualEntryBarcode,
-                            onBack = { currentDestination = MainDestination.SCANNER },
+                            onBack = navigateBack,
                             onNavigateToConfirmation = { photoFile, parsedNutrients, barcode ->
                                 selectedOffProduct = null
                                 selectedOcrData = OcrConfirmationData(
@@ -270,7 +354,8 @@ class MainActivity : ComponentActivity() {
                                 offProduct = offProduct,
                                 ocrData = ocrData,
                                 viewModel = confirmationViewModel,
-                                onConfirmed = {
+                                onConfirmed = { saveResult ->
+                                    val savedProductName = confirmationViewModel.uiState.value.name.trim()
                                     selectedOffProduct = null
                                     selectedOcrData = null
                                     val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
@@ -278,24 +363,48 @@ class MainActivity : ComponentActivity() {
                                     dailyPanelViewModel.loadDay(targetDate)
                                     if (targetMeal != null) {
                                         mealDetailViewModel.initialize(targetDate, targetMeal)
+                                        when (saveResult) {
+                                            is com.controlcal.core.nutrition.MealEntrySaveResult.Merged -> {
+                                                mealDetailViewModel.notifyMerged(saveResult.mergedEntry, saveResult.previousEntry)
+                                            }
+                                            is com.controlcal.core.nutrition.MealEntrySaveResult.Created -> {
+                                                mealDetailViewModel.notifyAdded(saveResult.entry)
+                                            }
+                                            null -> {
+                                                mealDetailViewModel.sendFeedback(
+                                                    UiFeedbackEvent.Success(
+                                                        UiText.StringResource(
+                                                            R.string.feedback_product_saved,
+                                                            savedProductName,
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                        }
                                         currentDestination = MainDestination.MEAL_DETAIL
                                     } else {
+                                        when (saveResult) {
+                                            is com.controlcal.core.nutrition.MealEntrySaveResult.Merged -> {
+                                                dailyPanelViewModel.notifyMerged(saveResult.mergedEntry, saveResult.previousEntry)
+                                            }
+                                            is com.controlcal.core.nutrition.MealEntrySaveResult.Created -> {
+                                                dailyPanelViewModel.notifyAdded(saveResult.entry)
+                                            }
+                                            null -> {
+                                                dailyPanelViewModel.sendFeedback(
+                                                    UiFeedbackEvent.Success(
+                                                        UiText.StringResource(
+                                                            R.string.feedback_product_saved,
+                                                            savedProductName,
+                                                        )
+                                                    )
+                                                )
+                                            }
+                                        }
                                         currentDestination = MainDestination.DAILY_PANEL
                                     }
                                 },
-                                onDiscard = {
-                                    selectedOffProduct = null
-                                    selectedOcrData = null
-                                    val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
-                                    val targetMeal = activeMealContext?.mealId
-                                    dailyPanelViewModel.loadDay(targetDate)
-                                    if (targetMeal != null) {
-                                        mealDetailViewModel.initialize(targetDate, targetMeal)
-                                        currentDestination = MainDestination.MEAL_DETAIL
-                                    } else {
-                                        currentDestination = MainDestination.DAILY_PANEL
-                                    }
-                                }
+                                onDiscard = navigateBack,
                             )
                         } else {
                             currentDestination = MainDestination.DAILY_PANEL
@@ -304,7 +413,7 @@ class MainActivity : ComponentActivity() {
 
                     MainDestination.ABOUT -> {
                         AboutScreen(
-                            onBack = { currentDestination = MainDestination.DAILY_PANEL }
+                            onBack = navigateBack
                         )
                     }
 
@@ -324,47 +433,50 @@ class MainActivity : ComponentActivity() {
 
                     MainDestination.DEBUG_OCR_COLLECTOR -> {
                         DebugFeatures.DebugOcrCollectorRoute(
-                            onBack = { currentDestination = MainDestination.SCANNER }
+                            onBack = navigateBack
                         )
                     }
 
                     MainDestination.WEIGHT -> {
                         WeightRoute(
                             viewModel = weightViewModel,
-                            onBack = { currentDestination = MainDestination.DAILY_PANEL }
+                            onBack = navigateBack
                         )
                     }
 
                     MainDestination.SETTINGS -> {
                         SettingsRoute(
                             viewModel = settingsViewModel,
-                            onBack = {
-                                dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
-                                currentDestination = MainDestination.DAILY_PANEL
-                            }
+                            onBack = navigateBack
                         )
                     }
 
                     MainDestination.PANTRY -> {
                         PantryRoute(
                             viewModel = pantryViewModel,
-                            onBack = {
-                                dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
-                                currentDestination = MainDestination.DAILY_PANEL
-                            }
+                            onBack = navigateBack
                         )
                     }
 
                     MainDestination.MACRO_TETRIS -> {
                         MacroTetrisRoute(
                             viewModel = macroTetrisViewModel,
-                            onBack = {
-                                dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
-                                currentDestination = MainDestination.DAILY_PANEL
-                            },
+                            onBack = navigateBack,
                             onNavigateToPantry = {
                                 pantryViewModel.loadProducts()
                                 currentDestination = MainDestination.PANTRY
+                            },
+                            onTetrisAdded = { mealName ->
+                                dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                                dailyPanelViewModel.sendFeedback(
+                                    UiFeedbackEvent.Success(
+                                        UiText.StringResource(
+                                            R.string.feedback_macro_tetris_added,
+                                            mealName,
+                                        )
+                                    )
+                                )
+                                currentDestination = MainDestination.DAILY_PANEL
                             },
                         )
                     }

@@ -27,14 +27,20 @@ import com.controlcal.core.repo.WeightEntryRepository
 import com.controlcal.core.suggest.QuickLogRanker
 import com.controlcal.core.suggest.QuickLogSuggestion
 import com.controlcal.core.tdee.DailyIntake
+import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.UiFeedbackEvent
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.tdee.TdeeCalculationResult
 import com.controlcal.core.tdee.TdeeEstimator
 import com.controlcal.core.tdee.TdeeGoalProposal
 import com.controlcal.core.tdee.TdeeProposalCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.controlcal.core.date.DateHelper
@@ -66,6 +72,15 @@ class DailyPanelViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(DailyPanelUiState())
     val uiState: StateFlow<DailyPanelUiState> = _uiState.asStateFlow()
+
+    private val _feedbackEvents = Channel<UiFeedbackEvent>(Channel.BUFFERED)
+    val feedbackEvents: Flow<UiFeedbackEvent> = _feedbackEvents.receiveAsFlow()
+
+    fun sendFeedback(event: UiFeedbackEvent) {
+        viewModelScope.launch {
+            _feedbackEvents.send(event)
+        }
+    }
 
     init {
         loadDay(DateHelper.getToday(clock))
@@ -299,6 +314,12 @@ class DailyPanelViewModel @Inject constructor(
                     dayRemaining = remaining,
                 )
             }
+            val msgRes = if (newDayType == DayType.TRAINING) {
+                R.string.feedback_day_type_training
+            } else {
+                R.string.feedback_day_type_rest
+            }
+            _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(msgRes)))
         }
     }
 
@@ -332,12 +353,48 @@ class DailyPanelViewModel @Inject constructor(
                 loggedAt = loggedAt,
             )
 
-            mealEntryRepository.insert(entry)
+            val result = mealEntryRepository.save(entry)
             loadDay(_uiState.value.selectedDate)
-            val mealName = _uiState.value.mealSections.find { it.mealId == targetMeal }?.name ?: targetMeal
-            _uiState.update {
-                it.copy(
-                    message = "Añadido ${product.name} (${NumberFormatHelper.formatDecimal(suggestion.defaultGrams)} g) a $mealName"
+            if (result is com.controlcal.core.nutrition.MealEntrySaveResult.Merged) {
+                val formattedQuantity = com.controlcal.core.nutrition.FoodPortionFormatter.formatQuantity(
+                    grams = result.mergedEntry.grams,
+                    unitG = product.unitG,
+                    unitName = product.unitName,
+                )
+                _uiState.update {
+                    it.copy(
+                        recentlyMergedPreviousEntry = result.previousEntry,
+                        message = null,
+                    )
+                }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Success(
+                        message = UiText.StringResource(
+                            R.string.meal_entry_merged_snackbar,
+                            product.name,
+                            formattedQuantity,
+                        ),
+                        actionLabel = UiText.StringResource(R.string.feedback_action_undo),
+                        onAction = { onUndoMerge() },
+                    )
+                )
+            } else {
+                val mealName = _uiState.value.mealSections.find { it.mealId == targetMeal }?.name ?: targetMeal
+                _uiState.update {
+                    it.copy(
+                        recentlyMergedPreviousEntry = null,
+                        message = "Añadido al diario: ${product.name} (${NumberFormatHelper.formatDecimal(suggestion.defaultGrams)} g)",
+                    )
+                }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Success(
+                        message = UiText.StringResource(
+                            R.string.daily_panel_quick_add_success,
+                            product.name,
+                            NumberFormatHelper.formatDecimal(suggestion.defaultGrams),
+                            mealName,
+                        )
+                    )
                 )
             }
         }
@@ -408,41 +465,87 @@ class DailyPanelViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val product = productRepository.getById(suggestion.productId) ?: return@launch
-            val portion = NutritionCalculator.calculatePortionMacros(product, parsedGrams)
-            val targetDate = state.selectedDate
-            val targetMeal = suggestion.targetMeal
-            val existingEntries = mealEntryRepository.getByDateAndMeal(targetDate.toString(), targetMeal)
-            val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == targetMeal }?.startTime
-            val loggedAt = MealTimeCalculator.calculateLoggedAt(
-                date = targetDate,
-                existingEntries = existingEntries,
-                configuredStartTime = configuredStartTime,
-                zoneId = clock.zone,
-                clock = clock,
-            )
+            _uiState.update { it.copy(isSaving = true) }
+            try {
+                val product = productRepository.getById(suggestion.productId) ?: return@launch
+                val portion = NutritionCalculator.calculatePortionMacros(product, parsedGrams)
+                val targetDate = state.selectedDate
+                val targetMeal = suggestion.targetMeal
+                val existingEntries = mealEntryRepository.getByDateAndMeal(targetDate.toString(), targetMeal)
+                val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == targetMeal }?.startTime
+                val loggedAt = MealTimeCalculator.calculateLoggedAt(
+                    date = targetDate,
+                    existingEntries = existingEntries,
+                    configuredStartTime = configuredStartTime,
+                    zoneId = clock.zone,
+                    clock = clock,
+                )
 
-            val entry = MealEntry(
-                id = 0L,
-                date = targetDate.toString(),
-                meal = targetMeal,
-                productId = product.id,
-                productName = product.name,
-                grams = parsedGrams,
-                kcal = portion.kcal,
-                protein = portion.protein,
-                carbs = portion.carbs,
-                fat = portion.fat,
-                loggedAt = loggedAt,
-            )
+                val entry = MealEntry(
+                    id = 0L,
+                    date = targetDate.toString(),
+                    meal = targetMeal,
+                    productId = product.id,
+                    productName = product.name,
+                    grams = parsedGrams,
+                    kcal = portion.kcal,
+                    protein = portion.protein,
+                    carbs = portion.carbs,
+                    fat = portion.fat,
+                    loggedAt = loggedAt,
+                )
 
-            mealEntryRepository.insert(entry)
-            _uiState.update { it.copy(editingSuggestion = null) }
-            loadDay(state.selectedDate)
-            val mealName = _uiState.value.mealSections.find { it.mealId == targetMeal }?.name ?: targetMeal
-            _uiState.update {
-                it.copy(
-                    message = "Añadido ${product.name} (${NumberFormatHelper.formatDecimal(parsedGrams)} g) a $mealName"
+                val result = mealEntryRepository.save(entry)
+                _uiState.update { it.copy(isSaving = false, editingSuggestion = null) }
+                loadDay(state.selectedDate)
+                if (result is com.controlcal.core.nutrition.MealEntrySaveResult.Merged) {
+                    val formattedQuantity = com.controlcal.core.nutrition.FoodPortionFormatter.formatQuantity(
+                        grams = result.mergedEntry.grams,
+                        unitG = product.unitG,
+                        unitName = product.unitName,
+                    )
+                    _uiState.update {
+                        it.copy(
+                            recentlyMergedPreviousEntry = result.previousEntry,
+                            message = null,
+                        )
+                    }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Success(
+                            message = UiText.StringResource(
+                                R.string.meal_entry_merged_snackbar,
+                                product.name,
+                                formattedQuantity,
+                            ),
+                            actionLabel = UiText.StringResource(R.string.feedback_action_undo),
+                            onAction = { onUndoMerge() },
+                        )
+                    )
+                } else {
+                    val mealName = _uiState.value.mealSections.find { it.mealId == targetMeal }?.name ?: targetMeal
+                    _uiState.update {
+                        it.copy(
+                            recentlyMergedPreviousEntry = null,
+                            message = null,
+                        )
+                    }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Success(
+                            message = UiText.StringResource(
+                                R.string.daily_panel_quick_add_success,
+                                product.name,
+                                NumberFormatHelper.formatDecimal(parsedGrams),
+                                mealName,
+                            )
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false) }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.feedback_save_error)
+                    )
                 )
             }
         }
@@ -452,25 +555,97 @@ class DailyPanelViewModel @Inject constructor(
         _uiState.update { it.copy(editingSuggestion = null) }
     }
 
+    fun notifyAdded(entry: MealEntry) {
+        viewModelScope.launch {
+            val product = entry.productId?.let { productRepository.getById(it) }
+            val formattedQuantity = com.controlcal.core.nutrition.FoodPortionFormatter.formatQuantity(
+                grams = entry.grams,
+                unitG = product?.unitG,
+                unitName = product?.unitName,
+            )
+            loadDay(_uiState.value.selectedDate)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.StringResource(
+                        R.string.feedback_food_added,
+                        entry.productName,
+                        formattedQuantity,
+                    )
+                )
+            )
+        }
+    }
+
+    fun notifyMerged(mergedEntry: MealEntry, previousEntry: MealEntry) {
+        viewModelScope.launch {
+            val product = mergedEntry.productId?.let { productRepository.getById(it) }
+            val formattedQuantity = com.controlcal.core.nutrition.FoodPortionFormatter.formatQuantity(
+                grams = mergedEntry.grams,
+                unitG = product?.unitG,
+                unitName = product?.unitName,
+            )
+            _uiState.update {
+                it.copy(
+                    recentlyMergedPreviousEntry = previousEntry,
+                    message = null,
+                )
+            }
+            loadDay(_uiState.value.selectedDate)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.StringResource(
+                        R.string.meal_entry_merged_snackbar,
+                        mergedEntry.productName,
+                        formattedQuantity,
+                    ),
+                    actionLabel = UiText.StringResource(R.string.feedback_action_undo),
+                    onAction = { onUndoMerge() },
+                )
+            )
+        }
+    }
+
+    fun onUndoMerge() {
+        val previous = _uiState.value.recentlyMergedPreviousEntry ?: return
+        viewModelScope.launch {
+            mealEntryRepository.update(previous)
+            _uiState.update {
+                it.copy(
+                    recentlyMergedPreviousEntry = null,
+                    message = null,
+                )
+            }
+            loadDay(_uiState.value.selectedDate)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.DynamicString("Acción deshecha")
+                )
+            )
+        }
+    }
+
     fun onRepeatMeal(meal: String) {
         viewModelScope.launch {
             val dateStr = _uiState.value.selectedDate.toString()
             val latestDate = mealEntryRepository.getLatestDateWithMealBefore(dateStr, meal)
             if (latestDate == null) {
                 _uiState.update { it.copy(message = "No hay registros anteriores de esta comida") }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.daily_panel_repeat_meal_empty)))
                 return@launch
             }
 
             val sourceEntries = mealEntryRepository.getByDateAndMeal(latestDate, meal)
             if (sourceEntries.isEmpty()) {
                 _uiState.update { it.copy(message = "No hay registros anteriores de esta comida") }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.daily_panel_repeat_meal_empty)))
                 return@launch
             }
 
             val cloned = repeatMealUseCase(sourceEntries, dateStr, meal, clock.zone)
-            mealEntryRepository.insertAll(cloned)
+            mealEntryRepository.saveAll(cloned)
             loadDay(_uiState.value.selectedDate)
-            _uiState.update { it.copy(message = "Comida repetida (${cloned.size} alimentos)") }
+            _uiState.update { it.copy(message = "Comida repetida de un día anterior") }
+            _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.daily_panel_repeat_meal_success)))
         }
     }
 
@@ -480,14 +655,16 @@ class DailyPanelViewModel @Inject constructor(
             val sourceEntries = mealEntryRepository.getByDate(yesterdayStr)
             if (sourceEntries.isEmpty()) {
                 _uiState.update { it.copy(message = "No hay registros en el día de ayer") }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.daily_panel_copy_yesterday_empty)))
                 return@launch
             }
 
             val targetDateStr = _uiState.value.selectedDate.toString()
             val cloned = copyDayUseCase(sourceEntries, targetDateStr, clock.zone)
-            mealEntryRepository.insertAll(cloned)
+            mealEntryRepository.saveAll(cloned)
             loadDay(_uiState.value.selectedDate)
-            _uiState.update { it.copy(message = "Se han copiado las comidas de ayer (${cloned.size} alimentos)") }
+            _uiState.update { it.copy(message = "Se han copiado las comidas de ayer") }
+            _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.daily_panel_copy_yesterday_success)))
         }
     }
 

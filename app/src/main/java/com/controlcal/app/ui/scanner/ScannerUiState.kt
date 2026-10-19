@@ -31,4 +31,7 @@ data class ScannerUiState(
     val lookupState: BarcodeLookupState = BarcodeLookupState.Idle,
     val availableMeals: List<ConfiguredMeal> = emptyList(),
     val preselectedMeal: String = DefaultMealIds.BREAKFAST,
+    val isSaving: Boolean = false,
+    val feedbackMessage: String? = null,
+    val recentlyMergedPreviousEntry: com.controlcal.core.model.MealEntry? = null,
 )

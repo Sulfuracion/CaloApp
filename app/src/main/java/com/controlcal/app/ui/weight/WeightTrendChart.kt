@@ -40,6 +40,8 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -184,10 +186,26 @@ private fun ChartCanvasWithScrubber(
         DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("es-ES"))
     }
 
+    val latestPoint = points.lastOrNull()
+    val earliestPoint = points.firstOrNull()
+    val chartDescription = remember(points, latestPoint, earliestPoint) {
+        if (latestPoint != null && earliestPoint != null) {
+            val netChange = latestPoint.trendKg - earliestPoint.trendKg
+            val changeFormatted = NumberFormatHelper.formatDecimal(abs(netChange))
+            val changeDirection = if (netChange > 0.05) "aumento de $changeFormatted kg" else if (netChange < -0.05) "descenso de $changeFormatted kg" else "estable"
+            "Gráfica de peso y tendencia EMA. Total de pesajes: ${points.size}. Último pesaje: ${NumberFormatHelper.formatDecimal(latestPoint.weightKg)} kg. Tendencia actual: ${NumberFormatHelper.formatDecimal(latestPoint.trendKg)} kg, $changeDirection."
+        } else {
+            "Gráfica de peso y tendencia"
+        }
+    }
+
     Box(modifier = modifier) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
+                .semantics {
+                    contentDescription = chartDescription
+                }
                 .pointerInput(points) {
                     detectTapGestures(
                         onPress = { offset ->

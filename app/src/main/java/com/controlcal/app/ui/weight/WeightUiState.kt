@@ -37,5 +37,6 @@ data class WeightUiState(
     val pastEntryWeightText: String = "",
     val pastEntryError: String? = null,
     val conflictState: WeightConflict? = null,
+    val isSaving: Boolean = false,
     val message: String? = null,
 )

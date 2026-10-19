@@ -2,6 +2,9 @@ package com.controlcal.app.ui.pantry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.UiFeedbackEvent
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.model.Product
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.pantry.PantryError
@@ -9,9 +12,12 @@ import com.controlcal.core.pantry.PantryLimitsValidator
 import com.controlcal.core.pantry.PantryValidationResult
 import com.controlcal.core.repo.ProductRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,6 +29,9 @@ class PantryViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(PantryUiState())
     val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
+
+    private val _feedbackEvents = Channel<UiFeedbackEvent>(Channel.BUFFERED)
+    val feedbackEvents: Flow<UiFeedbackEvent> = _feedbackEvents.receiveAsFlow()
 
     init {
         loadProducts()
@@ -109,6 +118,7 @@ class PantryViewModel @Inject constructor(
                     snackbarMessage = msg,
                 )
             }
+            _feedbackEvents.send(UiFeedbackEvent.Success(UiText.DynamicString(msg)))
         }
     }
 
@@ -145,74 +155,140 @@ class PantryViewModel @Inject constructor(
         _uiState.update { it.copy(editInPantry = inPantry) }
     }
 
+    private data class FormErrors(
+        val minGError: String?,
+        val maxGError: String?,
+        val unitNameError: String?,
+        val unitGError: String?,
+    )
+
+    private fun validateFields(
+        minGText: String,
+        maxGText: String,
+        unitNameText: String,
+        unitGText: String,
+    ): FormErrors {
+        var minGError: String? = null
+        var maxGError: String? = null
+        var unitGError: String? = null
+
+        val parsedMinG = if (minGText.isNotBlank()) {
+            val p = NumberFormatHelper.parseDecimal(minGText)
+            if (p == null) minGError = "Introduce un número válido"
+            p
+        } else null
+
+        val parsedMaxG = if (maxGText.isNotBlank()) {
+            val p = NumberFormatHelper.parseDecimal(maxGText)
+            if (p == null) maxGError = "Introduce un número válido"
+            p
+        } else null
+
+        val parsedUnitG = if (unitGText.isNotBlank()) {
+            val p = NumberFormatHelper.parseDecimal(unitGText)
+            if (p == null) unitGError = "Introduce un número válido"
+            p
+        } else null
+
+        if (minGError != null || maxGError != null || unitGError != null) {
+            return FormErrors(minGError, maxGError, null, unitGError)
+        }
+
+        return when (val res = PantryLimitsValidator.validate(parsedMinG, parsedMaxG, unitNameText, parsedUnitG)) {
+            is PantryValidationResult.Invalid -> FormErrors(
+                mapError(res.minGError),
+                mapError(res.maxGError),
+                mapError(res.unitNameError),
+                mapError(res.unitGError),
+            )
+            is PantryValidationResult.Valid -> FormErrors(null, null, null, null)
+        }
+    }
+
     fun onEditMinGChanged(text: String) {
-        _uiState.update { it.copy(editMinGText = text, editMinGError = null) }
+        val current = _uiState.value
+        val errors = validateFields(text, current.editMaxGText, current.editUnitNameText, current.editUnitGText)
+        _uiState.update {
+            it.copy(
+                editMinGText = text,
+                editMinGError = errors.minGError,
+                editMaxGError = errors.maxGError,
+                editUnitNameError = errors.unitNameError,
+                editUnitGError = errors.unitGError,
+            )
+        }
     }
 
     fun onEditMaxGChanged(text: String) {
-        _uiState.update { it.copy(editMaxGText = text, editMaxGError = null) }
+        val current = _uiState.value
+        val errors = validateFields(current.editMinGText, text, current.editUnitNameText, current.editUnitGText)
+        _uiState.update {
+            it.copy(
+                editMaxGText = text,
+                editMinGError = errors.minGError,
+                editMaxGError = errors.maxGError,
+                editUnitNameError = errors.unitNameError,
+                editUnitGError = errors.unitGError,
+            )
+        }
     }
 
     fun onEditUnitNameChanged(text: String) {
-        _uiState.update { it.copy(editUnitNameText = text, editUnitNameError = null) }
+        val current = _uiState.value
+        val errors = validateFields(current.editMinGText, current.editMaxGText, text, current.editUnitGText)
+        _uiState.update {
+            it.copy(
+                editUnitNameText = text,
+                editMinGError = errors.minGError,
+                editMaxGError = errors.maxGError,
+                editUnitNameError = errors.unitNameError,
+                editUnitGError = errors.unitGError,
+            )
+        }
     }
 
     fun onEditUnitGChanged(text: String) {
-        _uiState.update { it.copy(editUnitGText = text, editUnitGError = null) }
+        val current = _uiState.value
+        val errors = validateFields(current.editMinGText, current.editMaxGText, current.editUnitNameText, text)
+        _uiState.update {
+            it.copy(
+                editUnitGText = text,
+                editMinGError = errors.minGError,
+                editMaxGError = errors.maxGError,
+                editUnitNameError = errors.unitNameError,
+                editUnitGError = errors.unitGError,
+            )
+        }
     }
 
     fun onSaveProductConfig() {
         val current = _uiState.value
         val product = current.editingProduct ?: return
 
-        var hasFormatError = false
-        var minGError: String? = null
-        var maxGError: String? = null
-        var unitGError: String? = null
+        val errors = validateFields(
+            current.editMinGText,
+            current.editMaxGText,
+            current.editUnitNameText,
+            current.editUnitGText,
+        )
 
-        val parsedMinG: Double? = if (current.editMinGText.isNotBlank()) {
-            val parsed = NumberFormatHelper.parseDecimal(current.editMinGText)
-            if (parsed == null) {
-                minGError = "Introduce un número válido"
-                hasFormatError = true
-            }
-            parsed
-        } else {
-            null
-        }
-
-        val parsedMaxG: Double? = if (current.editMaxGText.isNotBlank()) {
-            val parsed = NumberFormatHelper.parseDecimal(current.editMaxGText)
-            if (parsed == null) {
-                maxGError = "Introduce un número válido"
-                hasFormatError = true
-            }
-            parsed
-        } else {
-            null
-        }
-
-        val parsedUnitG: Double? = if (current.editUnitGText.isNotBlank()) {
-            val parsed = NumberFormatHelper.parseDecimal(current.editUnitGText)
-            if (parsed == null) {
-                unitGError = "Introduce un número válido"
-                hasFormatError = true
-            }
-            parsed
-        } else {
-            null
-        }
-
-        if (hasFormatError) {
+        if (errors.minGError != null || errors.maxGError != null ||
+            errors.unitNameError != null || errors.unitGError != null
+        ) {
             _uiState.update {
                 it.copy(
-                    editMinGError = minGError,
-                    editMaxGError = maxGError,
-                    editUnitGError = unitGError,
+                    editMinGError = errors.minGError,
+                    editMaxGError = errors.maxGError,
+                    editUnitNameError = errors.unitNameError,
+                    editUnitGError = errors.unitGError,
                 )
             }
             return
         }
+
+        val parsedMinG = if (current.editMinGText.isNotBlank()) NumberFormatHelper.parseDecimal(current.editMinGText) else null
+        val parsedMaxG = if (current.editMaxGText.isNotBlank()) NumberFormatHelper.parseDecimal(current.editMaxGText) else null
+        val parsedUnitG = if (current.editUnitGText.isNotBlank()) NumberFormatHelper.parseDecimal(current.editUnitGText) else null
 
         val validationResult = PantryLimitsValidator.validate(
             minG = parsedMinG,
@@ -221,20 +297,10 @@ class PantryViewModel @Inject constructor(
             unitG = parsedUnitG,
         )
 
-        when (validationResult) {
-            is PantryValidationResult.Invalid -> {
-                _uiState.update {
-                    it.copy(
-                        editMinGError = mapError(validationResult.minGError),
-                        editMaxGError = mapError(validationResult.maxGError),
-                        editUnitNameError = mapError(validationResult.unitNameError),
-                        editUnitGError = mapError(validationResult.unitGError),
-                    )
-                }
-            }
-
-            is PantryValidationResult.Valid -> {
-                viewModelScope.launch {
+        if (validationResult is PantryValidationResult.Valid) {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isSaving = true) }
+                try {
                     productRepository.updatePantryConfig(
                         id = product.id,
                         inPantry = current.editInPantry,
@@ -255,6 +321,7 @@ class PantryViewModel @Inject constructor(
                             query = state.searchQuery,
                         )
                         state.copy(
+                            isSaving = false,
                             editingProduct = null,
                             allProducts = all,
                             pantryProducts = pantry,
@@ -262,6 +329,18 @@ class PantryViewModel @Inject constructor(
                             snackbarMessage = "Configuración guardada para «${product.name}»",
                         )
                     }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Success(
+                            UiText.StringResource(R.string.feedback_pantry_saved, product.name)
+                        )
+                    )
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(isSaving = false) }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Error(
+                            UiText.StringResource(R.string.feedback_save_error)
+                        )
+                    )
                 }
             }
         }

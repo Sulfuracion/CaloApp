@@ -49,6 +49,8 @@ data class DailyPanelUiState(
     val isWeeklyProposalVisible: Boolean = false,
     val tdeeCalculationResult: TdeeCalculationResult? = null,
     val isLoading: Boolean = false,
+    val recentlyMergedPreviousEntry: MealEntry? = null,
+    val isSaving: Boolean = false,
     val message: String? = null,
 ) {
     val isToday: Boolean

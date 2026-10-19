@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.NutrientTotals
 import com.controlcal.core.model.Product
@@ -74,23 +75,10 @@ fun MealDetailRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.userMessage) {
-        val msg = uiState.userMessage ?: return@LaunchedEffect
-        val isDeleteMessage = uiState.recentlyDeletedEntry != null
-        if (isDeleteMessage) {
-            val result = snackbarHostState.showSnackbar(
-                message = msg,
-                actionLabel = "Deshacer",
-                duration = SnackbarDuration.Short,
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                viewModel.onUndoDelete()
-            }
-        } else {
-            snackbarHostState.showSnackbar(msg)
-        }
-        viewModel.onMessageConsumed()
-    }
+    HandleFeedbackEvents(
+        events = viewModel.feedbackEvents,
+        snackbarHostState = snackbarHostState,
+    )
 
     MealDetailScreen(
         uiState = uiState,
@@ -383,6 +371,7 @@ fun MealDetailScreen(
             selectedProduct = uiState.selectedTareProduct,
             gramsText = uiState.tareGramsText,
             gramsError = uiState.tareGramsError,
+            isSaving = uiState.isSaving,
             onProductSelected = onTareProductSelected,
             onGramsChanged = onTareGramsChanged,
             onConfirm = onConfirmTare,
@@ -393,6 +382,7 @@ fun MealDetailScreen(
     if (uiState.showTimePickerDialog) {
         MealTimePickerDialog(
             initialTime = uiState.mealTime,
+            isSaving = uiState.isSaving,
             onConfirm = onMealTimeChanged,
             onDismiss = onDismissTimePicker,
         )
@@ -409,6 +399,7 @@ fun MealDetailScreen(
             kcalError = uiState.quickKcalError,
             atwaterWarning = uiState.quickAtwaterWarning,
             isSaveEnabled = uiState.isQuickCaloriesSaveEnabled,
+            isSaving = uiState.isSaving,
             onKcalChanged = onQuickKcalChanged,
             onProteinChanged = onQuickProteinChanged,
             onCarbsChanged = onQuickCarbsChanged,
@@ -424,6 +415,7 @@ fun MealDetailScreen(
 @Composable
 private fun MealTimePickerDialog(
     initialTime: LocalTime,
+    isSaving: Boolean = false,
     onConfirm: (LocalTime) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -434,7 +426,7 @@ private fun MealTimePickerDialog(
     )
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = {
             Text(
                 text = stringResource(R.string.meal_detail_time_picker_title),
@@ -454,13 +446,14 @@ private fun MealTimePickerDialog(
             Button(
                 onClick = {
                     onConfirm(LocalTime.of(timePickerState.hour, timePickerState.minute))
-                }
+                },
+                enabled = !isSaving,
             ) {
                 Text(text = stringResource(R.string.date_picker_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.daily_panel_cancel_action))
             }
         },
@@ -605,12 +598,11 @@ private fun MealDetailEntryRow(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 if (item.isQuickCalories) {
                     IconButton(
                         onClick = onEditClick,
-                        modifier = Modifier.size(36.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_edit),
@@ -622,7 +614,6 @@ private fun MealDetailEntryRow(
                     IconButton(
                         onClick = onDecreaseClick,
                         enabled = item.canDecrease,
-                        modifier = Modifier.size(36.dp),
                     ) {
                         Text(
                             text = "−",
@@ -633,7 +624,6 @@ private fun MealDetailEntryRow(
                     }
                     IconButton(
                         onClick = onIncreaseClick,
-                        modifier = Modifier.size(36.dp),
                     ) {
                         Text(
                             text = "+",
@@ -646,7 +636,6 @@ private fun MealDetailEntryRow(
 
                 IconButton(
                     onClick = onDeleteClick,
-                    modifier = Modifier.size(36.dp),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_delete),
@@ -665,13 +654,14 @@ private fun TareDialog(
     selectedProduct: Product?,
     gramsText: String,
     gramsError: String?,
+    isSaving: Boolean = false,
     onProductSelected: (Product) -> Unit,
     onGramsChanged: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = {
             Text(
                 text = stringResource(R.string.meal_detail_tare_dialog_title),
@@ -717,12 +707,15 @@ private fun TareDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                enabled = gramsError == null && gramsText.isNotBlank() && !isSaving,
+            ) {
                 Text(text = stringResource(R.string.meal_detail_tare_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.daily_panel_cancel_action))
             }
         },
@@ -740,6 +733,7 @@ private fun QuickCaloriesDialog(
     kcalError: String?,
     atwaterWarning: String?,
     isSaveEnabled: Boolean,
+    isSaving: Boolean = false,
     onKcalChanged: (String) -> Unit,
     onProteinChanged: (String) -> Unit,
     onCarbsChanged: (String) -> Unit,
@@ -749,7 +743,7 @@ private fun QuickCaloriesDialog(
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = {
             Text(
                 text = stringResource(
@@ -840,13 +834,13 @@ private fun QuickCaloriesDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = isSaveEnabled,
+                enabled = isSaveEnabled && !isSaving,
             ) {
                 Text(text = stringResource(R.string.date_picker_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.daily_panel_cancel_action))
             }
         },

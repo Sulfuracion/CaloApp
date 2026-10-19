@@ -17,7 +17,18 @@ internal data class OffApiResponseDto(
 )
 
 @Serializable
+internal data class OffSearchResponseDto(
+    val count: Int? = null,
+    val page: Int? = null,
+    @SerialName("page_size")
+    val pageSize: Int? = null,
+    val products: List<OffProductDto> = emptyList(),
+)
+
+@Serializable
 internal data class OffProductDto(
+    @SerialName("code")
+    val code: String? = null,
     @SerialName("product_name")
     val productName: String? = null,
     @SerialName("brands")
@@ -81,9 +92,25 @@ data class OffProduct(
     }
 }
 
+data class OffSearchItem(
+    val code: String?,
+    val name: String?,
+    val brand: String?,
+    val kcal100g: Double?,
+    val offProduct: OffProduct,
+)
+
 sealed interface OffSearchResult {
     data class Success(val product: OffProduct) : OffSearchResult
     data object NotFound : OffSearchResult
     data object Offline : OffSearchResult
     data class Error(val message: String, val cause: Throwable? = null) : OffSearchResult
+}
+
+sealed interface OffSearchByNameResult {
+    data class Success(val items: List<OffSearchItem>) : OffSearchByNameResult
+    data object Empty : OffSearchByNameResult
+    data object Offline : OffSearchByNameResult
+    data class RateLimited(val secondsRemaining: Int) : OffSearchByNameResult
+    data class Error(val message: String, val cause: Throwable? = null) : OffSearchByNameResult
 }

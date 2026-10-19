@@ -60,6 +60,12 @@ import com.controlcal.core.model.WeightEntry
 import com.controlcal.core.nutrition.NumberFormatHelper
 import java.time.LocalDate
 
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.controlcal.app.ui.feedback.HandleFeedbackEvents
+import com.controlcal.app.ui.feedback.clearFocusAndHideKeyboard
+import com.controlcal.core.weight.WeightValidator
+
 @Composable
 fun WeightRoute(
     viewModel: WeightViewModel,
@@ -69,12 +75,10 @@ fun WeightRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.message) {
-        uiState.message?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
-            viewModel.onMessageConsumed()
-        }
-    }
+    HandleFeedbackEvents(
+        events = viewModel.feedbackEvents,
+        snackbarHostState = snackbarHostState,
+    )
 
     WeightScreen(
         uiState = uiState,
@@ -168,6 +172,7 @@ fun WeightScreen(
                     todayWeightKg = uiState.todayWeightKg,
                     inputText = uiState.todayInputText,
                     errorText = uiState.todayInputError,
+                    isSaving = uiState.isSaving,
                     onInputChanged = onTodayInputChanged,
                     onQuickAddDelta = onQuickAddDelta,
                     onSaveWeight = onSaveTodayWeight,
@@ -267,6 +272,7 @@ fun WeightScreen(
             dateText = uiState.editingDateText,
             weightText = uiState.editingWeightText,
             errorText = uiState.editingError,
+            isSaving = uiState.isSaving,
             onDateChanged = onEditingDateChanged,
             onWeightChanged = onEditingWeightChanged,
             onSave = onSaveEditEntry,
@@ -289,6 +295,7 @@ fun WeightScreen(
             dateText = uiState.pastEntryDate,
             weightText = uiState.pastEntryWeightText,
             errorText = uiState.pastEntryError,
+            isSaving = uiState.isSaving,
             onDateChanged = onPastEntryDateChanged,
             onWeightChanged = onPastEntryWeightChanged,
             onSave = onSavePastEntry,
@@ -311,11 +318,16 @@ private fun TodayWeightCard(
     todayWeightKg: Double?,
     inputText: String,
     errorText: String?,
+    isSaving: Boolean,
     onInputChanged: (String) -> Unit,
     onQuickAddDelta: (Double) -> Unit,
     onSaveWeight: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val isValid = WeightValidator.isValid(inputText)
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -374,7 +386,11 @@ private fun TodayWeightCard(
                 )
 
                 Button(
-                    onClick = onSaveWeight,
+                    onClick = {
+                        onSaveWeight()
+                        clearFocusAndHideKeyboard(focusManager, keyboardController)
+                    },
+                    enabled = !isSaving && isValid,
                     modifier = Modifier.align(Alignment.CenterVertically),
                 ) {
                     Text(text = stringResource(R.string.weight_save_action))
@@ -503,6 +519,7 @@ private fun EditWeightDialog(
     dateText: String,
     weightText: String,
     errorText: String?,
+    isSaving: Boolean,
     onDateChanged: (String) -> Unit,
     onWeightChanged: (String) -> Unit,
     onSave: () -> Unit,
@@ -564,7 +581,10 @@ private fun EditWeightDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onSave) {
+            Button(
+                onClick = onSave,
+                enabled = !isSaving && WeightValidator.isValid(weightText),
+            ) {
                 Text(text = stringResource(R.string.weight_save_action))
             }
         },
@@ -653,6 +673,7 @@ private fun AddPastWeightDialog(
     dateText: String,
     weightText: String,
     errorText: String?,
+    isSaving: Boolean,
     onDateChanged: (String) -> Unit,
     onWeightChanged: (String) -> Unit,
     onSave: () -> Unit,
@@ -714,7 +735,10 @@ private fun AddPastWeightDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onSave) {
+            Button(
+                onClick = onSave,
+                enabled = !isSaving && WeightValidator.isValid(weightText),
+            ) {
                 Text(text = stringResource(R.string.weight_save_action))
             }
         },

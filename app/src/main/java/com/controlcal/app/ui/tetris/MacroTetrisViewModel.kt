@@ -121,51 +121,57 @@ class MacroTetrisViewModel @Inject constructor(
         _uiState.update { it.copy(selectedMeal = meal) }
     }
 
-    fun addToDiary(date: LocalDate = LocalDate.now(), onSuccess: () -> Unit = {}) {
+    fun addToDiary(date: LocalDate = LocalDate.now(), onSuccess: (String) -> Unit = {}) {
         val state = _uiState.value
+        if (state.isAddingToDiary) return
         val items = state.solution?.items ?: return
         if (items.isEmpty()) return
 
+        val mealName = state.availableMeals.find { it.id == state.selectedMeal }?.name ?: state.selectedMeal
+
         viewModelScope.launch {
             _uiState.update { it.copy(isAddingToDiary = true) }
-
-            val dateStr = date.toString()
-            val existingEntries = mealEntryRepository.getByDateAndMeal(dateStr, state.selectedMeal)
-            val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == state.selectedMeal }?.startTime
-            val loggedAt = com.controlcal.core.nutrition.MealTimeCalculator.calculateLoggedAt(
-                date = date,
-                existingEntries = existingEntries,
-                configuredStartTime = configuredStartTime,
-                zoneId = clock.zone,
-                clock = clock,
-            )
-
-            val mealEntries = items.map { item ->
-                val portion = NutritionCalculator.calculatePortionMacros(item.product, item.roundedGrams)
-                MealEntry(
-                    id = 0L,
-                    date = dateStr,
-                    meal = state.selectedMeal,
-                    productId = item.product.id,
-                    productName = item.product.name,
-                    grams = item.roundedGrams,
-                    kcal = portion.kcal,
-                    protein = portion.protein,
-                    carbs = portion.carbs,
-                    fat = portion.fat,
-                    loggedAt = loggedAt,
+            try {
+                val dateStr = date.toString()
+                val existingEntries = mealEntryRepository.getByDateAndMeal(dateStr, state.selectedMeal)
+                val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == state.selectedMeal }?.startTime
+                val loggedAt = com.controlcal.core.nutrition.MealTimeCalculator.calculateLoggedAt(
+                    date = date,
+                    existingEntries = existingEntries,
+                    configuredStartTime = configuredStartTime,
+                    zoneId = clock.zone,
+                    clock = clock,
                 )
-            }
 
-            mealEntryRepository.insertAll(mealEntries)
+                val mealEntries = items.map { item ->
+                    val portion = NutritionCalculator.calculatePortionMacros(item.product, item.roundedGrams)
+                    MealEntry(
+                        id = 0L,
+                        date = dateStr,
+                        meal = state.selectedMeal,
+                        productId = item.product.id,
+                        productName = item.product.name,
+                        grams = item.roundedGrams,
+                        kcal = portion.kcal,
+                        protein = portion.protein,
+                        carbs = portion.carbs,
+                        fat = portion.fat,
+                        loggedAt = loggedAt,
+                    )
+                }
 
-            _uiState.update {
-                it.copy(
-                    isAddingToDiary = false,
-                    isSaved = true,
-                )
+                mealEntryRepository.saveAll(mealEntries)
+
+                _uiState.update {
+                    it.copy(
+                        isAddingToDiary = false,
+                        isSaved = true,
+                    )
+                }
+                onSuccess(mealName)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isAddingToDiary = false) }
             }
-            onSuccess()
         }
     }
 

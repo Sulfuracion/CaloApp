@@ -31,7 +31,7 @@ class RepositoryMappingTest : DaoTestBase() {
     @Before
     fun initRepos() {
         productRepo = ProductRepositoryImpl(db.productDao(), db.mealEntryDao())
-        mealEntryRepo = MealEntryRepositoryImpl(db.mealEntryDao(), db.dailyLogDao())
+        mealEntryRepo = MealEntryRepositoryImpl(db, db.mealEntryDao(), db.dailyLogDao())
         dailyLogRepo = DailyLogRepositoryImpl(db.dailyLogDao())
         goalProfileRepo = GoalProfileRepositoryImpl(db.goalProfileDao())
         weightEntryRepo = WeightEntryRepositoryImpl(db.weightEntryDao())
@@ -63,6 +63,11 @@ class RepositoryMappingTest : DaoTestBase() {
         val results = productRepo.searchByName("Ave")
         assertEquals(1, results.size)
         assertEquals(id, results.first().id)
+
+        // Search by substring
+        val searchResults = productRepo.search("Integral")
+        assertEquals(1, searchResults.size)
+        assertEquals(id, searchResults.first().id)
 
         // Archive
         productRepo.archive(id)

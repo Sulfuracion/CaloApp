@@ -1,0 +1,24 @@
+{
+  "count": 1,
+  "page": 1,
+  "page_count": 1,
+  "page_size": 20,
+  "products": [
+    {
+      "code": "8410000000004",
+      "product_name": "Bebida isotónica limón",
+      "brands": "Isodrink",
+      "quantity": "500 ml",
+      "serving_size": "250 ml",
+      "nutriments": {
+        "energy-kj_100g": 418.4,
+        "energy_100g": 418.4,
+        "proteins_100g": 0.0,
+        "carbohydrates_100g": 6.0,
+        "fat_100g": 0.0,
+        "sugars_100g": 5.5,
+        "salt_100g": 0.12
+      }
+    }
+  ]
+}

@@ -69,6 +69,7 @@ import com.controlcal.app.camera.CameraPreview
 import com.controlcal.app.camera.VibrationHelper
 import com.controlcal.app.data.off.OffProduct
 import com.controlcal.app.ui.debug.DebugFeatures
+import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.Product
@@ -89,6 +90,7 @@ fun ScannerRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     val barcodeAnalyzer = remember {
         BarcodeAnalyzer(
@@ -103,6 +105,11 @@ fun ScannerRoute(
             barcodeAnalyzer.close()
         }
     }
+
+    HandleFeedbackEvents(
+        events = viewModel.feedbackEvents,
+        snackbarHostState = snackbarHostState,
+    )
 
     LaunchedEffect(uiState.scannedBarcode) {
         val barcode = uiState.scannedBarcode
@@ -135,35 +142,42 @@ fun ScannerRoute(
         viewModel.onPermissionChecked(isGranted)
     }
 
-    ScannerScreen(
-        uiState = uiState,
-        barcodeAnalyzer = barcodeAnalyzer,
-        onRequestPermission = {
-            viewModel.onRationaleAccepted()
-            permissionLauncher.launch(Manifest.permission.CAMERA)
-        },
-        onDismissRationale = viewModel::onRationaleDismissed,
-        onRetryPermission = {
-            permissionLauncher.launch(Manifest.permission.CAMERA)
-        },
-        onOpenSettings = {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", context.packageName, null)
-            }
-            context.startActivity(intent)
-        },
-        onToggleTorch = viewModel::onTorchToggled,
-        onTorchAvailabilityChanged = viewModel::onTorchAvailabilityChanged,
-        onScanAgain = viewModel::onScanAgain,
-        onRetryLookup = viewModel::onRetryLookup,
-        onAddLocalProductToDiary = viewModel::onAddLocalProductToDiary,
-        onBack = onBack,
-        onNavigateToAbout = onNavigateToAbout,
-        onNavigateToManualEntry = onNavigateToManualEntry,
-        onNavigateToOcrCapture = onNavigateToOcrCapture,
-        onNavigateToDebugOcr = onNavigateToDebugOcr,
-        modifier = modifier
-    )
+    Box(modifier = modifier.fillMaxSize()) {
+        ScannerScreen(
+            uiState = uiState,
+            barcodeAnalyzer = barcodeAnalyzer,
+            onRequestPermission = {
+                viewModel.onRationaleAccepted()
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onDismissRationale = viewModel::onRationaleDismissed,
+            onRetryPermission = {
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onOpenSettings = {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            },
+            onToggleTorch = viewModel::onTorchToggled,
+            onTorchAvailabilityChanged = viewModel::onTorchAvailabilityChanged,
+            onScanAgain = viewModel::onScanAgain,
+            onRetryLookup = viewModel::onRetryLookup,
+            onAddLocalProductToDiary = viewModel::onAddLocalProductToDiary,
+            onBack = onBack,
+            onNavigateToAbout = onNavigateToAbout,
+            onNavigateToManualEntry = onNavigateToManualEntry,
+            onNavigateToOcrCapture = onNavigateToOcrCapture,
+            onNavigateToDebugOcr = onNavigateToDebugOcr,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
 }
 
 @Composable
@@ -451,6 +465,7 @@ private fun ScannerCameraContent(
                     product = lookup.product,
                     availableMeals = uiState.availableMeals,
                     defaultMeal = uiState.preselectedMeal,
+                    isSaving = uiState.isSaving,
                     onAddToDiary = { meal, grams ->
                         onAddLocalProductToDiary(lookup.product, meal, grams)
                     },
@@ -633,6 +648,7 @@ private fun LocalProductCard(
     product: Product,
     availableMeals: List<ConfiguredMeal>,
     defaultMeal: String,
+    isSaving: Boolean = false,
     onAddToDiary: (String, Double) -> Unit,
     onScanAgain: () -> Unit,
     modifier: Modifier = Modifier
@@ -642,6 +658,15 @@ private fun LocalProductCard(
     }
     val defaultGramsText = product.servingG?.let { NumberFormatHelper.formatDecimal(it) } ?: "100"
     var gramsText by remember { mutableStateOf(defaultGramsText) }
+    var hasBeenTouched by remember { mutableStateOf(false) }
+
+    val parsedGrams = NumberFormatHelper.parseDecimal(gramsText)
+    val gramsError = when {
+        gramsText.isBlank() -> "Campo obligatorio"
+        parsedGrams == null -> "Número no válido"
+        parsedGrams <= 0.0 -> "Debe ser mayor que 0"
+        else -> null
+    }
 
     Surface(
         modifier = modifier
@@ -716,8 +741,13 @@ private fun LocalProductCard(
 
             OutlinedTextField(
                 value = gramsText,
-                onValueChange = { gramsText = it },
+                onValueChange = {
+                    hasBeenTouched = true
+                    gramsText = it
+                },
                 label = { Text(stringResource(R.string.confirm_product_quantity_label)) },
+                isError = hasBeenTouched && gramsError != null,
+                supportingText = if (hasBeenTouched && gramsError != null) { { Text(gramsError) } } else null,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
@@ -725,14 +755,13 @@ private fun LocalProductCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            val parsedGrams = NumberFormatHelper.parseDecimal(gramsText)
             Button(
                 onClick = {
-                    if (parsedGrams != null && parsedGrams > 0) {
+                    if (parsedGrams != null && parsedGrams > 0 && !isSaving) {
                         onAddToDiary(selectedMeal, parsedGrams)
                     }
                 },
-                enabled = parsedGrams != null && parsedGrams > 0,
+                enabled = gramsError == null && !isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = stringResource(R.string.scanner_product_already_saved_add_action))

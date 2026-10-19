@@ -65,6 +65,7 @@ fun MacroTetrisRoute(
     viewModel: MacroTetrisViewModel,
     onBack: () -> Unit,
     onNavigateToPantry: () -> Unit,
+    onTetrisAdded: (mealName: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,12 +78,6 @@ fun MacroTetrisRoute(
         }
     }
 
-    LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) {
-            onBack()
-        }
-    }
-
     MacroTetrisScreen(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
@@ -92,7 +87,11 @@ fun MacroTetrisRoute(
         onExcludeProduct = viewModel::excludeProduct,
         onIncludeProduct = viewModel::includeProduct,
         onSelectMeal = viewModel::selectMeal,
-        onAddToDiary = { viewModel.addToDiary() },
+        onAddToDiary = {
+            viewModel.addToDiary(onSuccess = { mealName ->
+                onTetrisAdded(mealName)
+            })
+        },
         modifier = modifier,
     )
 }

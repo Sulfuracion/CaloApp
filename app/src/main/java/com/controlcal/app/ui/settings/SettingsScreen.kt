@@ -44,6 +44,7 @@ import com.controlcal.core.model.DayType
 import java.time.DayOfWeek
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
@@ -53,6 +54,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import com.controlcal.core.model.ConfiguredMeal
 import java.time.LocalTime
 
@@ -65,13 +67,10 @@ fun SettingsRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.infoMessage, uiState.errorMessage) {
-        val msg = uiState.infoMessage ?: uiState.errorMessage
-        if (msg != null) {
-            snackbarHostState.showSnackbar(msg)
-            viewModel.onMessageConsumed()
-        }
-    }
+    HandleFeedbackEvents(
+        events = viewModel.feedbackEvents,
+        snackbarHostState = snackbarHostState,
+    )
 
     SettingsScreen(
         uiState = uiState,
@@ -148,7 +147,7 @@ fun SettingsScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.weight_back),
+                            contentDescription = stringResource(R.string.settings_back),
                         )
                     }
                 },
@@ -182,6 +181,10 @@ fun SettingsScreen(
                     proteinText = uiState.trainingProteinText,
                     carbsText = uiState.trainingCarbsText,
                     fatText = uiState.trainingFatText,
+                    kcalError = uiState.trainingKcalError,
+                    proteinError = uiState.trainingProteinError,
+                    carbsError = uiState.trainingCarbsError,
+                    fatError = uiState.trainingFatError,
                     onKcalChanged = onTrainingKcalChanged,
                     onProteinChanged = onTrainingProteinChanged,
                     onCarbsChanged = onTrainingCarbsChanged,
@@ -197,6 +200,10 @@ fun SettingsScreen(
                     proteinText = uiState.restProteinText,
                     carbsText = uiState.restCarbsText,
                     fatText = uiState.restFatText,
+                    kcalError = uiState.restKcalError,
+                    proteinError = uiState.restProteinError,
+                    carbsError = uiState.restCarbsError,
+                    fatError = uiState.restFatError,
                     onKcalChanged = onRestKcalChanged,
                     onProteinChanged = onRestProteinChanged,
                     onCarbsChanged = onRestCarbsChanged,
@@ -207,6 +214,7 @@ fun SettingsScreen(
             item {
                 SafetyLimitsCard(
                     minKcalText = uiState.minKcalText,
+                    minKcalError = uiState.minKcalError,
                     onMinKcalChanged = onMinKcalChanged,
                 )
             }
@@ -224,8 +232,20 @@ fun SettingsScreen(
             }
 
             item {
+                val isGoalsValid = uiState.minKcalError == null &&
+                    uiState.trainingKcalError == null && uiState.trainingProteinError == null &&
+                    uiState.trainingCarbsError == null && uiState.trainingFatError == null &&
+                    uiState.restKcalError == null && uiState.restProteinError == null &&
+                    uiState.restCarbsError == null && uiState.restFatError == null &&
+                    uiState.minKcalText.isNotBlank() && uiState.trainingKcalText.isNotBlank() &&
+                    uiState.trainingProteinText.isNotBlank() && uiState.trainingCarbsText.isNotBlank() &&
+                    uiState.trainingFatText.isNotBlank() && uiState.restKcalText.isNotBlank() &&
+                    uiState.restProteinText.isNotBlank() && uiState.restCarbsText.isNotBlank() &&
+                    uiState.restFatText.isNotBlank()
+
                 Button(
                     onClick = onSaveGoals,
+                    enabled = isGoalsValid && !uiState.isSavingGoals,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -239,6 +259,7 @@ fun SettingsScreen(
 
     if (uiState.showAddMealDialog) {
         AddMealDialog(
+            isSaving = uiState.isSavingMeal,
             onDismiss = onDismissAddMealDialog,
             onConfirm = onConfirmAddMeal,
         )
@@ -248,6 +269,7 @@ fun SettingsScreen(
     if (editing != null) {
         RenameMealDialog(
             meal = editing,
+            isSaving = uiState.isSavingMeal,
             onDismiss = onDismissRenameMealDialog,
             onConfirm = onConfirmRenameMeal,
         )
@@ -257,6 +279,7 @@ fun SettingsScreen(
     if (changingTime != null) {
         ChangeMealTimeDialog(
             meal = changingTime,
+            isSaving = uiState.isSavingMeal,
             onDismiss = onDismissChangeTimeDialog,
             onConfirm = onConfirmChangeStartTime,
         )
@@ -266,6 +289,7 @@ fun SettingsScreen(
     if (deactivateOffer != null) {
         DeactivateOfferDialog(
             meal = deactivateOffer,
+            isSaving = uiState.isSavingMeal,
             onDismiss = onDismissDeleteDialogs,
             onConfirmDeactivate = { onDeactivateMeal(deactivateOffer.id) },
         )
@@ -275,6 +299,7 @@ fun SettingsScreen(
     if (deleteConfirm != null) {
         DeleteMealConfirmDialog(
             meal = deleteConfirm,
+            isSaving = uiState.isSavingMeal,
             onDismiss = onDismissDeleteDialogs,
             onConfirmDelete = { onConfirmDeleteMeal(deleteConfirm.id) },
         )
@@ -363,6 +388,10 @@ private fun GoalProfileCard(
     proteinText: String,
     carbsText: String,
     fatText: String,
+    kcalError: String? = null,
+    proteinError: String? = null,
+    carbsError: String? = null,
+    fatError: String? = null,
     onKcalChanged: (String) -> Unit,
     onProteinChanged: (String) -> Unit,
     onCarbsChanged: (String) -> Unit,
@@ -391,6 +420,8 @@ private fun GoalProfileCard(
                 value = kcalText,
                 onValueChange = onKcalChanged,
                 label = { Text(stringResource(R.string.settings_kcal_label)) },
+                isError = kcalError != null,
+                supportingText = kcalError?.let { { Text(it) } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -405,6 +436,8 @@ private fun GoalProfileCard(
                     value = proteinText,
                     onValueChange = onProteinChanged,
                     label = { Text(stringResource(R.string.settings_protein_label)) },
+                    isError = proteinError != null,
+                    supportingText = proteinError?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.weight(1f),
@@ -413,6 +446,8 @@ private fun GoalProfileCard(
                     value = carbsText,
                     onValueChange = onCarbsChanged,
                     label = { Text(stringResource(R.string.settings_carbs_label)) },
+                    isError = carbsError != null,
+                    supportingText = carbsError?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.weight(1f),
@@ -421,6 +456,8 @@ private fun GoalProfileCard(
                     value = fatText,
                     onValueChange = onFatChanged,
                     label = { Text(stringResource(R.string.settings_fat_label)) },
+                    isError = fatError != null,
+                    supportingText = fatError?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
                     modifier = Modifier.weight(1f),
@@ -433,6 +470,7 @@ private fun GoalProfileCard(
 @Composable
 private fun SafetyLimitsCard(
     minKcalText: String,
+    minKcalError: String? = null,
     onMinKcalChanged: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -457,7 +495,8 @@ private fun SafetyLimitsCard(
                 value = minKcalText,
                 onValueChange = onMinKcalChanged,
                 label = { Text(stringResource(R.string.settings_min_kcal_label)) },
-                supportingText = { Text(stringResource(R.string.settings_min_kcal_explanation)) },
+                isError = minKcalError != null,
+                supportingText = { Text(minKcalError ?: stringResource(R.string.settings_min_kcal_explanation)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -592,25 +631,29 @@ private fun MealItemRow(
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            IconButton(onClick = onRename) {
                 Icon(
                     painter = painterResource(R.drawable.ic_edit),
                     contentDescription = stringResource(R.string.settings_meal_rename_action),
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
-            IconButton(onClick = onChangeTime, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = onChangeTime) {
                 Icon(
                     painter = painterResource(R.drawable.ic_schedule),
                     contentDescription = stringResource(R.string.settings_meal_change_time_action),
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
             if (meal.isActive) {
                 TextButton(
                     onClick = onDeactivate,
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.settings_meal_deactivate_action),
@@ -620,7 +663,8 @@ private fun MealItemRow(
             } else {
                 TextButton(
                     onClick = onReactivate,
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.heightIn(min = 48.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.settings_meal_reactivate_action),
@@ -630,12 +674,12 @@ private fun MealItemRow(
                     )
                 }
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = onDelete) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete),
                     contentDescription = stringResource(R.string.settings_meal_delete_action),
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
@@ -644,23 +688,32 @@ private fun MealItemRow(
 
 @Composable
 private fun AddMealDialog(
+    isSaving: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, LocalTime) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var hourText by remember { mutableStateOf("08") }
     var minuteText by remember { mutableStateOf("00") }
-    var inputError by remember { mutableStateOf<String?>(null) }
+    var touched by remember { mutableStateOf(false) }
+
+    val nameError = if (touched && name.trim().isEmpty()) "El nombre no puede estar vacío" else null
+    val h = hourText.trim().toIntOrNull()
+    val m = minuteText.trim().toIntOrNull()
+    val timeError = if (touched && (h == null || h !in 0..23 || m == null || m !in 0..59)) "Hora inválida (0–23h, 0–59m)" else null
+    val isValid = name.trim().isNotEmpty() && h != null && h in 0..23 && m != null && m in 0..59
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(text = stringResource(R.string.meal_dialog_add_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it; inputError = null },
+                    onValueChange = { name = it; touched = true },
                     label = { Text(stringResource(R.string.meal_dialog_name_label)) },
+                    isError = nameError != null,
+                    supportingText = nameError?.let { { Text(it) } },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -670,24 +723,26 @@ private fun AddMealDialog(
                 ) {
                     OutlinedTextField(
                         value = hourText,
-                        onValueChange = { hourText = it; inputError = null },
+                        onValueChange = { hourText = it; touched = true },
                         label = { Text(stringResource(R.string.meal_dialog_hour_label)) },
+                        isError = timeError != null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         value = minuteText,
-                        onValueChange = { minuteText = it; inputError = null },
+                        onValueChange = { minuteText = it; touched = true },
                         label = { Text(stringResource(R.string.meal_dialog_minute_label)) },
+                        isError = timeError != null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
                 }
-                if (inputError != null) {
+                if (timeError != null) {
                     Text(
-                        text = inputError!!,
+                        text = timeError,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -697,25 +752,18 @@ private fun AddMealDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val cleanName = name.trim()
-                    if (cleanName.isEmpty()) {
-                        inputError = "El nombre no puede estar vacío"
-                        return@TextButton
+                    touched = true
+                    if (isValid && !isSaving) {
+                        onConfirm(name.trim(), LocalTime.of(h!!, m!!))
                     }
-                    val h = hourText.trim().toIntOrNull()
-                    val m = minuteText.trim().toIntOrNull()
-                    if (h == null || h !in 0..23 || m == null || m !in 0..59) {
-                        inputError = "Hora inválida (0–23h, 0–59m)"
-                        return@TextButton
-                    }
-                    onConfirm(cleanName, LocalTime.of(h, m))
-                }
+                },
+                enabled = isValid && !isSaving,
             ) {
                 Text(text = stringResource(R.string.meal_dialog_save_action))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.meal_dialog_cancel_action))
             }
         }
@@ -725,50 +773,46 @@ private fun AddMealDialog(
 @Composable
 private fun RenameMealDialog(
     meal: ConfiguredMeal,
+    isSaving: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, String) -> Unit,
 ) {
     var name by remember { mutableStateOf(meal.name) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var touched by remember { mutableStateOf(false) }
+    val nameError = if (touched && name.trim().isEmpty()) "El nombre no puede estar vacío" else null
+    val isValid = name.trim().isNotEmpty()
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(text = stringResource(R.string.meal_dialog_rename_title)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it; error = null },
+                    onValueChange = { name = it; touched = true },
                     label = { Text(stringResource(R.string.meal_dialog_name_label)) },
+                    isError = nameError != null,
+                    supportingText = nameError?.let { { Text(it) } },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (error != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = error!!,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val clean = name.trim()
-                    if (clean.isEmpty()) {
-                        error = "El nombre no puede estar vacío"
-                        return@TextButton
+                    touched = true
+                    if (isValid && !isSaving) {
+                        onConfirm(meal.id, name.trim())
                     }
-                    onConfirm(meal.id, clean)
-                }
+                },
+                enabled = isValid && !isSaving,
             ) {
                 Text(text = stringResource(R.string.meal_dialog_save_action))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.meal_dialog_cancel_action))
             }
         }
@@ -778,15 +822,21 @@ private fun RenameMealDialog(
 @Composable
 private fun ChangeMealTimeDialog(
     meal: ConfiguredMeal,
+    isSaving: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String, LocalTime) -> Unit,
 ) {
     var hourText by remember { mutableStateOf(String.format("%02d", meal.startTime.hour)) }
     var minuteText by remember { mutableStateOf(String.format("%02d", meal.startTime.minute)) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var touched by remember { mutableStateOf(false) }
+
+    val h = hourText.trim().toIntOrNull()
+    val m = minuteText.trim().toIntOrNull()
+    val isValid = h != null && h in 0..23 && m != null && m in 0..59
+    val error = if (touched && !isValid) "Hora inválida (0–23h, 0–59m)" else null
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(text = stringResource(R.string.meal_dialog_change_time_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -801,16 +851,18 @@ private fun ChangeMealTimeDialog(
                 ) {
                     OutlinedTextField(
                         value = hourText,
-                        onValueChange = { hourText = it; error = null },
+                        onValueChange = { hourText = it; touched = true },
                         label = { Text(stringResource(R.string.meal_dialog_hour_label)) },
+                        isError = error != null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
                     OutlinedTextField(
                         value = minuteText,
-                        onValueChange = { minuteText = it; error = null },
+                        onValueChange = { minuteText = it; touched = true },
                         label = { Text(stringResource(R.string.meal_dialog_minute_label)) },
+                        isError = error != null,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         modifier = Modifier.weight(1f),
@@ -818,7 +870,7 @@ private fun ChangeMealTimeDialog(
                 }
                 if (error != null) {
                     Text(
-                        text = error!!,
+                        text = error,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -828,20 +880,18 @@ private fun ChangeMealTimeDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val h = hourText.trim().toIntOrNull()
-                    val m = minuteText.trim().toIntOrNull()
-                    if (h == null || h !in 0..23 || m == null || m !in 0..59) {
-                        error = "Hora inválida (0–23h, 0–59m)"
-                        return@TextButton
+                    touched = true
+                    if (isValid && !isSaving) {
+                        onConfirm(meal.id, LocalTime.of(h!!, m!!))
                     }
-                    onConfirm(meal.id, LocalTime.of(h, m))
-                }
+                },
+                enabled = isValid && !isSaving,
             ) {
                 Text(text = stringResource(R.string.meal_dialog_save_action))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.meal_dialog_cancel_action))
             }
         }
@@ -851,22 +901,23 @@ private fun ChangeMealTimeDialog(
 @Composable
 private fun DeactivateOfferDialog(
     meal: ConfiguredMeal,
+    isSaving: Boolean,
     onDismiss: () -> Unit,
     onConfirmDeactivate: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(text = stringResource(R.string.meal_deactivate_offer_title)) },
         text = {
             Text(text = stringResource(R.string.meal_deactivate_offer_message, meal.name))
         },
         confirmButton = {
-            Button(onClick = onConfirmDeactivate) {
+            Button(onClick = onConfirmDeactivate, enabled = !isSaving) {
                 Text(text = stringResource(R.string.meal_deactivate_offer_action))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.meal_dialog_cancel_action))
             }
         }
@@ -876,11 +927,12 @@ private fun DeactivateOfferDialog(
 @Composable
 private fun DeleteMealConfirmDialog(
     meal: ConfiguredMeal,
+    isSaving: Boolean,
     onDismiss: () -> Unit,
     onConfirmDelete: () -> Unit,
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isSaving) onDismiss() },
         title = { Text(text = stringResource(R.string.meal_delete_confirm_title)) },
         text = {
             Text(text = stringResource(R.string.meal_delete_confirm_message, meal.name))
@@ -888,6 +940,7 @@ private fun DeleteMealConfirmDialog(
         confirmButton = {
             Button(
                 onClick = onConfirmDelete,
+                enabled = !isSaving,
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
                 ),
@@ -896,7 +949,7 @@ private fun DeleteMealConfirmDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
                 Text(text = stringResource(R.string.meal_dialog_cancel_action))
             }
         }

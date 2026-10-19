@@ -67,6 +67,7 @@ class ProductConfirmationViewModel @Inject constructor(
                 availableMeals = activeMeals,
                 selectedMeal = selected,
                 targetDate = date,
+                addToDiary = targetMeal != null,
             )
             recalculatePortion(state)
         }
@@ -300,8 +301,9 @@ class ProductConfirmationViewModel @Inject constructor(
         onFinish()
     }
 
-    fun onConfirmAndSave(onSuccess: () -> Unit) {
+    fun onConfirmAndSave(onSuccess: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {}) {
         val state = _uiState.value
+        if (state.isSaving) return
         val name = state.name.trim()
         val kcal = NumberFormatHelper.parseDecimal(state.kcal100g)
         val protein = NumberFormatHelper.parseDecimal(state.protein100g)
@@ -328,70 +330,73 @@ class ProductConfirmationViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-
-            val now = System.currentTimeMillis()
-            val product = Product(
-                id = 0L,
-                barcode = state.barcode.trim().takeIf { it.isNotEmpty() },
-                name = name,
-                brand = state.brand.trim().takeIf { it.isNotEmpty() },
-                kcal100g = kcal,
-                protein100g = protein,
-                carbs100g = carbs,
-                fat100g = fat,
-                fiber100g = NumberFormatHelper.parseDecimal(state.fiber100g),
-                sugars100g = NumberFormatHelper.parseDecimal(state.sugars100g),
-                satFat100g = NumberFormatHelper.parseDecimal(state.satFat100g),
-                salt100g = NumberFormatHelper.parseDecimal(state.salt100g),
-                isLiquid = state.isLiquid,
-                unitName = state.unitName.trim().takeIf { it.isNotEmpty() },
-                unitG = NumberFormatHelper.parseDecimal(state.unitG),
-                servingG = NumberFormatHelper.parseDecimal(state.servingG),
-                source = state.source,
-                createdAt = now,
-                updatedAt = now,
-            )
-
-            val insertedId = productRepository.insert(product)
-
-            if (state.addToDiary) {
-                val grams = NumberFormatHelper.parseDecimal(state.diaryGrams) ?: 100.0
-                val portion = NutritionCalculator.calculatePortionMacros(product, grams)
-                val targetDate = state.targetDate
-                val existingEntries = mealEntryRepository.getByDateAndMeal(targetDate.toString(), state.selectedMeal)
-                val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == state.selectedMeal }?.startTime
-                val loggedAt = com.controlcal.core.nutrition.MealTimeCalculator.calculateLoggedAt(
-                    date = targetDate,
-                    existingEntries = existingEntries,
-                    configuredStartTime = configuredStartTime,
-                    zoneId = clock.zone,
-                    clock = clock,
-                )
-                val entry = MealEntry(
+            try {
+                val now = System.currentTimeMillis()
+                val product = Product(
                     id = 0L,
-                    date = targetDate.toString(),
-                    meal = state.selectedMeal,
-                    productId = insertedId,
-                    productName = product.name,
-                    grams = grams,
-                    kcal = portion.kcal,
-                    protein = portion.protein,
-                    carbs = portion.carbs,
-                    fat = portion.fat,
-                    loggedAt = loggedAt,
+                    barcode = state.barcode.trim().takeIf { it.isNotEmpty() },
+                    name = name,
+                    brand = state.brand.trim().takeIf { it.isNotEmpty() },
+                    kcal100g = kcal,
+                    protein100g = protein,
+                    carbs100g = carbs,
+                    fat100g = fat,
+                    fiber100g = NumberFormatHelper.parseDecimal(state.fiber100g),
+                    sugars100g = NumberFormatHelper.parseDecimal(state.sugars100g),
+                    satFat100g = NumberFormatHelper.parseDecimal(state.satFat100g),
+                    salt100g = NumberFormatHelper.parseDecimal(state.salt100g),
+                    isLiquid = state.isLiquid,
+                    unitName = state.unitName.trim().takeIf { it.isNotEmpty() },
+                    unitG = NumberFormatHelper.parseDecimal(state.unitG),
+                    servingG = NumberFormatHelper.parseDecimal(state.servingG),
+                    source = state.source,
+                    createdAt = now,
+                    updatedAt = now,
                 )
-                mealEntryRepository.insert(entry)
-            }
 
-            // Delete temporary photo file after successful save
-            state.photoFile?.let { file ->
-                if (file.exists()) {
-                    file.delete()
+                val insertedId = productRepository.insert(product)
+
+                val saveResult = if (state.addToDiary) {
+                    val grams = NumberFormatHelper.parseDecimal(state.diaryGrams) ?: 100.0
+                    val portion = NutritionCalculator.calculatePortionMacros(product, grams)
+                    val targetDate = state.targetDate
+                    val existingEntries = mealEntryRepository.getByDateAndMeal(targetDate.toString(), state.selectedMeal)
+                    val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == state.selectedMeal }?.startTime
+                    val loggedAt = com.controlcal.core.nutrition.MealTimeCalculator.calculateLoggedAt(
+                        date = targetDate,
+                        existingEntries = existingEntries,
+                        configuredStartTime = configuredStartTime,
+                        zoneId = clock.zone,
+                        clock = clock,
+                    )
+                    val entry = MealEntry(
+                        id = 0L,
+                        date = targetDate.toString(),
+                        meal = state.selectedMeal,
+                        productId = insertedId,
+                        productName = product.name,
+                        grams = grams,
+                        kcal = portion.kcal,
+                        protein = portion.protein,
+                        carbs = portion.carbs,
+                        fat = portion.fat,
+                        loggedAt = loggedAt,
+                    )
+                    mealEntryRepository.save(entry)
+                } else null
+
+                // Delete temporary photo file after successful save
+                state.photoFile?.let { file ->
+                    if (file.exists()) {
+                        file.delete()
+                    }
                 }
-            }
 
-            _uiState.update { it.copy(isSaving = false, isSaved = true) }
-            onSuccess()
+                _uiState.update { it.copy(isSaving = false, isSaved = true) }
+                onSuccess(saveResult)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false) }
+            }
         }
     }
 }

@@ -29,6 +29,7 @@ fun QuickLogQuantityDialog(
     portionProtein: Double,
     portionCarbs: Double,
     portionFat: Double,
+    isSaving: Boolean = false,
     onGramsChanged: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
@@ -72,7 +73,10 @@ fun QuickLogQuantityDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            TextButton(
+                onClick = onConfirm,
+                enabled = errorText == null && gramsText.isNotBlank() && !isSaving,
+            ) {
                 Text(text = stringResource(R.string.daily_panel_add_action))
             }
         },

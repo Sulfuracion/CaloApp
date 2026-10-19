@@ -43,10 +43,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.controlcal.app.R
 import com.controlcal.core.model.Product
+import com.controlcal.app.data.off.OffProduct
+import com.controlcal.app.data.off.OffSearchItem
 import com.controlcal.core.nutrition.NumberFormatHelper
 
 @Composable
@@ -56,14 +60,15 @@ fun AddEntryRoute(
     onNavigateToScanner: () -> Unit,
     onNavigateToOcrCapture: () -> Unit,
     onNavigateToManualEntry: () -> Unit,
-    onEntryAdded: () -> Unit,
+    onNavigateToConfirmation: (OffProduct) -> Unit,
+    onEntryAdded: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isAddedSuccessfully) {
         if (uiState.isAddedSuccessfully) {
-            onEntryAdded()
+            onEntryAdded(uiState.lastSaveResult)
         }
     }
 
@@ -76,18 +81,16 @@ fun AddEntryRoute(
         onSearchQueryChanged = viewModel::onSearchQueryChanged,
         onSelectProduct = viewModel::onSelectProductForPortion,
         onQuickAddHabitual = { habitual ->
-            viewModel.onQuickAddHabitual(habitual) {
-                onEntryAdded()
-            }
+            viewModel.onQuickAddHabitual(habitual)
         },
         onDismissPortionDialog = viewModel::onDismissPortionDialog,
         onToggleMeasuringUnit = viewModel::onToggleMeasuringUnit,
         onQuantityInputChanged = viewModel::onQuantityInputChanged,
         onConfirmAddProduct = {
-            viewModel.onConfirmAddProduct {
-                onEntryAdded()
-            }
+            viewModel.onConfirmAddProduct()
         },
+        onSearchInOff = viewModel::onSearchInOff,
+        onSelectOffProduct = { item -> viewModel.onSelectOffProduct(item, onNavigateToConfirmation) },
         modifier = modifier,
     )
 }
@@ -107,6 +110,8 @@ fun AddEntryScreen(
     onToggleMeasuringUnit: () -> Unit,
     onQuantityInputChanged: (String) -> Unit,
     onConfirmAddProduct: () -> Unit,
+    onSearchInOff: () -> Unit,
+    onSelectOffProduct: (OffSearchItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -254,8 +259,133 @@ fun AddEntryScreen(
                 }
             }
 
+            if (uiState.searchQuery.isNotBlank()) {
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                if (uiState.isOffSearching) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            ),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = stringResource(R.string.add_entry_search_off_loading),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    item {
+                        OutlinedCard(
+                            onClick = onSearchInOff,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_search),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Text(
+                                    text = stringResource(R.string.add_entry_search_off_action, uiState.searchQuery.trim()),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (!uiState.offSearchMessage.isNullOrBlank()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            ),
+                        ) {
+                            Text(
+                                text = uiState.offSearchMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp),
+                            )
+                        }
+                    }
+                }
+
+                if (uiState.offSearchResults.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.add_entry_off_results_title, uiState.offSearchResults.size),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    items(uiState.offSearchResults, key = { "off_${it.code}_${it.name}_${it.kcal100g}" }) { offItem ->
+                        OffSearchItemRow(
+                            item = offItem,
+                            onClick = { onSelectOffProduct(offItem) },
+                        )
+                    }
+                }
+            }
+
             item {
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+    }
+
+    if (uiState.isFetchingOffProductDetails) {
+        Dialog(onDismissRequest = {}) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Text(
+                        text = stringResource(R.string.add_entry_off_fetching_details),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         }
     }
@@ -272,6 +402,7 @@ fun AddEntryScreen(
             portionProtein = uiState.portionPreviewProtein,
             portionCarbs = uiState.portionPreviewCarbs,
             portionFat = uiState.portionPreviewFat,
+            isSaving = uiState.isSaving,
             onToggleUnit = onToggleMeasuringUnit,
             onQuantityChanged = onQuantityInputChanged,
             onConfirm = onConfirmAddProduct,
@@ -320,12 +451,12 @@ private fun HabitualFoodRow(
             Spacer(modifier = Modifier.width(8.dp))
             FilledTonalIconButton(
                 onClick = onQuickAddClick,
-                modifier = Modifier.size(36.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_add),
                     contentDescription = stringResource(R.string.add_entry_confirm_add),
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -392,6 +523,7 @@ private fun PortionQuantityDialog(
     portionProtein: Double,
     portionCarbs: Double,
     portionFat: Double,
+    isSaving: Boolean = false,
     onToggleUnit: () -> Unit,
     onQuantityChanged: (String) -> Unit,
     onConfirm: () -> Unit,
@@ -474,7 +606,10 @@ private fun PortionQuantityDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                enabled = inputQuantityError == null && inputQuantityText.isNotBlank() && !isSaving,
+            ) {
                 Text(text = stringResource(R.string.add_entry_confirm_add))
             }
         },
@@ -485,3 +620,52 @@ private fun PortionQuantityDialog(
         },
     )
 }
+
+@Composable
+private fun OffSearchItemRow(
+    item: OffSearchItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.name ?: "Sin nombre",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                val brandText = if (!item.brand.isNullOrBlank()) "${item.brand} · " else ""
+                val kcalText = item.kcal100g?.let {
+                    stringResource(R.string.add_entry_off_kcal_format, NumberFormatHelper.formatDecimal(it))
+                } ?: stringResource(R.string.add_entry_off_no_kcal)
+                Text(
+                    text = "$brandText$kcalText",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+

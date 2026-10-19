@@ -207,6 +207,7 @@
     <!-- Ajustes y macros cíclicos (Tarea 4.3) -->
     <string name="settings_title">Ajustes</string>
     <string name="settings_action">Ajustes</string>
+    <string name="settings_back">Volver</string>
     <string name="settings_weekly_pattern_title">Patrón semanal habitual</string>
     <string name="settings_weekly_pattern_subtitle">Tipo de día por defecto para cada día de la semana. Al abrir un día por primera vez, usará esta opción.</string>
     <string name="settings_day_monday">L</string>
@@ -440,4 +441,46 @@
     <string name="quick_calories_atwater_warning_partial">Los macros parciales (%1$s kcal) superan las %2$s kcal en más de un 15 %%</string>
     <string name="quick_calories_saved_success">Añadido «%1$s» a %2$s</string>
     <string name="quick_calories_updated_success">Actualizado «%1$s»</string>
+
+    <!-- Búsqueda por nombre en Open Food Facts (Tarea M.8) -->
+    <string name="add_entry_search_off_action">Buscar «%1$s» en Open Food Facts</string>
+    <string name="add_entry_search_off_loading">Buscando en Open Food Facts…</string>
+    <string name="add_entry_off_results_title">Resultados en Open Food Facts (%1$d)</string>
+    <string name="add_entry_off_no_results">No se encontraron productos en Open Food Facts</string>
+    <string name="add_entry_off_offline">Sin conexión a internet. Mostrando solo resultados locales</string>
+    <string name="add_entry_off_rate_limited">Límite de búsquedas en Open Food Facts alcanzado. Espera %1$d s</string>
+    <string name="add_entry_off_error">Error al consultar Open Food Facts: %1$s</string>
+    <string name="add_entry_off_kcal_format">%1$s kcal / 100 g</string>
+    <string name="add_entry_off_no_kcal">Sin datos de calorías</string>
+    <string name="add_entry_off_fetching_details">Obteniendo información nutricional…</string>
+
+    <!-- Fusión de entradas duplicadas (Tarea M.9) -->
+    <string name="meal_entry_merged_snackbar">Sumado a %1$s: ahora %2$s</string>
+
+    <!-- Respuesta en todos los formularios (Tarea M.10) -->
+    <string name="feedback_weight_saved">Peso guardado: %1$s kg</string>
+    <string name="feedback_weight_updated">Peso de hoy actualizado: %1$s kg</string>
+    <string name="feedback_weight_past_saved">Peso guardado (%1$s): %2$s kg</string>
+    <string name="feedback_weight_past_updated">Peso actualizado (%1$s): %2$s kg</string>
+    <string name="feedback_food_added">Añadido: %1$s de %2$s</string>
+    <string name="feedback_product_saved">Producto guardado: %1$s</string>
+    <string name="feedback_product_and_entry_saved">Guardado y añadido al diario: %1$s</string>
+    <string name="feedback_goals_saved">Objetivos guardados</string>
+    <string name="feedback_weekly_pattern_saved">Patrón semanal actualizado: %1$s → %2$s</string>
+    <string name="feedback_day_type_training">Día marcado como Entrenamiento</string>
+    <string name="feedback_day_type_rest">Día marcado como Descanso</string>
+    <string name="feedback_pantry_saved">Configuración guardada para «%1$s»</string>
+    <string name="feedback_meal_added">Comida «%1$s» añadida</string>
+    <string name="feedback_meal_renamed">Comida renombrada a «%1$s»</string>
+    <string name="feedback_meal_time_updated">Hora de la comida actualizada a las %1$s</string>
+    <string name="feedback_meal_deactivated">Comida «%1$s» desactivada</string>
+    <string name="feedback_meal_reactivated">Comida «%1$s» reactivada</string>
+    <string name="feedback_meal_deleted">Comida «%1$s» eliminada</string>
+    <string name="feedback_quick_calories_added">Añadidas %1$s kcal a %2$s</string>
+    <string name="feedback_quick_calories_updated">Calorías rápidas actualizadas: %1$s kcal</string>
+    <string name="feedback_portion_adjusted">%1$s: ahora %2$s</string>
+    <string name="feedback_leftovers_subtracted">Restados %1$s de sobras de «%2$s»</string>
+    <string name="feedback_macro_tetris_added">Alimentos de Macro Tetris añadidos a %1$s</string>
+    <string name="feedback_save_error">Error al guardar. Comprueba los datos e inténtalo de nuevo</string>
+    <string name="feedback_action_undo">Deshacer</string>
 </resources>
