@@ -11,4 +11,5 @@ data class QuickLogSuggestion(
     val score: Double,
     val targetMeal: String,
     val lastLoggedAt: Long,
+    val isLiquid: Boolean = false,
 )

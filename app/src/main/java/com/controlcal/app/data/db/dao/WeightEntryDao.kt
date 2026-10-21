@@ -30,6 +30,9 @@ interface WeightEntryDao {
     @Query("DELETE FROM weight_entries WHERE date = :date")
     suspend fun deleteByDate(date: String)
 
+    @Query("DELETE FROM weight_entries")
+    suspend fun deleteAll()
+
     @Transaction
     suspend fun moveEntry(oldDate: String, newEntry: WeightEntryEntity) {
         if (oldDate != newEntry.date) {

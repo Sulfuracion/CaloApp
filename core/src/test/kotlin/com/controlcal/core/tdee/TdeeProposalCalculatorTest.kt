@@ -79,4 +79,31 @@ class TdeeProposalCalculatorTest {
 
         assertTrue(proposal.disclaimer.contains("consejo médico"))
     }
+
+    @Test
+    fun applyProposalToProfileScalesMacrosProportionallyAndRespectsMinLimit() {
+        val currentProfile = com.controlcal.core.model.GoalProfile(
+            id = 1L,
+            dayType = com.controlcal.core.model.DayType.TRAINING,
+            kcal = 2000.0,
+            proteinG = 160.0,
+            carbsG = 200.0,
+            fatG = 60.0,
+            validFrom = "2026-10-01",
+            origin = com.controlcal.core.model.GoalOrigin.MANUAL,
+        )
+        val proposal = TdeeProposalCalculator.calculateProposal(
+            currentKcal = 2000.0,
+            estimatedTdee = 2200.0,
+            minKcalLimit = 1200.0,
+        ) // delta = +150 -> newKcal = 2150 (ratio = 1.075)
+
+        val scaled = TdeeProposalCalculator.applyProposalToProfile(currentProfile, proposal, "2026-10-21")
+        assertEquals(2150.0, scaled.kcal, 0.01)
+        assertEquals(172.0, scaled.proteinG, 0.01)
+        assertEquals(215.0, scaled.carbsG, 0.01)
+        assertEquals(64.5, scaled.fatG, 0.01)
+        assertEquals(com.controlcal.core.model.GoalOrigin.TDEE, scaled.origin)
+        assertEquals("2026-10-21", scaled.validFrom)
+    }
 }

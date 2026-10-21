@@ -27,24 +27,37 @@ interface WrappedKeyStoreIO {
  */
 class DataStoreWrappedKeyStore(
     private val dataStore: DataStore<Preferences>,
+    private val legacyDataStore: DataStore<Preferences>? = null,
 ) : WrappedKeyStoreIO {
 
     private val wrappedKey = stringPreferencesKey("wrapped_db_key")
 
     override fun read(): ByteArray? = blocking {
-        dataStore.data.first()[wrappedKey]?.let { Base64.decode(it, Base64.NO_WRAP) }
+        val current = dataStore.data.first()[wrappedKey]
+        if (current != null) {
+            return@blocking Base64.decode(current, Base64.NO_WRAP)
+        }
+        val legacy = legacyDataStore?.data?.first()?.get(wrappedKey) ?: return@blocking null
+        dataStore.edit { preferences -> preferences[wrappedKey] = legacy }
+        legacyDataStore.edit { preferences -> preferences.remove(wrappedKey) }
+        Base64.decode(legacy, Base64.NO_WRAP)
     }
 
     override fun write(wrapped: ByteArray) {
         blocking {
             val encoded = Base64.encodeToString(wrapped, Base64.NO_WRAP)
             dataStore.edit { preferences -> preferences[wrappedKey] = encoded }
+            legacyDataStore?.edit { preferences -> preferences.remove(wrappedKey) }
         }
     }
 
     override fun delete() {
-        blocking { dataStore.edit { preferences -> preferences.remove(wrappedKey) } }
+        blocking {
+            dataStore.edit { preferences -> preferences.remove(wrappedKey) }
+            legacyDataStore?.edit { preferences -> preferences.remove(wrappedKey) }
+        }
     }
 
     private fun <T> blocking(block: suspend () -> T): T = runBlocking(Dispatchers.IO) { block() }
 }
+

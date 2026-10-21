@@ -19,10 +19,14 @@ class DatabaseFilesTest {
     fun deleteAllRemovesDatabaseAndSideFiles() {
         val base = context.getDatabasePath(ControlCalDatabase.NAME)
         val sideFiles = listOf("$base-wal", "$base-shm", "$base-journal")
-        listOf(base.absolutePath) + sideFiles.forEach { File(it).apply { parentFile?.mkdirs() }.writeBytes(byteArrayOf(1, 2, 3)) }
+        (listOf(base.absolutePath) + sideFiles).forEach {
+            File(it).apply { parentFile?.mkdirs() }.writeBytes(byteArrayOf(1, 2, 3))
+        }
+        assertTrue(files.exists())
 
         files.deleteAll()
 
+        assertFalse(files.exists())
         assertFalse(File(base.absolutePath).exists())
         sideFiles.forEach { assertFalse(File(it).exists()) }
     }
@@ -34,7 +38,7 @@ class DatabaseFilesTest {
 
         files.deleteAll()
 
+        assertFalse(files.exists())
         assertFalse(File(base.absolutePath).exists())
-        assertTrue(true)
     }
 }

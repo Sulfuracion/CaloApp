@@ -37,6 +37,7 @@ abstract class SecurityBindingsModule {
 object DatabaseModule {
 
     private const val DATASTORE_NAME = "controlcal_preferences"
+    private const val KEY_DATASTORE_NAME = "controlcal_key_store"
 
     @Provides
     @Singleton
@@ -47,8 +48,15 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideWrappedKeyStore(dataStore: DataStore<Preferences>): WrappedKeyStoreIO =
-        DataStoreWrappedKeyStore(dataStore)
+    fun provideWrappedKeyStore(
+        @ApplicationContext context: Context,
+        legacyDataStore: DataStore<Preferences>,
+    ): WrappedKeyStoreIO {
+        val keyDataStore = PreferenceDataStoreFactory.create(
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+        ) { context.preferencesDataStoreFile(KEY_DATASTORE_NAME) }
+        return DataStoreWrappedKeyStore(keyDataStore, legacyDataStore)
+    }
 
     @Provides
     @Singleton
@@ -61,7 +69,12 @@ object DatabaseModule {
         keyManager: DbKeyManager,
         databaseFiles: DatabaseFiles,
     ): DatabaseKeyResolver =
-        DatabaseKeyResolver(keyStore, keyManager) { databaseFiles.deleteAll() }
+        DatabaseKeyResolver(
+            keyStore = keyStore,
+            keyManager = keyManager,
+            hasExistingDatabase = { databaseFiles.exists() },
+            onKeyLost = { databaseFiles.deleteAll() },
+        )
 
     @Provides
     @Singleton

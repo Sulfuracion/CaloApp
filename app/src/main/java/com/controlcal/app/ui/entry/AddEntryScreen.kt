@@ -1,6 +1,7 @@
 package com.controlcal.app.ui.entry
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -66,9 +68,19 @@ fun AddEntryRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val snackbarHostState = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() }
+
     LaunchedEffect(uiState.isAddedSuccessfully) {
         if (uiState.isAddedSuccessfully) {
             onEntryAdded(uiState.lastSaveResult)
+        }
+    }
+
+    LaunchedEffect(uiState.userMessage) {
+        val msg = uiState.userMessage
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.onMessageConsumed()
         }
     }
 
@@ -91,6 +103,8 @@ fun AddEntryRoute(
         },
         onSearchInOff = viewModel::onSearchInOff,
         onSelectOffProduct = { item -> viewModel.onSelectOffProduct(item, onNavigateToConfirmation) },
+        onSelectTargetMeal = viewModel::onSelectTargetMeal,
+        snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
 }
@@ -112,10 +126,13 @@ fun AddEntryScreen(
     onConfirmAddProduct: () -> Unit,
     onSearchInOff: () -> Unit,
     onSelectOffProduct: (OffSearchItem) -> Unit,
+    onSelectTargetMeal: (String) -> Unit = {},
+    snackbarHostState: androidx.compose.material3.SnackbarHostState = androidx.compose.runtime.remember { androidx.compose.material3.SnackbarHostState() },
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { androidx.compose.material3.SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -168,6 +185,23 @@ fun AddEntryScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
+                if (uiState.availableMeals.size > 1) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        uiState.availableMeals.forEach { meal ->
+                            FilterChip(
+                                selected = uiState.targetMealId == meal.id,
+                                onClick = { onSelectTargetMeal(meal.id) },
+                                label = { Text(meal.name) },
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 // Search box
                 OutlinedTextField(
                     value = uiState.searchQuery,

@@ -28,6 +28,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -59,6 +60,8 @@ import com.controlcal.core.nutrition.NumberFormatHelper
 fun PantryRoute(
     viewModel: PantryViewModel,
     onBack: () -> Unit,
+    onEditNutrition: (Product) -> Unit = {},
+    onCreateProduct: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -84,6 +87,8 @@ fun PantryRoute(
         onEditUnitNameChanged = viewModel::onEditUnitNameChanged,
         onEditUnitGChanged = viewModel::onEditUnitGChanged,
         onSaveProductConfig = viewModel::onSaveProductConfig,
+        onEditNutrition = onEditNutrition,
+        onCreateProduct = onCreateProduct,
         modifier = modifier,
     )
 }
@@ -105,6 +110,8 @@ fun PantryScreen(
     onEditUnitNameChanged: (String) -> Unit,
     onEditUnitGChanged: (String) -> Unit,
     onSaveProductConfig: () -> Unit,
+    onEditNutrition: (Product) -> Unit = {},
+    onCreateProduct: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -123,6 +130,14 @@ fun PantryScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = stringResource(R.string.pantry_back),
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onCreateProduct) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_add),
+                            contentDescription = stringResource(R.string.manual_entry_title),
                         )
                     }
                 },
@@ -236,8 +251,9 @@ fun PantryScreen(
     }
 
     if (uiState.editingProduct != null) {
+        val editingProd = uiState.editingProduct
         PantryEditDialog(
-            product = uiState.editingProduct,
+            product = editingProd,
             editInPantry = uiState.editInPantry,
             minGText = uiState.editMinGText,
             maxGText = uiState.editMaxGText,
@@ -255,6 +271,10 @@ fun PantryScreen(
             onUnitGChanged = onEditUnitGChanged,
             onSave = onSaveProductConfig,
             onDismiss = onDismissEditDialog,
+            onEditNutrition = {
+                onDismissEditDialog()
+                onEditNutrition(editingProd)
+            },
         )
     }
 }
@@ -446,6 +466,7 @@ fun PantryEditDialog(
     onUnitGChanged: (String) -> Unit,
     onSave: () -> Unit,
     onDismiss: () -> Unit,
+    onEditNutrition: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     AlertDialog(
@@ -569,6 +590,16 @@ fun PantryEditDialog(
                     supportingText = unitGError?.let { { Text(it) } },
                     singleLine = true,
                 )
+
+                HorizontalDivider()
+
+                OutlinedButton(
+                    onClick = onEditNutrition,
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.pantry_edit_nutrition_action))
+                }
             }
         },
         confirmButton = {

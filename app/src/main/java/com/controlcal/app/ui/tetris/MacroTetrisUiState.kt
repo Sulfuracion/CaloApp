@@ -6,8 +6,10 @@ import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MacroTargets
 import com.controlcal.core.model.Product
 import com.controlcal.core.solver.MacroSolution
+import java.time.LocalDate
 
 data class MacroTetrisUiState(
+    val selectedDate: LocalDate = LocalDate.now(),
     val isLoading: Boolean = false,
     val todayRemaining: DayRemaining? = null,
     val targetMacros: MacroTargets = MacroTargets(0.0, 0.0, 0.0, 0.0),

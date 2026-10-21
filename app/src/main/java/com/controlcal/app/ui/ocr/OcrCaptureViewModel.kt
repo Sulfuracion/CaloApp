@@ -35,7 +35,20 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
     private val _uiState = MutableStateFlow(OcrCaptureUiState())
     val uiState: StateFlow<OcrCaptureUiState> = _uiState.asStateFlow()
 
-    internal var cameraExecutor: Executor = Executors.newSingleThreadExecutor()
+    internal var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    private var _cameraExecutor: ExecutorService? = null
+    internal var cameraExecutor: Executor
+        get() {
+            val current = _cameraExecutor
+            if (current != null && !current.isShutdown) return current
+            return Executors.newSingleThreadExecutor().also { _cameraExecutor = it }
+        }
+        set(value) {
+            _cameraExecutor?.shutdown()
+            _cameraExecutor = value as? ExecutorService
+        }
+
     private var _recognizer: TextRecognizer? = null
 
     internal fun getRecognizer(): TextRecognizer {
@@ -48,7 +61,14 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
         _recognizer = recognizer
     }
 
-    internal var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    fun releaseResources() {
+        try {
+            _recognizer?.close()
+        } catch (_: Exception) {}
+        _recognizer = null
+        _cameraExecutor?.shutdown()
+        _cameraExecutor = null
+    }
 
     fun setTargetBarcode(barcode: String?) {
         _uiState.update { it.copy(targetBarcode = barcode) }
@@ -106,10 +126,34 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
         _uiState.update { it.copy(isTorchAvailable = available) }
     }
 
-    fun onRetryCapture(photoFileToDelete: File? = null) {
-        photoFileToDelete?.let {
-            if (it.exists()) it.delete()
+    private fun deleteFileOffMainThread(file: File) {
+        val isAndroidMainThread = try {
+            android.os.Looper.getMainLooper()?.thread == Thread.currentThread()
+        } catch (_: Throwable) {
+            false
         }
+        if (isAndroidMainThread) {
+            viewModelScope.launch(ioDispatcher) {
+                if (file.exists()) file.delete()
+            }
+        } else {
+            if (file.exists()) file.delete()
+        }
+    }
+
+    fun onRetryCapture(photoFileToDelete: File? = null) {
+        photoFileToDelete?.let { file ->
+            deleteFileOffMainThread(file)
+        }
+        _uiState.update { it.copy(processingState = OcrProcessingState.Idle) }
+    }
+
+    fun onCancelCapture() {
+        val currentProcessing = _uiState.value.processingState
+        if (currentProcessing is OcrProcessingState.NoDataDetected) {
+            deleteFileOffMainThread(currentProcessing.photoFile)
+        }
+        releaseResources()
         _uiState.update { it.copy(processingState = OcrProcessingState.Idle) }
     }
 
@@ -131,6 +175,9 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
                 }
 
                 override fun onError(exception: ImageCaptureException) {
+                    if (targetFile.exists()) {
+                        targetFile.delete()
+                    }
                     _uiState.update {
                         it.copy(
                             processingState = OcrProcessingState.Error(
@@ -194,6 +241,7 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
                         }
                     }
                     .addOnFailureListener { error ->
+                        deleteFileOffMainThread(photoFile)
                         _uiState.update {
                             it.copy(
                                 processingState = OcrProcessingState.Error(
@@ -203,6 +251,7 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
                         }
                     }
             } catch (e: Exception) {
+                deleteFileOffMainThread(photoFile)
                 _uiState.update {
                     it.copy(
                         processingState = OcrProcessingState.Error(
@@ -216,11 +265,16 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        try {
-            _recognizer?.close()
-        } catch (_: Exception) {}
-        if (cameraExecutor is ExecutorService) {
-            (cameraExecutor as ExecutorService).shutdown()
+        releaseResources()
+    }
+
+    companion object {
+        fun cleanupOrphanedTempPhotos(cacheDir: File) {
+            cacheDir.listFiles { _, name ->
+                name.startsWith("ocr_temp_") && name.endsWith(".jpg")
+            }?.forEach { file ->
+                file.delete()
+            }
         }
     }
 }

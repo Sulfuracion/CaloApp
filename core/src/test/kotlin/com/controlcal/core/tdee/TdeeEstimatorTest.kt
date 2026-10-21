@@ -152,4 +152,25 @@ class TdeeEstimatorTest {
         assertTrue(Math.abs(success.weightTrendChangeKg) < 0.15)
         assertEquals(2000.0, success.tdeeKcal, 60.0)
     }
+
+    @Test
+    fun ignoresZeroOrNegativeFoodDaysAndOutOfWindowEntries() {
+        val dates = generateDateRange("2026-10-01", 21)
+        val validFood = dates.take(14).map { DailyIntake(date = it, kcal = 2000.0) }
+        val zeroAndOutOfWindowFood = listOf(
+            DailyIntake(date = dates[14], kcal = 0.0),
+            DailyIntake(date = dates[15], kcal = -100.0),
+            DailyIntake(date = "2026-09-15", kcal = 3000.0), // before window
+            DailyIntake(date = "2026-10-25", kcal = 3000.0), // after endDate
+        )
+        val weights = dates.take(8).map { WeightEntry(date = it, weightKg = 75.0) } +
+            listOf(WeightEntry(date = "2026-09-10", weightKg = 90.0))
+
+        val result = TdeeEstimator.estimate(endDate, validFood + zeroAndOutOfWindowFood, weights)
+        assertTrue(result is TdeeCalculationResult.Success)
+        val success = result as TdeeCalculationResult.Success
+        assertEquals(14, success.loggedFoodDays)
+        assertEquals(8, success.weighInDays)
+        assertEquals(2000.0, success.averageDailyIntakeKcal, 0.01)
+    }
 }

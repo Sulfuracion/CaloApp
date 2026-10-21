@@ -350,6 +350,12 @@ class PantryViewModel @Inject constructor(
         _uiState.update { it.copy(snackbarMessage = null) }
     }
 
+    fun sendFeedback(event: UiFeedbackEvent) {
+        viewModelScope.launch {
+            _feedbackEvents.send(event)
+        }
+    }
+
     private fun mapError(error: PantryError?): String? = when (error) {
         null -> null
         PantryError.NEGATIVE_VALUE -> "El valor no puede ser negativo"

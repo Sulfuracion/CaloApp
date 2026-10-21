@@ -47,7 +47,8 @@ class DateHelperTest {
         assertEquals(LocalDate.of(2026, 7, 15), today)
 
         // 2. Calendar representation of today in UTC midnight millis
-        val todayUtcMillis = DateHelper.localDateToUtcMillis(today)
+        val todayUtcMillis = DateHelper.getTodayUtcMillis(fixedClock)
+        assertEquals(DateHelper.localDateToUtcMillis(today), todayUtcMillis)
 
         // 3. Show that comparing with raw currentTimeMillis / clock.millis would erroneously BLOCK today:
         val rawCurrentTimeMillis = fixedClock.millis()

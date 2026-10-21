@@ -8,6 +8,7 @@ interface ProductRepository {
     suspend fun searchByName(prefix: String): List<Product>
     suspend fun search(query: String): List<Product> = searchByName(query)
     suspend fun getActiveProducts(): List<Product>
+    suspend fun getAllIncludingArchived(): List<Product> = getActiveProducts()
     suspend fun getPantryProducts(): List<Product>
     suspend fun setInPantry(id: Long, inPantry: Boolean)
     suspend fun updatePantryConfig(
@@ -21,5 +22,7 @@ interface ProductRepository {
     suspend fun insert(product: Product): Long
     suspend fun update(product: Product)
     suspend fun archive(id: Long)
+    suspend fun delete(id: Long) {}
+    suspend fun deleteAll() {}
     suspend fun hasEntries(productId: Long): Boolean
 }

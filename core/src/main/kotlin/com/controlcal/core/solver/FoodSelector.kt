@@ -4,9 +4,16 @@ import com.controlcal.core.model.DayRemaining
 import com.controlcal.core.model.MacroTargets
 import com.controlcal.core.model.NutrientTotals
 import com.controlcal.core.model.Product
-import java.util.Locale
+import com.controlcal.core.nutrition.NumberFormatHelper
 import kotlin.math.abs
 import kotlin.math.min
+
+enum class FoodCategory {
+    PROTEIN,
+    CARBS,
+    FAT,
+    BALANCED,
+}
 
 /**
  * Orchestrates food selection and Macro Tetris optimization following PLAN.md section 5.6:
@@ -18,7 +25,29 @@ import kotlin.math.min
  */
 object FoodSelector {
 
-    private val spanishLocale = Locale.forLanguageTag("es-ES")
+    /**
+     * Classifies a [Product] by its dominant macro calorie contribution (PLAN.md 5.6 step 3):
+     * - Protein > 40% of kcal -> [FoodCategory.PROTEIN]
+     * - Carbs > 50% of kcal -> [FoodCategory.CARBS]
+     * - Fat > 50% of kcal -> [FoodCategory.FAT]
+     * - Otherwise -> [FoodCategory.BALANCED]
+     */
+    fun classifyFood(product: Product): FoodCategory {
+        val totalMacroKcal = (product.protein100g * 4.0) + (product.carbs100g * 4.0) + (product.fat100g * 9.0)
+        val denominator = if (product.kcal100g > 0.0) product.kcal100g else totalMacroKcal
+        if (denominator <= 0.0) return FoodCategory.BALANCED
+
+        val proteinShare = (product.protein100g * 4.0) / denominator
+        val carbsShare = (product.carbs100g * 4.0) / denominator
+        val fatShare = (product.fat100g * 9.0) / denominator
+
+        return when {
+            proteinShare > 0.40 -> FoodCategory.PROTEIN
+            carbsShare > 0.50 -> FoodCategory.CARBS
+            fatShare > 0.50 -> FoodCategory.FAT
+            else -> FoodCategory.BALANCED
+        }
+    }
 
     fun selectAndSolve(
         target: MacroTargets,
@@ -213,7 +242,7 @@ object FoodSelector {
             )
         }
 
-        fun formatDec(value: Double): String = String.format(spanishLocale, "%.1f", value)
+        fun formatDec(value: Double): String = NumberFormatHelper.formatDecimal(value, maxDecimals = 1)
 
         // Protein suggestion (> 10%)
         if (error.percentProtein > 10.0 && target.protein > 0.0) {

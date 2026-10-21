@@ -68,8 +68,15 @@ object CipherMemorySecurityHook : SQLiteDatabaseHook {
 /** Deletes the database file and its side files when the key is lost. */
 class DatabaseFiles @Inject constructor(@ApplicationContext private val context: Context) {
 
-    fun deleteAll() {
+    private fun allPaths(): List<String> {
         val base = context.getDatabasePath(ControlCalDatabase.NAME).absolutePath
-        listOf(base, "$base-wal", "$base-shm", "$base-journal").forEach { File(it).delete() }
+        return listOf(base, "$base-wal", "$base-shm", "$base-journal")
+    }
+
+    fun exists(): Boolean = allPaths().any { File(it).exists() }
+
+    fun deleteAll() {
+        allPaths().forEach { File(it).delete() }
     }
 }
+

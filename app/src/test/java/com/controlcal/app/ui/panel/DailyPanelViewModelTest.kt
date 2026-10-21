@@ -405,6 +405,64 @@ class DailyPanelViewModelTest {
     }
 
     @Test
+    fun onAddWater_updatesWaterMlAndClampsAtZero() = runTest {
+        val today = LocalDate.now()
+        viewModel.loadDay(today)
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.uiState.value.waterMl)
+
+        viewModel.onAddWater(250)
+        advanceUntilIdle()
+        assertEquals(250, viewModel.uiState.value.waterMl)
+
+        viewModel.onAddWater(500)
+        advanceUntilIdle()
+        assertEquals(750, viewModel.uiState.value.waterMl)
+
+        viewModel.onAddWater(-1000)
+        advanceUntilIdle()
+        assertEquals(0, viewModel.uiState.value.waterMl)
+    }
+
+    @Test
+    fun onSuggestionTapped_whenSameProductExistsInMeal_mergesAndAllowsUndo() = runTest {
+        val today = LocalDate.now()
+        val existingEntry = MealEntry(
+            id = 1L,
+            date = today.toString(),
+            meal = DefaultMealIds.BREAKFAST,
+            productId = testProduct.id,
+            productName = testProduct.name,
+            grams = 50.0,
+            kcal = 185.0,
+            protein = 6.75,
+            carbs = 30.0,
+            fat = 3.5,
+            loggedAt = 1000L,
+        )
+        fakeMealEntryRepository.entries.add(existingEntry)
+        viewModel.loadDay(today)
+        advanceUntilIdle()
+
+        val suggestion = QuickLogSuggestion(
+            productId = testProduct.id,
+            productName = testProduct.name,
+            defaultGrams = 40.0,
+            score = 5.0,
+            targetMeal = DefaultMealIds.BREAKFAST,
+            lastLoggedAt = 1000L,
+        )
+
+        viewModel.onSuggestionTapped(suggestion)
+        advanceUntilIdle()
+
+        val breakfastEntries = viewModel.uiState.value.entriesByMeal[DefaultMealIds.BREAKFAST] ?: emptyList()
+        assertEquals(1, breakfastEntries.size)
+        assertEquals(90.0, breakfastEntries.first().grams, 0.001)
+    }
+
+    @Test
     fun tdeeProposal_whenSufficientDataAndNoRecentReview_showsProposalCard() = runTest {
         val today = LocalDate.now()
         // Provide 16 days of food intake in the last 21 days at 1700 kcal (creating a deficit > 150 kcal)
@@ -762,8 +820,22 @@ private class FakeDailyLogRepository : DailyLogRepository {
             logs[date] = DailyLog(date = date, dayType = dayType)
         }
     }
-    override suspend fun setWaterMl(date: String, waterMl: Int) {}
-    override suspend fun setNotes(date: String, notes: String?) {}
+    override suspend fun setWaterMl(date: String, waterMl: Int) {
+        val existing = logs[date]
+        if (existing != null) {
+            logs[date] = existing.copy(waterMl = waterMl)
+        } else {
+            logs[date] = DailyLog(date = date, dayType = DayType.REST, waterMl = waterMl)
+        }
+    }
+    override suspend fun setNotes(date: String, notes: String?) {
+        val existing = logs[date]
+        if (existing != null) {
+            logs[date] = existing.copy(notes = notes)
+        } else {
+            logs[date] = DailyLog(date = date, dayType = DayType.REST, notes = notes)
+        }
+    }
 }
 
 private class FakeUserSettingsRepository : UserSettingsRepository {
@@ -881,6 +953,19 @@ private class FakeMealEntryRepository : MealEntryRepository {
         val id = if (entry.id == 0L) (entries.size + 1).toLong() else entry.id
         entries.add(entry.copy(id = id))
         return id
+    }
+
+    override suspend fun save(entry: MealEntry): com.controlcal.core.nutrition.MealEntrySaveResult {
+        val current = getByDateAndMeal(entry.date, entry.meal)
+        val candidate = com.controlcal.core.nutrition.MealEntryMerger.findMergeCandidate(current, entry)
+        return if (candidate != null) {
+            val merged = com.controlcal.core.nutrition.MealEntryMerger.merge(candidate, entry)
+            update(merged)
+            com.controlcal.core.nutrition.MealEntrySaveResult.Merged(mergedEntry = merged, previousEntry = candidate)
+        } else {
+            val id = insert(entry)
+            com.controlcal.core.nutrition.MealEntrySaveResult.Created(entry.copy(id = id))
+        }
     }
 
     override suspend fun insertAll(entries: List<MealEntry>): List<Long> {

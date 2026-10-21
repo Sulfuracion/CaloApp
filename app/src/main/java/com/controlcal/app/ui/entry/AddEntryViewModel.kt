@@ -11,6 +11,7 @@ import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
 import com.controlcal.core.search.ProductSearchEngine
+import com.controlcal.core.suggest.QuickLogRanker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -99,6 +100,7 @@ class AddEntryViewModel(
             searchQueryFlow.value = ""
 
             val configs = mealConfigRepository.getMealConfigs()
+            val activeMeals = configs.filter { it.isActive }.sortedBy { it.startTime }
             val mealName = configs.find { it.id == mealId }?.name ?: mealId
 
             cachedActiveProducts = productRepository.getActiveProducts()
@@ -108,9 +110,25 @@ class AddEntryViewModel(
             _uiState.update {
                 it.copy(
                     targetMealName = mealName,
+                    availableMeals = activeMeals,
                     isLoading = false,
                 )
             }
+        }
+    }
+
+    fun onSelectTargetMeal(mealId: String) {
+        val state = _uiState.value
+        if (state.targetMealId == mealId) return
+        val mealName = state.availableMeals.find { it.id == mealId }?.name ?: mealId
+        _uiState.update {
+            it.copy(
+                targetMealId = mealId,
+                targetMealName = mealName,
+            )
+        }
+        viewModelScope.launch {
+            loadHabitualFoods(mealId)
         }
     }
 
@@ -119,35 +137,33 @@ class AddEntryViewModel(
         val history = mealEntryRepository.getSince(sixtyDaysAgo)
         cachedRecentProductIds = history.mapNotNull { it.productId }.distinct()
         val activeProducts = cachedActiveProducts.associateBy { it.id }
+        val fallbackServings = cachedActiveProducts
+            .mapNotNull { p -> p.servingG?.let { p.id to it } }
+            .toMap()
 
-        // Filter by meal first, falling back to any meal if empty (excluding quick calories with null productId)
-        val mealEntries = history.filter { it.meal == mealId && it.productId != null && it.grams > 0.0 }
-        val sourceEntries = mealEntries.ifEmpty {
-            history.filter { it.productId != null && it.grams > 0.0 }
-        }
+        val suggestions = QuickLogRanker.rankHabitualsForMeal(
+            entries = history,
+            mealId = mealId,
+            activeProductIds = activeProducts.keys,
+            fallbackServingByProduct = fallbackServings,
+            limit = 6,
+        )
 
-        val grouped = sourceEntries.groupBy { it.productId }
-        val rankedHabituals = grouped.mapNotNull { (productId, entries) ->
-            if (productId == null) return@mapNotNull null
-            val product = activeProducts[productId] ?: return@mapNotNull null
-            // Mode of grams
-            val mostFrequentGrams = entries
-                .groupBy { it.grams }
-                .maxByOrNull { it.value.size }
-                ?.key ?: product.servingG ?: 100.0
-
-            val macros = NutritionCalculator.calculatePortionMacros(product, mostFrequentGrams)
+        val rankedHabituals = suggestions.mapNotNull { suggestion ->
+            val product = activeProducts[suggestion.productId] ?: return@mapNotNull null
+            val macros = NutritionCalculator.calculatePortionMacros(product, suggestion.defaultGrams)
             HabitualFoodUiModel(
                 product = product,
-                defaultGrams = mostFrequentGrams,
+                defaultGrams = suggestion.defaultGrams,
                 formattedQuantity = FoodPortionFormatter.formatQuantity(
-                    grams = mostFrequentGrams,
+                    grams = suggestion.defaultGrams,
                     unitG = product.unitG,
                     unitName = product.unitName,
+                    isLiquid = product.isLiquid,
                 ),
                 formattedKcal = "${NumberFormatHelper.formatDecimal(macros.kcal)} kcal",
             )
-        }.take(6)
+        }
 
         _uiState.update { it.copy(habitualFoods = rankedHabituals) }
     }
@@ -396,7 +412,13 @@ class AddEntryViewModel(
                 }
                 onSuccess(result)
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false) }
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        inputQuantityError = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                        userMessage = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                    )
+                }
             }
         }
     }
@@ -416,7 +438,12 @@ class AddEntryViewModel(
                 }
                 onSuccess(result)
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false) }
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        userMessage = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                    )
+                }
             }
         }
     }

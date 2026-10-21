@@ -150,6 +150,7 @@ class MealDetailViewModel @Inject constructor(
                     grams = entry.grams,
                     unitG = product?.unitG,
                     unitName = product?.unitName,
+                    isLiquid = product?.isLiquid ?: false,
                 )
             }
             val kcalFormatted = if (isTare) {
@@ -199,6 +200,7 @@ class MealDetailViewModel @Inject constructor(
                 grams = updated.grams,
                 unitG = product?.unitG,
                 unitName = product?.unitName,
+                isLiquid = product?.isLiquid ?: false,
             )
             _feedbackEvents.send(
                 UiFeedbackEvent.Success(
@@ -225,6 +227,7 @@ class MealDetailViewModel @Inject constructor(
                 grams = updated.grams,
                 unitG = product?.unitG,
                 unitName = product?.unitName,
+                isLiquid = product?.isLiquid ?: false,
             )
             _feedbackEvents.send(
                 UiFeedbackEvent.Success(
@@ -319,6 +322,7 @@ class MealDetailViewModel @Inject constructor(
                 grams = entry.grams,
                 unitG = product?.unitG,
                 unitName = product?.unitName,
+                isLiquid = product?.isLiquid ?: false,
             )
             loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
             _feedbackEvents.send(
@@ -340,6 +344,7 @@ class MealDetailViewModel @Inject constructor(
                 grams = mergedEntry.grams,
                 unitG = product?.unitG,
                 unitName = product?.unitName,
+                isLiquid = product?.isLiquid ?: false,
             )
             _uiState.update {
                 it.copy(
@@ -395,8 +400,16 @@ class MealDetailViewModel @Inject constructor(
 
             if (eligibleProductIds.isEmpty()) {
                 _uiState.update {
-                    it.copy(userMessage = "No hay alimentos en esta comida para restar sobras")
+                    it.copy(
+                        userMessage = "No hay alimentos en esta comida para restar sobras",
+                        isOptionsMenuExpanded = false,
+                    )
                 }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.meal_detail_tare_empty_meal)
+                    )
+                )
                 return@launch
             }
 

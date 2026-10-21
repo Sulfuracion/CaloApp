@@ -30,6 +30,8 @@ interface MealEntryRepository {
     suspend fun getByDateAndMeal(date: String, meal: String): List<MealEntry>
     suspend fun getByProduct(productId: Long): List<MealEntry>
     suspend fun getSince(sinceMillis: Long): List<MealEntry>
+    suspend fun getAll(): List<MealEntry> = getSince(0L)
+    suspend fun deleteAll() {}
     suspend fun getLatestDateWithMealBefore(date: String, meal: String): String?
     suspend fun countByMeal(meal: String): Int
     suspend fun updateLoggedAtForMeal(date: String, meal: String, loggedAt: Long) {

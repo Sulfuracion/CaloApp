@@ -43,6 +43,7 @@ data class DailyPanelUiState(
     val portionPreviewCarbs: Double = 0.0,
     val portionPreviewFat: Double = 0.0,
     val dayType: DayType = DayType.REST,
+    val waterMl: Int = 0,
     val activeGoalProfile: GoalProfile? = null,
     val dayRemaining: DayRemaining? = null,
     val tdeeProposal: TdeeGoalProposal? = null,

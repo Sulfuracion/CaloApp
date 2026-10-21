@@ -17,6 +17,9 @@ class ControlCalApplication : Application() {
         Thread(
             {
                 runCatching {
+                    com.controlcal.app.ui.ocr.OcrCaptureViewModel.cleanupOrphanedTempPhotos(appContext.cacheDir)
+                }
+                runCatching {
                     EntryPointAccessors.fromApplication(appContext, DatabaseInitEntryPoint::class.java)
                         .databaseProvider()
                         .open()

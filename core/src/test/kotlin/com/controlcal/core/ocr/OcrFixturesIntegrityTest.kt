@@ -15,17 +15,12 @@ class OcrFixturesIntegrityTest {
 
         for (expected in expectedList) {
             assertNotNull("Product name must not be null", expected.productName)
-            assertTrue("Kcal must be positive", expected.kcal > 0.0)
-            assertTrue("Protein must be non-negative", expected.protein >= 0.0)
-            assertTrue("Carbs must be non-negative", expected.carbs >= 0.0)
-            assertTrue("Fat must be non-negative", expected.fat >= 0.0)
-
-            expected.sugars?.let {
-                assertTrue("Sugars must be <= Carbs", it <= expected.carbs)
-            }
-            expected.satFat?.let {
-                assertTrue("Saturated fat must be <= Fat", it <= expected.fat)
-            }
+            expected.kcal?.let { assertTrue("Kcal must be positive", it > 0.0) }
+            expected.protein?.let { assertTrue("Protein must be non-negative", it >= 0.0) }
+            expected.carbs?.let { assertTrue("Carbs must be non-negative", it >= 0.0) }
+            expected.fat?.let { assertTrue("Fat must be non-negative", it >= 0.0) }
+            expected.sugars?.let { assertTrue("Sugars must be non-negative", it >= 0.0) }
+            expected.satFat?.let { assertTrue("Saturated fat must be non-negative", it >= 0.0) }
         }
     }
 

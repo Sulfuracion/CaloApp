@@ -574,7 +574,7 @@ private fun MealDetailEntryRow(
                             shape = RoundedCornerShape(4.dp),
                         ) {
                             Text(
-                                text = stringResource(R.string.meal_detail_sobras_badge),
+                                text = stringResource(R.string.meal_detail_tare_badge),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onTertiary,
                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),

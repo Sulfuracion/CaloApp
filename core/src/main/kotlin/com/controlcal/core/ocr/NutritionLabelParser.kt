@@ -26,6 +26,7 @@ object NutritionLabelParser {
         val value: Double,
         val isApproximate: Boolean = false,
         val fromKj: Boolean = false,
+        val inferredDecimal: Boolean = false,
         val rawToken: String = ""
     )
 
@@ -74,66 +75,10 @@ object NutritionLabelParser {
             }
         }
 
-        // Special fallback for Salt if keyword "Sal" was missing but number is right below Protein (e.g. label_21)
-        if (!extractedValues.containsKey(NutrientType.SALT) && detectedRows.containsKey(NutrientType.PROTEIN) && col100gBox != null) {
-            val proteinLine = detectedRows[NutrientType.PROTEIN]!!
-            val colCenter = (col100gBox.left + col100gBox.right) / 2
-            val candidateBelow = normalizedLines.filter { line ->
-                val candCenter = (line.box.left + line.box.right) / 2
-                abs(candCenter - colCenter) < 100 &&
-                    line.box.top > proteinLine.box.bottom &&
-                    line.box.top <= proteinLine.box.bottom + 150 &&
-                    hasNumericContent(line.normalizedText)
-            }.minByOrNull { it.box.top }
-
-            if (candidateBelow != null) {
-                val parsed = extractNumberFromText(candidateBelow.normalizedText)
-                if (parsed != null && parsed.value <= 15.0) {
-                    extractedValues[NutrientType.SALT] = parsed
-                }
-            }
-        }
-
-        // Special fallback for Carbs if Sugars is 0.0 and Carbs was not found (e.g. label_14 solomillo)
-        if (!extractedValues.containsKey(NutrientType.CARBS) && extractedValues[NutrientType.SUGARS]?.value == 0.0) {
-            extractedValues[NutrientType.CARBS] = ParsedValue(value = 0.0, isApproximate = false, rawToken = "0")
-        }
-
-        // Special fallback for missing Fat if ML Kit skipped line (e.g. label_03 salsa light): deduce using Atwater
-        if (!extractedValues.containsKey(NutrientType.FAT)) {
-            val kcal = extractedValues[NutrientType.ENERGY]?.value
-            var c = extractedValues[NutrientType.CARBS]?.value
-            val p = extractedValues[NutrientType.PROTEIN]?.value
-            if (kcal != null && p != null && c != null) {
-                if (c >= 10.0 && kcal - 4.0 * c < 150) {
-                    c = round((c / 10.0) * 10.0) / 10.0
-                    extractedValues[NutrientType.CARBS] = extractedValues[NutrientType.CARBS]!!.copy(value = c)
-                }
-                val remainingKcal = kcal - 4.0 * p - 4.0 * c
-                if (remainingKcal > 0) {
-                    val deducedF = round((remainingKcal / 9.0) * 10.0) / 10.0
-                    extractedValues[NutrientType.FAT] = ParsedValue(value = deducedF, isApproximate = true)
-                }
-            }
-        }
-
         if (extractedValues.isEmpty()) return null
 
-        // Refine decimal heuristics (Step 1 & 7)
+        // Refine OCR character confusions in numeric context (Step 1 & 7)
         refineDecimalValues(extractedValues)
-
-        // Attempt Atwater deduction if a macro was missed by OCR
-        attemptMacroDeduction(extractedValues)
-
-        // Special fallback for missing SatFat in high protein meats (e.g. label_15 jamón cocido)
-        if (!extractedValues.containsKey(NutrientType.SAT_FAT)) {
-            val p = extractedValues[NutrientType.PROTEIN]?.value
-            val f = extractedValues[NutrientType.FAT]?.value
-            if (p != null && p >= 15.0 && f != null && f in 1.0..10.0) {
-                val estimatedSatFat = round(f * 0.37 * 10.0) / 10.0
-                extractedValues[NutrientType.SAT_FAT] = ParsedValue(value = estimatedSatFat, isApproximate = true)
-            }
-        }
 
         // Build initial OcrParsedNutrients
         val approximations = mutableSetOf<String>()
@@ -174,6 +119,7 @@ object NutritionLabelParser {
             var conf = 0.95f
             if (parsed.isApproximate) conf = 0.90f
             if (parsed.fromKj) conf = 0.85f
+            if (parsed.inferredDecimal) conf = min(conf, 0.80f)
             if (validationResult.invalidFields.contains(field)) {
                 conf = 0.40f
             }
@@ -193,9 +139,7 @@ object NutritionLabelParser {
     private fun normalizeText(text: String): String {
         val lower = text.lowercase()
         val nfd = Normalizer.normalize(lower, Normalizer.Form.NFD)
-        var s = nfd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-        s = s.replace("gras as", "grasas")
-        return s
+        return nfd.replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
     // Step 4: Locate 100g / 100ml column header box
@@ -204,6 +148,7 @@ object NutritionLabelParser {
             Regex("(?:por|o/|valor\\s+medio\\s+por)?\\s*100\\s*(?:g|ml|9)\\b"),
             Regex("\\b100\\s*(?:g|ml|9)\\b")
         )
+        val secondColPattern = Regex("(?:\\||%|porc|rac|dosis|unid|\\b\\d{1,2}\\s*(?:g|ml)\\b)")
         for (pattern in patterns) {
             val match = lines.firstOrNull { pattern.containsMatchIn(it.normalizedText) }
             if (match != null) {
@@ -213,9 +158,9 @@ object NutritionLabelParser {
                 val idx100 = text.indexOf("100")
                 if (idx100 >= 0) {
                     val after100 = text.substring(idx100 + 3)
-                    val splitIdxRelative = after100.indexOfAny(listOf("|", "30", "%", "porc", "rac"))
-                    if (splitIdxRelative >= 0) {
-                        val splitIdx = idx100 + 3 + splitIdxRelative
+                    val secondColMatch = secondColPattern.find(after100)
+                    if (secondColMatch != null) {
+                        val splitIdx = idx100 + 3 + secondColMatch.range.first
                         val fraction = splitIdx.toDouble() / text.length
                         val right = box.left + ((box.right - box.left) * fraction).toInt()
                         return OcrBox(box.left, box.top, right, box.bottom)
@@ -325,17 +270,19 @@ object NutritionLabelParser {
     }
 
     private fun isIngredientParagraph(line: NormalizedLine): Boolean {
-        if (line.normalizedText.endsWith("grasas/") || line.normalizedText.endsWith("grasas") ||
-            line.normalizedText.endsWith(".grasas") || line.normalizedText.endsWith("lipidos") ||
-            line.normalizedText.endsWith("energia") || line.normalizedText.endsWith("carbono") ||
-            line.normalizedText.endsWith("proteinas")
+        val text = line.normalizedText
+        if (text.endsWith("grasas/") || text.endsWith("grasas") ||
+            text.endsWith(".grasas") || text.endsWith("lipidos") ||
+            text.endsWith("energia") || text.endsWith("carbono") ||
+            text.endsWith("proteinas")
         ) {
             return false
         }
-        if (line.box.left < 500 && line.normalizedText.length > 35) return true
-        if (line.normalizedText.contains(",") && line.normalizedText.contains("leche") && line.box.left < 500) return true
-        if (line.normalizedText.contains("aceite") || line.normalizedText.contains("harina")) return true
-        if (line.normalizedText.contains("fibra de guisante") || line.normalizedText.contains("fibra de")) return true
+        // General ingredient list markers: comma-separated lists, food additive E-numbers, or percentages with commas
+        if (text.count { it == ',' } >= 2) return true
+        if (Regex("\\be-?\\d{3}[a-z]?\\b").containsMatchIn(text)) return true
+        if (text.contains(",") && text.contains("%")) return true
+        if (text.contains("fibra de ")) return true
         return false
     }
 
@@ -353,18 +300,19 @@ object NutritionLabelParser {
     }
 
     private fun isExcludedHeaderLine(text: String): Boolean {
-        if (text.contains("alto en") || text.contains("alto %") || text.contains("con proteinas de la leche")) return true
-        if (text.contains("bajo en") || text.contains("en grasa") || text.contains("en proteinas")) return true
+        if (text.contains("alto en") || text.contains("alto %") || text.contains("bajo en")) return true
+        if (text.contains("en grasa") || text.contains("en proteinas") || text.contains("con proteinas")) return true
+        if (text.contains("proteinas de") || text.contains("proteinasde") || text.contains("proteina de")) return true
         if (text.contains("ingredientes") || text.contains("conservar") || text.contains("fabricado por")) return true
-        if (text.contains("mantequilla con sal")) return true
+        if (text.contains("con sal") || text.contains("sin sal")) return true
         if (text.startsWith("valor medio por 100")) return true
         return false
     }
 
     private fun isEnergyKeyword(text: String): Boolean {
         if (text.startsWith("valor medio por 100")) return false
-        if (text.contains("menos de grasa")) return false
-        return (text.contains("energ") || text.contains("labr energ") ||
+        if (text.contains("menos de grasa") || text.contains("menos gordura")) return false
+        return (text.contains("energ") ||
             text.trim() == "valor" ||
             (text.contains("kj") && (text.contains("kcal") || text.contains("keal"))))
     }
@@ -391,17 +339,18 @@ object NutritionLabelParser {
     }
 
     private fun isFiberKeyword(text: String): Boolean {
-        if (text.contains("guisante")) return false
+        if (text.contains("fibra de ")) return false
         return text.contains("fibra")
     }
 
     private fun isProteinKeyword(text: String): Boolean {
-        if (text.contains("leche") || text.contains("alto %") || text.contains("alto en") || text.contains("en proteinas")) return false
+        if (text.contains("con proteinas") || text.contains("alto %") || text.contains("alto en") || text.contains("en proteinas")) return false
         return text.contains("proteina") || text.contains("proteins")
     }
 
     private fun isSaltKeyword(text: String): Boolean {
-        if (text.contains("ingrediente") || text.contains("carne") || text.contains("queso") || text.contains("mantequilla")) return false
+        if (text.contains("ingrediente") || text.contains("con sal") || text.contains("sin sal")) return false
+        if (text.contains(",")) return false
         val clean = text.replace(Regex("[:|/\\-]"), " ").trim()
         val tokens = clean.split(Regex("\\s+"))
         return tokens.any { it == "sal" || it == "salt" || it == "sa" }
@@ -618,18 +567,18 @@ object NutritionLabelParser {
         }
     }
 
-    private fun hasUnitSuffix(text: String): Boolean {
-        return text.contains("kcal") || text.contains("kj") || Regex("\\d+\\s*(?:g|mg|9)").containsMatchIn(text)
-    }
-
     private fun hasNumericContent(text: String): Boolean {
         if (text.contains("trazas") || text.contains("tracos")) return true
         return Regex("\\d").containsMatchIn(text)
     }
 
     private fun extractInlineNutrientNumber(text: String): ParsedValue? {
+        val trimmed = text.trim()
+        if (Regex("(?:[:|\\-]?\\s*|\\s+)(?:trazas|tracos)$").containsMatchIn(trimmed)) {
+            return ParsedValue(value = 0.0, isApproximate = true, rawToken = "trazas")
+        }
         val pattern = Regex("(?:[:|\\-]?\\s*|de\\s+)?(<?\\s*\\d+(?:[\\.,]\\d+)?)\\s*(?:g|9|mg)?$")
-        val match = pattern.find(text.trim())
+        val match = pattern.find(trimmed)
         if (match != null) {
             val rawStr = match.groupValues[1]
             return parseNumberString(rawStr)
@@ -638,13 +587,9 @@ object NutritionLabelParser {
     }
 
     private fun extractNumberFromText(text: String): ParsedValue? {
-        var clean = text.trim()
+        val clean = text.trim()
         if (clean.contains("trazas") || clean.contains("tracos")) {
             return ParsedValue(value = 0.0, isApproximate = true, rawToken = "trazas")
-        }
-
-        if (clean.startsWith("b,")) {
-            clean = "5," + clean.substring(2)
         }
 
         val pattern = Regex("(<?\\s*\\d+(?:[\\.,]\\d+)?)\\s*(?:g|9|mg)?")
@@ -663,7 +608,8 @@ object NutritionLabelParser {
         s = cleanNumberString(s)
 
         val num = s.toDoubleOrNull() ?: return null
-        return ParsedValue(value = num, isApproximate = isApprox, rawToken = s)
+        val finalNum = if (isApprox && num <= 0.5) 0.5 else num
+        return ParsedValue(value = finalNum, isApproximate = isApprox, rawToken = s)
     }
 
     private fun cleanNumberString(raw: String): String {
@@ -680,13 +626,14 @@ object NutritionLabelParser {
         return s
     }
 
-    // Heuristics for OCR missing decimal points and Atwater checks
+    // Step 1: Handle OCR missing decimal commas and trailing '9'-as-'g' artifacts
     private fun refineDecimalValues(extracted: MutableMap<NutrientType, ParsedValue>) {
         for ((type, parsed) in extracted.entries) {
             if (type == NutrientType.ENERGY) continue
 
             var v = parsed.value
             val raw = parsed.rawToken
+            var inferred = false
 
             if (raw.startsWith("0") && raw.length == 3 && !raw.contains(".") && !raw.contains(",")) {
                 v = if (raw.endsWith("9")) {
@@ -694,44 +641,32 @@ object NutritionLabelParser {
                 } else {
                     raw.toDouble() / 100.0
                 }
-            }
-
-            if (raw == "39" && type == NutrientType.SAT_FAT) {
-                v = 3.0
-            }
-
-            if (raw.length == 3 && raw.endsWith("9") && !raw.contains(".") && !raw.contains(",")) {
-                val digits = raw.substring(0, 2)
-                v = if (digits == "95") {
-                    95.0
-                } else {
-                    digits.toDouble() / 10.0
-                }
-            }
-
-            if (raw.length == 4 && raw.endsWith("9") && !raw.contains(".") && !raw.contains(",")) {
-                val digits = raw.substring(0, 3)
-                v = digits.toDouble() / 10.0
-            }
-
-            if (type == NutrientType.SUGARS && v == 154.0) {
-                v = 1.5
+                inferred = true
+            } else if (raw.length in 3..4 && raw.endsWith("9") && !raw.contains(".") && !raw.contains(",")) {
+                // Trailing '9' is OCR misread of unit 'g' (e.g. "959" -> "95g", "1369" -> "136g")
+                v = raw.substring(0, raw.length - 1).toDouble()
+                inferred = true
             }
 
             while (v > 100.0) {
                 v /= 10.0
+                inferred = true
             }
 
             if (type == NutrientType.SALT && v > 15.0) {
                 v /= 10.0
+                inferred = true
             }
 
             if (v != parsed.value) {
-                extracted[type] = parsed.copy(value = round(v * 100.0) / 100.0)
+                extracted[type] = parsed.copy(
+                    value = round(v * 100.0) / 100.0,
+                    inferredDecimal = inferred
+                )
             }
         }
 
-        // Caloric balance validation: check for missing decimal points in 2-digit numbers
+        // Check if 2-digit numbers missed their decimal separator (e.g., "14g" for "1,4 g")
         val kcal = extracted[NutrientType.ENERGY]?.value
         if (kcal != null && kcal > 0) {
             val pParsed = extracted[NutrientType.PROTEIN]
@@ -745,7 +680,6 @@ object NutritionLabelParser {
 
             val initialDiff = abs(4.0 * pOrig + 4.0 * cOrig + 9.0 * fOrig + 2.0 * fiber - kcal)
 
-            // ONLY attempt decimal scaling if caloric balance error exceeds 15% (PLAN.md Section 5.3 Step 7)
             if (initialDiff > 0.15 * kcal) {
                 var bestDiff = initialDiff
                 var bestP = pOrig
@@ -775,104 +709,45 @@ object NutritionLabelParser {
                 }
 
                 if (bestP != pOrig && extracted.containsKey(NutrientType.PROTEIN)) {
-                    extracted[NutrientType.PROTEIN] = extracted[NutrientType.PROTEIN]!!.copy(value = bestP)
+                    extracted[NutrientType.PROTEIN] = extracted[NutrientType.PROTEIN]!!.copy(value = bestP, inferredDecimal = true)
                 }
                 if (bestC != cOrig && extracted.containsKey(NutrientType.CARBS)) {
-                    extracted[NutrientType.CARBS] = extracted[NutrientType.CARBS]!!.copy(value = bestC)
+                    extracted[NutrientType.CARBS] = extracted[NutrientType.CARBS]!!.copy(value = bestC, inferredDecimal = true)
                 }
                 if (bestF != fOrig && extracted.containsKey(NutrientType.FAT)) {
-                    extracted[NutrientType.FAT] = extracted[NutrientType.FAT]!!.copy(value = bestF)
-                }
-
-                // Check if single-digit values were truncated by OCR
-                var currentP = extracted[NutrientType.PROTEIN]?.value ?: 0.0
-                var currentC = extracted[NutrientType.CARBS]?.value ?: 0.0
-                var currentF = extracted[NutrientType.FAT]?.value ?: 0.0
-                var currentKcal = 4.0 * currentP + 4.0 * currentC + 9.0 * currentF + 2.0 * fiber
-
-                if (currentKcal < kcal * 0.7) {
-                    for (tens in listOf(10.0, 20.0, 30.0, 40.0)) {
-                        val candidateF = currentF + tens
-                        val testKcal = 4.0 * currentP + 4.0 * currentC + 9.0 * candidateF + 2.0 * fiber
-                        if (abs(testKcal - kcal) <= 0.10 * kcal) {
-                            currentF = candidateF
-                            extracted[NutrientType.FAT]?.let { extracted[NutrientType.FAT] = it.copy(value = currentF) }
-                            break
-                        }
-                    }
-                    for (tens in listOf(10.0, 20.0)) {
-                        val candidateP = currentP + tens
-                        val testKcal = 4.0 * candidateP + 4.0 * currentC + 9.0 * currentF + 2.0 * fiber
-                        if (abs(testKcal - kcal) <= 0.10 * kcal) {
-                            currentP = candidateP
-                            extracted[NutrientType.PROTEIN]?.let { extracted[NutrientType.PROTEIN] = it.copy(value = currentP) }
-                            break
-                        }
-                    }
+                    extracted[NutrientType.FAT] = extracted[NutrientType.FAT]!!.copy(value = bestF, inferredDecimal = true)
                 }
             }
         }
 
-        // Rule: sugars <= carbs (PLAN.md Step 7)
+        // Sub-macro missing decimal separator check: sugars <= carbs, satFat <= fat
         val carbs = extracted[NutrientType.CARBS]?.value
-        val sugars = extracted[NutrientType.SUGARS]?.value
-        if (carbs != null && sugars != null && sugars > carbs + 0.1) {
-            val fixedSugars = sugars / 10.0
+        val sugarsParsed = extracted[NutrientType.SUGARS]
+        if (carbs != null && sugarsParsed != null &&
+            !sugarsParsed.rawToken.contains(".") && !sugarsParsed.rawToken.contains(",") &&
+            sugarsParsed.value > carbs + 0.1
+        ) {
+            val fixedSugars = sugarsParsed.value / 10.0
             if (fixedSugars <= carbs + 0.1) {
-                extracted[NutrientType.SUGARS]?.let {
-                    extracted[NutrientType.SUGARS] = it.copy(value = round(fixedSugars * 100.0) / 100.0)
-                }
+                extracted[NutrientType.SUGARS] = sugarsParsed.copy(
+                    value = round(fixedSugars * 100.0) / 100.0,
+                    inferredDecimal = true
+                )
             }
         }
 
-        // Rule: satFat <= fat (PLAN.md Step 7)
         val fat = extracted[NutrientType.FAT]?.value
-        val satFat = extracted[NutrientType.SAT_FAT]?.value
-        if (fat != null && satFat != null && satFat > fat + 0.1) {
-            val fixedSatFat = satFat / 10.0
+        val satFatParsed = extracted[NutrientType.SAT_FAT]
+        if (fat != null && satFatParsed != null &&
+            !satFatParsed.rawToken.contains(".") && !satFatParsed.rawToken.contains(",") &&
+            satFatParsed.value > fat + 0.1
+        ) {
+            val fixedSatFat = satFatParsed.value / 10.0
             if (fixedSatFat <= fat + 0.1) {
-                extracted[NutrientType.SAT_FAT]?.let {
-                    extracted[NutrientType.SAT_FAT] = it.copy(value = round(fixedSatFat * 100.0) / 100.0)
-                }
-            }
-        }
-    }
-
-    // Atwater factor deduction for missing macro: 4P + 4C + 9F = kcal
-    private fun attemptMacroDeduction(extracted: MutableMap<NutrientType, ParsedValue>) {
-        val kcal = extracted[NutrientType.ENERGY]?.value ?: return
-        val p = extracted[NutrientType.PROTEIN]?.value
-        val c = extracted[NutrientType.CARBS]?.value
-        val f = extracted[NutrientType.FAT]?.value
-        val fiber = extracted[NutrientType.FIBER]?.value ?: 0.0
-
-        if (f == null && p != null && c != null && kcal > 0) {
-            val remainingKcal = kcal - 4.0 * p - 4.0 * c - 2.0 * fiber
-            if (remainingKcal >= 0) {
-                val deducedFat = round((remainingKcal / 9.0) * 10.0) / 10.0
-                if (deducedFat in 0.0..100.0) {
-                    extracted[NutrientType.FAT] = ParsedValue(value = deducedFat, isApproximate = true)
-                }
-            }
-        }
-
-        if (p == null && c != null && f != null && kcal > 0) {
-            val remainingKcal = kcal - 4.0 * c - 9.0 * f - 2.0 * fiber
-            if (remainingKcal >= 0) {
-                val deducedP = round((remainingKcal / 4.0) * 10.0) / 10.0
-                if (deducedP in 0.0..100.0) {
-                    extracted[NutrientType.PROTEIN] = ParsedValue(value = deducedP, isApproximate = true)
-                }
-            }
-        }
-
-        if (c == null && p != null && f != null && kcal > 0) {
-            val remainingKcal = kcal - 4.0 * p - 9.0 * f - 2.0 * fiber
-            if (remainingKcal >= 0) {
-                val deducedC = round((remainingKcal / 4.0) * 10.0) / 10.0
-                if (deducedC in 0.0..100.0) {
-                    extracted[NutrientType.CARBS] = ParsedValue(value = deducedC, isApproximate = true)
-                }
+                extracted[NutrientType.SAT_FAT] = satFatParsed.copy(
+                    value = round(fixedSatFat * 100.0) / 100.0,
+                    inferredDecimal = true
+                )
             }
         }
     }

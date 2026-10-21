@@ -167,6 +167,11 @@ class ProductSearchEngineTest {
         assertEquals(4L, allResults[2].id)
         assertEquals(3L, allResults[3].id)
         assertEquals(2L, allResults[4].id)
+
+        // Non-empty query with recents: matching recent product comes before matching non-recent product
+        val queryWithRecents = ProductSearchEngine.search("a", sampleProducts, recentIds)
+        assertEquals(6L, queryWithRecents[0].id)
+        assertEquals(1L, queryWithRecents[1].id)
     }
 
     @Test

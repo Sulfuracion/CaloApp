@@ -20,4 +20,10 @@ class GoalProfileRepositoryImpl @Inject constructor(
 
     override suspend fun getProfilesForDayTypeUpTo(dayType: DayType, date: String): List<GoalProfile> =
         goalProfileDao.profilesForDayTypeUpTo(dayType, date).map { it.toDomain() }
+
+    override suspend fun getAll(): List<GoalProfile> =
+        goalProfileDao.getAll().map { it.toDomain() }
+
+    override suspend fun deleteAll() =
+        goalProfileDao.deleteAll()
 }

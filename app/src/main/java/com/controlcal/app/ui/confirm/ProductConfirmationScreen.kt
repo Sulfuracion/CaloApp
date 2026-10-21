@@ -24,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +43,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -85,19 +87,13 @@ fun ProductConfirmationRoute(
     viewModel: ProductConfirmationViewModel,
     onConfirmed: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {},
     onDiscard: () -> Unit,
+    onNavigateToOcrCapture: (String?) -> Unit = {},
+    onProductDeletedOrArchived: (archived: Boolean, productName: String) -> Unit = { _, _ -> },
     offProduct: OffProduct? = null,
     ocrData: OcrConfirmationData? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(offProduct, ocrData) {
-        if (ocrData != null) {
-            viewModel.initializeFromOcr(ocrData.photoFile, ocrData.parsedNutrients, ocrData.barcode)
-        } else if (offProduct != null) {
-            viewModel.initialize(offProduct)
-        }
-    }
 
     ProductConfirmationScreen(
         uiState = uiState,
@@ -121,6 +117,8 @@ fun ProductConfirmationRoute(
         onDiaryGramsChanged = viewModel::onDiaryGramsChanged,
         onConfirmAndSave = { viewModel.onConfirmAndSave(onConfirmed) },
         onDiscard = { viewModel.onDiscard(onDiscard) },
+        onNavigateToOcrCapture = onNavigateToOcrCapture,
+        onDeleteOrArchive = { viewModel.onDeleteOrArchiveProduct(onProductDeletedOrArchived) },
         modifier = modifier
     )
 }
@@ -149,15 +147,23 @@ fun ProductConfirmationScreen(
     onDiaryGramsChanged: (String) -> Unit,
     onConfirmAndSave: () -> Unit,
     onDiscard: () -> Unit,
+    onNavigateToOcrCapture: (String?) -> Unit = {},
+    onDeleteOrArchive: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val titleRes = when {
+        uiState.editingProductId != null -> R.string.edit_product_title
+        uiState.source == ProductSource.MANUAL -> R.string.manual_entry_title
+        else -> R.string.confirm_product_title
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.confirm_product_title)) },
+                title = { Text(text = stringResource(titleRes)) },
                 navigationIcon = {
                     IconButton(onClick = onDiscard) {
                         Icon(
@@ -180,6 +186,15 @@ fun ProductConfirmationScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (uiState.source == ProductSource.MANUAL && uiState.editingProductId == null) {
+                OutlinedButton(
+                    onClick = { onNavigateToOcrCapture(uiState.barcode.trim().ifEmpty { null }) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.ocr_capture_action_from_manual))
+                }
+            }
+
             // Source Badge if OCR
             if (uiState.source == ProductSource.OCR) {
                 Surface(
@@ -244,6 +259,22 @@ fun ProductConfirmationScreen(
                 }
             }
 
+            if (uiState.saveError != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = uiState.saveError,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+
             // Section 1: General Info
             Text(
                 text = stringResource(R.string.confirm_product_section_general),
@@ -256,6 +287,8 @@ fun ProductConfirmationScreen(
                 onValueChange = onBarcodeChanged,
                 label = { Text(stringResource(R.string.confirm_product_field_barcode)) },
                 modifier = Modifier.fillMaxWidth(),
+                isError = uiState.barcodeError != null,
+                supportingText = uiState.barcodeError?.let { { Text(it) } },
                 singleLine = true
             )
 
@@ -590,77 +623,79 @@ fun ProductConfirmationScreen(
                 )
             }
 
-            // Section 4: Add to diary
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Section 4: Add to diary (only when creating/confirming a product, not editing an existing one)
+            if (uiState.editingProductId == null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.confirm_product_section_diary),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Switch(
-                            checked = uiState.addToDiary,
-                            onCheckedChange = onAddToDiaryChanged
-                        )
-                    }
-
-                    if (uiState.addToDiary) {
-                        Text(
-                            text = stringResource(R.string.confirm_product_meal_label),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            uiState.availableMeals.forEach { meal ->
-                                FilterChip(
-                                    selected = uiState.selectedMeal == meal.id,
-                                    onClick = { onMealSelected(meal.id) },
-                                    label = { Text(meal.name) }
-                                )
-                            }
+                            Text(
+                                text = stringResource(R.string.confirm_product_section_diary),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Switch(
+                                checked = uiState.addToDiary,
+                                onCheckedChange = onAddToDiaryChanged
+                            )
                         }
 
-                        OutlinedTextField(
-                            value = uiState.diaryGrams,
-                            onValueChange = onDiaryGramsChanged,
-                            label = { Text(stringResource(R.string.confirm_product_quantity_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = uiState.diaryGramsError != null,
-                            supportingText = uiState.diaryGramsError?.let { { Text(it) } },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true
-                        )
+                        if (uiState.addToDiary) {
+                            Text(
+                                text = stringResource(R.string.confirm_product_meal_label),
+                                style = MaterialTheme.typography.labelLarge
+                            )
 
-                        Text(
-                            text = stringResource(
-                                R.string.confirm_product_portion_preview,
-                                NumberFormatHelper.formatDecimal(uiState.portionKcal),
-                                NumberFormatHelper.formatDecimal(uiState.portionProtein),
-                                NumberFormatHelper.formatDecimal(uiState.portionCarbs),
-                                NumberFormatHelper.formatDecimal(uiState.portionFat),
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                uiState.availableMeals.forEach { meal ->
+                                    FilterChip(
+                                        selected = uiState.selectedMeal == meal.id,
+                                        onClick = { onMealSelected(meal.id) },
+                                        label = { Text(meal.name) }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = uiState.diaryGrams,
+                                onValueChange = onDiaryGramsChanged,
+                                label = { Text(stringResource(R.string.confirm_product_quantity_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                isError = uiState.diaryGramsError != null,
+                                supportingText = uiState.diaryGramsError?.let { { Text(it) } },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                singleLine = true
+                            )
+
+                            Text(
+                                text = stringResource(
+                                    R.string.confirm_product_portion_preview,
+                                    NumberFormatHelper.formatDecimal(uiState.portionKcal),
+                                    NumberFormatHelper.formatDecimal(uiState.portionProtein),
+                                    NumberFormatHelper.formatDecimal(uiState.portionCarbs),
+                                    NumberFormatHelper.formatDecimal(uiState.portionFat),
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
@@ -690,8 +725,47 @@ fun ProductConfirmationScreen(
                 Text(text = stringResource(R.string.confirm_product_discard_button))
             }
 
+            if (uiState.editingProductId != null) {
+                OutlinedButton(
+                    onClick = { showDeleteDialog = true },
+                    enabled = !uiState.isSaving,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.confirm_product_delete_action),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.confirm_product_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.confirm_product_delete_dialog_message, uiState.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDeleteOrArchive()
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.confirm_product_delete_confirm),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.pantry_dialog_cancel_action))
+                }
+            }
+        )
     }
 }
 
@@ -840,7 +914,11 @@ private fun loadBitmapUpright(file: File, maxDimension: Int = 1280): Bitmap? {
         }
         return if (rotationDegrees != 0f) {
             val matrix = Matrix().apply { postRotate(rotationDegrees) }
-            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            if (rotated != bitmap) {
+                bitmap.recycle()
+            }
+            rotated
         } else {
             bitmap
         }

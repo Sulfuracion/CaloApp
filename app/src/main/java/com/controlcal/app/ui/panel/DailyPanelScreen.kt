@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -127,6 +128,7 @@ fun DailyPanelRoute(
         onDismissEditDialog = viewModel::onDismissEditDialog,
         onAcceptTdeeProposal = viewModel::onAcceptTdeeProposal,
         onRejectTdeeProposal = viewModel::onRejectTdeeProposal,
+        onAddWater = viewModel::onAddWater,
         modifier = modifier,
     )
 }
@@ -157,6 +159,7 @@ fun DailyPanelScreen(
     onDismissEditDialog: () -> Unit,
     onAcceptTdeeProposal: () -> Unit,
     onRejectTdeeProposal: () -> Unit,
+    onAddWater: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -341,6 +344,14 @@ fun DailyPanelScreen(
             }
 
             item {
+                WaterIntakeCard(
+                    waterMl = uiState.waterMl,
+                    onAddWater = { onAddWater(250) },
+                    onSubtractWater = { onAddWater(-250) },
+                )
+            }
+
+            item {
                 Spacer(modifier = Modifier.height(64.dp))
             }
         }
@@ -517,52 +528,66 @@ private fun DailySummaryCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Calories
+            // Calories with circular ring (Task 1.4)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = if (targetKcal > 0.0) {
-                        "${NumberFormatHelper.formatDecimal(totals.kcal)} / ${NumberFormatHelper.formatDecimal(targetKcal)} ${stringResource(R.string.daily_panel_kcal_label)}"
-                    } else {
-                        "${NumberFormatHelper.formatDecimal(totals.kcal)} ${stringResource(R.string.daily_panel_kcal_label)}"
-                    },
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (remaining != null && targetKcal > 0.0) {
-                    val remainingText = if (remaining.surplusKcal > 0.0) {
-                        stringResource(R.string.daily_panel_surplus_kcal, NumberFormatHelper.formatDecimal(remaining.surplusKcal))
-                    } else {
-                        stringResource(R.string.daily_panel_remaining_kcal, NumberFormatHelper.formatDecimal(remaining.remainingKcal))
+                if (targetKcal > 0.0) {
+                    val progress = (totals.kcal / targetKcal.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
+                    val isSurplus = (remaining?.surplusKcal ?: 0.0) > 0.0
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(64.dp),
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 7.dp,
+                            color = if (isSurplus) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.16f),
+                        )
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSurplus) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                    val textColor = if (remaining.surplusKcal > 0.0) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                    Text(
-                        text = remainingText,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium,
-                        color = textColor,
-                    )
                 }
-            }
 
-            if (targetKcal > 0.0) {
-                Spacer(modifier = Modifier.height(8.dp))
-                val progress = (totals.kcal / targetKcal.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (targetKcal > 0.0) {
+                            "${NumberFormatHelper.formatDecimal(totals.kcal)} / ${NumberFormatHelper.formatDecimal(targetKcal)} ${stringResource(R.string.daily_panel_kcal_label)}"
+                        } else {
+                            "${NumberFormatHelper.formatDecimal(totals.kcal)} ${stringResource(R.string.daily_panel_kcal_label)}"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (remaining != null && targetKcal > 0.0) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        val remainingText = if (remaining.surplusKcal > 0.0) {
+                            stringResource(R.string.daily_panel_surplus_kcal, NumberFormatHelper.formatDecimal(remaining.surplusKcal))
+                        } else {
+                            stringResource(R.string.daily_panel_remaining_kcal, NumberFormatHelper.formatDecimal(remaining.remainingKcal))
+                        }
+                        val textColor = if (remaining.surplusKcal > 0.0) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                        Text(
+                            text = remainingText,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = textColor,
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -731,8 +756,9 @@ private fun QuickLogChip(
                 fontWeight = FontWeight.Medium,
             )
             Spacer(modifier = Modifier.width(6.dp))
+            val unitLabel = if (suggestion.isLiquid) "ml" else "g"
             Text(
-                text = "· ${NumberFormatHelper.formatDecimal(suggestion.defaultGrams)} g",
+                text = "· ${NumberFormatHelper.formatDecimal(suggestion.defaultGrams)} $unitLabel",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
             )
@@ -825,6 +851,61 @@ private fun MealCard(
                     contentDescription = stringResource(R.string.daily_panel_meal_add_food_description, mealTitle),
                     modifier = Modifier.size(24.dp),
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WaterIntakeCard(
+    waterMl: Int,
+    onAddWater: () -> Unit,
+    onSubtractWater: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val glasses = waterMl / 250
+    OutlinedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.daily_panel_water_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.daily_panel_water_summary, waterMl, glasses),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onSubtractWater,
+                    enabled = waterMl > 0,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(text = stringResource(R.string.daily_panel_water_subtract_action))
+                }
+                Button(
+                    onClick = onAddWater,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(text = stringResource(R.string.daily_panel_water_add_action))
+                }
             }
         }
     }

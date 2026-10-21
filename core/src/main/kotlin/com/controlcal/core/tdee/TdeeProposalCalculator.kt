@@ -1,5 +1,7 @@
 package com.controlcal.core.tdee
 
+import com.controlcal.core.model.GoalOrigin
+import com.controlcal.core.model.GoalProfile
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -13,6 +15,28 @@ object TdeeProposalCalculator {
 
     const val MAX_WEEKLY_DELTA_KCAL = 150.0
     const val DEFAULT_MIN_KCAL_LIMIT = 1200.0
+
+    /**
+     * Scales an existing [GoalProfile] by applying the calorie delta and minimum limit
+     * from a [TdeeGoalProposal], proportionally scaling protein, carbs, and fat.
+     */
+    fun applyProposalToProfile(
+        currentProfile: GoalProfile,
+        proposal: TdeeGoalProposal,
+        validFrom: String,
+    ): GoalProfile {
+        val newKcal = maxOf(proposal.minKcalLimit, currentProfile.kcal + proposal.deltaKcal)
+        val ratio = if (currentProfile.kcal > 0.0) newKcal / currentProfile.kcal else 1.0
+        return GoalProfile(
+            dayType = currentProfile.dayType,
+            kcal = newKcal,
+            proteinG = (currentProfile.proteinG * ratio * 10.0).roundToInt() / 10.0,
+            carbsG = (currentProfile.carbsG * ratio * 10.0).roundToInt() / 10.0,
+            fatG = (currentProfile.fatG * ratio * 10.0).roundToInt() / 10.0,
+            validFrom = validFrom,
+            origin = GoalOrigin.TDEE,
+        )
+    }
 
     /**
      * Calculates a weekly calorie proposal based on estimated TDEE and the current calorie target.

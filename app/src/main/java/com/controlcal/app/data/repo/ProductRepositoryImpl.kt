@@ -28,6 +28,9 @@ class ProductRepositoryImpl @Inject constructor(
     override suspend fun getActiveProducts(): List<Product> =
         productDao.activeProducts().map { it.toDomain() }
 
+    override suspend fun getAllIncludingArchived(): List<Product> =
+        productDao.allIncludingArchived().map { it.toDomain() }
+
     override suspend fun getPantryProducts(): List<Product> =
         productDao.pantryProducts().map { it.toDomain() }
 
@@ -51,6 +54,12 @@ class ProductRepositoryImpl @Inject constructor(
 
     override suspend fun archive(id: Long) =
         productDao.archive(id)
+
+    override suspend fun delete(id: Long) =
+        productDao.deleteById(id)
+
+    override suspend fun deleteAll() =
+        productDao.deleteAll()
 
     override suspend fun hasEntries(productId: Long): Boolean =
         mealEntryDao.entriesForProduct(productId).isNotEmpty()

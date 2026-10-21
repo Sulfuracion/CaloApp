@@ -6,32 +6,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.controlcal.app.data.off.OffProduct
 import com.controlcal.app.ui.about.AboutScreen
 import com.controlcal.app.ui.confirm.OcrConfirmationData
@@ -75,7 +53,6 @@ enum class MainDestination {
     PRODUCT_CONFIRMATION,
     OCR_CAPTURE,
     ABOUT,
-    MANUAL_ENTRY,
     DEBUG_OCR_COLLECTOR,
     WEIGHT,
     SETTINGS,
@@ -107,6 +84,7 @@ class MainActivity : ComponentActivity() {
                 var selectedOcrData by remember { mutableStateOf<OcrConfirmationData?>(null) }
                 var manualEntryBarcode by remember { mutableStateOf<String?>(null) }
                 var activeMealContext by remember { mutableStateOf<MealEntryContext?>(null) }
+                var returnToPantryAfterConfirmation by remember { mutableStateOf(false) }
 
                 val navigateBack: () -> Unit = {
                     when (currentDestination) {
@@ -135,27 +113,31 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         MainDestination.OCR_CAPTURE -> {
+                            ocrCaptureViewModel.onCancelCapture()
                             currentDestination = MainDestination.SCANNER
                         }
                         MainDestination.PRODUCT_CONFIRMATION -> {
+                            confirmationViewModel.cleanupTempPhoto()
                             selectedOffProduct = null
                             selectedOcrData = null
-                            val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
-                            val targetMeal = activeMealContext?.mealId
-                            dailyPanelViewModel.loadDay(targetDate)
-                            if (targetMeal != null) {
-                                mealDetailViewModel.initialize(targetDate, targetMeal)
-                                currentDestination = MainDestination.MEAL_DETAIL
+                            if (returnToPantryAfterConfirmation) {
+                                returnToPantryAfterConfirmation = false
+                                pantryViewModel.loadProducts()
+                                currentDestination = MainDestination.PANTRY
                             } else {
-                                currentDestination = MainDestination.DAILY_PANEL
+                                val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
+                                val targetMeal = activeMealContext?.mealId
+                                dailyPanelViewModel.loadDay(targetDate)
+                                if (targetMeal != null) {
+                                    mealDetailViewModel.initialize(targetDate, targetMeal)
+                                    currentDestination = MainDestination.MEAL_DETAIL
+                                } else {
+                                    currentDestination = MainDestination.DAILY_PANEL
+                                }
                             }
                         }
                         MainDestination.ABOUT -> {
                             currentDestination = MainDestination.DAILY_PANEL
-                        }
-                        MainDestination.MANUAL_ENTRY -> {
-                            manualEntryBarcode = null
-                            currentDestination = MainDestination.SCANNER
                         }
                         MainDestination.DEBUG_OCR_COLLECTOR -> {
                             currentDestination = MainDestination.SCANNER
@@ -204,7 +186,7 @@ class MainActivity : ComponentActivity() {
                                 currentDestination = MainDestination.SETTINGS
                             },
                             onNavigateToMacroTetris = {
-                                macroTetrisViewModel.loadData()
+                                macroTetrisViewModel.loadData(dailyPanelViewModel.uiState.value.selectedDate)
                                 currentDestination = MainDestination.MACRO_TETRIS
                             },
                             onNavigateToMealDetail = { mealId ->
@@ -251,21 +233,40 @@ class MainActivity : ComponentActivity() {
                                 currentDestination = MainDestination.OCR_CAPTURE
                             },
                             onNavigateToManualEntry = {
+                                selectedOffProduct = null
+                                selectedOcrData = null
                                 manualEntryBarcode = null
-                                currentDestination = MainDestination.MANUAL_ENTRY
+                                returnToPantryAfterConfirmation = false
+                                val ctx = activeMealContext
+                                val selectedMeal = addEntryViewModel.uiState.value.targetMealId.ifEmpty { ctx?.mealId }
+                                confirmationViewModel.initializeForManualEntry(
+                                    barcode = null,
+                                    targetDate = ctx?.date ?: dailyPanelViewModel.uiState.value.selectedDate,
+                                    targetMeal = selectedMeal,
+                                )
+                                currentDestination = MainDestination.PRODUCT_CONFIRMATION
                             },
                             onNavigateToConfirmation = { offProduct ->
                                 selectedOffProduct = offProduct
                                 selectedOcrData = null
+                                returnToPantryAfterConfirmation = false
                                 val ctx = activeMealContext
-                                confirmationViewModel.initialize(offProduct, ctx?.date, ctx?.mealId)
+                                val selectedMeal = addEntryViewModel.uiState.value.targetMealId.ifEmpty { ctx?.mealId }
+                                confirmationViewModel.initialize(
+                                    offProduct = offProduct,
+                                    targetDate = ctx?.date ?: dailyPanelViewModel.uiState.value.selectedDate,
+                                    targetMeal = selectedMeal,
+                                )
                                 currentDestination = MainDestination.PRODUCT_CONFIRMATION
                             },
                             onEntryAdded = { saveResult ->
                                 val ctx = activeMealContext
+                                val selectedMealId = addEntryViewModel.uiState.value.targetMealId.ifEmpty { ctx?.mealId ?: "" }
                                 if (ctx != null) {
-                                    mealDetailViewModel.initialize(ctx.date, ctx.mealId)
-                                    dailyPanelViewModel.loadDay(ctx.date)
+                                    val updatedCtx = ctx.copy(mealId = selectedMealId.ifEmpty { ctx.mealId })
+                                    activeMealContext = updatedCtx
+                                    mealDetailViewModel.initialize(updatedCtx.date, updatedCtx.mealId)
+                                    dailyPanelViewModel.loadDay(updatedCtx.date)
                                     when (saveResult) {
                                         is com.controlcal.core.nutrition.MealEntrySaveResult.Merged -> {
                                             mealDetailViewModel.notifyMerged(saveResult.mergedEntry, saveResult.previousEntry)
@@ -308,8 +309,17 @@ class MainActivity : ComponentActivity() {
                                 currentDestination = MainDestination.ABOUT
                             },
                             onNavigateToManualEntry = { barcode ->
+                                selectedOffProduct = null
+                                selectedOcrData = null
                                 manualEntryBarcode = barcode
-                                currentDestination = MainDestination.MANUAL_ENTRY
+                                returnToPantryAfterConfirmation = false
+                                val ctx = activeMealContext
+                                confirmationViewModel.initializeForManualEntry(
+                                    barcode = barcode,
+                                    targetDate = ctx?.date ?: dailyPanelViewModel.uiState.value.selectedDate,
+                                    targetMeal = ctx?.mealId,
+                                )
+                                currentDestination = MainDestination.PRODUCT_CONFIRMATION
                             },
                             onNavigateToOcrCapture = { barcode ->
                                 manualEntryBarcode = barcode
@@ -349,20 +359,67 @@ class MainActivity : ComponentActivity() {
                     MainDestination.PRODUCT_CONFIRMATION -> {
                         val offProduct = selectedOffProduct
                         val ocrData = selectedOcrData
-                        if (offProduct != null || ocrData != null) {
-                            ProductConfirmationRoute(
-                                offProduct = offProduct,
-                                ocrData = ocrData,
-                                viewModel = confirmationViewModel,
-                                onConfirmed = { saveResult ->
-                                    val savedProductName = confirmationViewModel.uiState.value.name.trim()
-                                    selectedOffProduct = null
-                                    selectedOcrData = null
+                        ProductConfirmationRoute(
+                            offProduct = offProduct,
+                            ocrData = ocrData,
+                            viewModel = confirmationViewModel,
+                            onNavigateToOcrCapture = { barcode ->
+                                manualEntryBarcode = barcode
+                                currentDestination = MainDestination.OCR_CAPTURE
+                            },
+                            onProductDeletedOrArchived = { archived, productName ->
+                                selectedOffProduct = null
+                                selectedOcrData = null
+                                val feedbackRes = if (archived) {
+                                    R.string.feedback_product_archived
+                                } else {
+                                    R.string.feedback_product_deleted
+                                }
+                                if (returnToPantryAfterConfirmation) {
+                                    returnToPantryAfterConfirmation = false
+                                    pantryViewModel.loadProducts()
+                                    pantryViewModel.sendFeedback(
+                                        UiFeedbackEvent.Success(
+                                            UiText.StringResource(feedbackRes, productName)
+                                        )
+                                    )
+                                    currentDestination = MainDestination.PANTRY
+                                } else {
+                                    val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
+                                    dailyPanelViewModel.loadDay(targetDate)
+                                    dailyPanelViewModel.sendFeedback(
+                                        UiFeedbackEvent.Success(
+                                            UiText.StringResource(feedbackRes, productName)
+                                        )
+                                    )
+                                    currentDestination = MainDestination.DAILY_PANEL
+                                }
+                            },
+                            onConfirmed = { saveResult ->
+                                val savedProductName = confirmationViewModel.uiState.value.name.trim()
+                                val wasEditing = confirmationViewModel.uiState.value.editingProductId != null
+                                selectedOffProduct = null
+                                selectedOcrData = null
+                                if (returnToPantryAfterConfirmation) {
+                                    returnToPantryAfterConfirmation = false
+                                    pantryViewModel.loadProducts()
+                                    pantryViewModel.sendFeedback(
+                                        UiFeedbackEvent.Success(
+                                            UiText.StringResource(
+                                                if (wasEditing) R.string.feedback_product_updated else R.string.feedback_product_saved,
+                                                savedProductName,
+                                            )
+                                        )
+                                    )
+                                    currentDestination = MainDestination.PANTRY
+                                } else {
                                     val targetDate = activeMealContext?.date ?: dailyPanelViewModel.uiState.value.selectedDate
                                     val targetMeal = activeMealContext?.mealId
                                     dailyPanelViewModel.loadDay(targetDate)
                                     if (targetMeal != null) {
-                                        mealDetailViewModel.initialize(targetDate, targetMeal)
+                                        val finalMeal = confirmationViewModel.uiState.value.selectedMeal.ifEmpty { targetMeal }
+                                        activeMealContext = MealEntryContext(targetDate, finalMeal)
+                                        mealDetailViewModel.initialize(targetDate, finalMeal)
                                         when (saveResult) {
                                             is com.controlcal.core.nutrition.MealEntrySaveResult.Merged -> {
                                                 mealDetailViewModel.notifyMerged(saveResult.mergedEntry, saveResult.previousEntry)
@@ -374,7 +431,7 @@ class MainActivity : ComponentActivity() {
                                                 mealDetailViewModel.sendFeedback(
                                                     UiFeedbackEvent.Success(
                                                         UiText.StringResource(
-                                                            R.string.feedback_product_saved,
+                                                            if (wasEditing) R.string.feedback_product_updated else R.string.feedback_product_saved,
                                                             savedProductName,
                                                         )
                                                     )
@@ -394,7 +451,7 @@ class MainActivity : ComponentActivity() {
                                                 dailyPanelViewModel.sendFeedback(
                                                     UiFeedbackEvent.Success(
                                                         UiText.StringResource(
-                                                            R.string.feedback_product_saved,
+                                                            if (wasEditing) R.string.feedback_product_updated else R.string.feedback_product_saved,
                                                             savedProductName,
                                                         )
                                                     )
@@ -403,31 +460,15 @@ class MainActivity : ComponentActivity() {
                                         }
                                         currentDestination = MainDestination.DAILY_PANEL
                                     }
-                                },
-                                onDiscard = navigateBack,
-                            )
-                        } else {
-                            currentDestination = MainDestination.DAILY_PANEL
-                        }
+                                }
+                            },
+                            onDiscard = navigateBack,
+                        )
                     }
 
                     MainDestination.ABOUT -> {
                         AboutScreen(
                             onBack = navigateBack
-                        )
-                    }
-
-                    MainDestination.MANUAL_ENTRY -> {
-                        ManualEntryPlaceholderScreen(
-                            initialBarcode = manualEntryBarcode,
-                            onOpenScanner = {
-                                manualEntryBarcode = null
-                                currentDestination = MainDestination.SCANNER
-                            },
-                            onNavigateToOcrCapture = { barcode ->
-                                manualEntryBarcode = barcode
-                                currentDestination = MainDestination.OCR_CAPTURE
-                            }
                         )
                     }
 
@@ -454,7 +495,26 @@ class MainActivity : ComponentActivity() {
                     MainDestination.PANTRY -> {
                         PantryRoute(
                             viewModel = pantryViewModel,
-                            onBack = navigateBack
+                            onBack = navigateBack,
+                            onEditNutrition = { product ->
+                                selectedOffProduct = null
+                                selectedOcrData = null
+                                returnToPantryAfterConfirmation = true
+                                confirmationViewModel.initializeForEdit(product)
+                                currentDestination = MainDestination.PRODUCT_CONFIRMATION
+                            },
+                            onCreateProduct = {
+                                selectedOffProduct = null
+                                selectedOcrData = null
+                                manualEntryBarcode = null
+                                returnToPantryAfterConfirmation = true
+                                confirmationViewModel.initializeForManualEntry(
+                                    barcode = null,
+                                    targetDate = dailyPanelViewModel.uiState.value.selectedDate,
+                                    targetMeal = null,
+                                )
+                                currentDestination = MainDestination.PRODUCT_CONFIRMATION
+                            },
                         )
                     }
 
@@ -481,64 +541,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ManualEntryPlaceholderScreen(
-    initialBarcode: String? = null,
-    onOpenScanner: () -> Unit,
-    onNavigateToOcrCapture: (String?) -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(R.string.manual_entry_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onOpenScanner) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.scanner_back)
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = if (initialBarcode != null) {
-                    "${stringResource(R.string.manual_entry_placeholder_message)} ($initialBarcode)"
-                } else {
-                    stringResource(R.string.manual_entry_placeholder_message)
-                },
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = { onNavigateToOcrCapture(initialBarcode) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = stringResource(R.string.ocr_capture_action_from_manual))
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onOpenScanner,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = stringResource(R.string.open_scanner_action))
             }
         }
     }

@@ -69,4 +69,56 @@ class DatabaseKeyResolverTest {
         assertTrue(!lostHandled)
         assertNotNull(store.stored)
     }
+
+    @Test
+    fun emptyStoreWithExistingDatabaseDeletesFilesAndStartsFresh() {
+        var lostHandled = 0
+        val resolver = DatabaseKeyResolver(
+            keyStore = store,
+            keyManager = keyManager,
+            hasExistingDatabase = { true },
+            onKeyLost = { lostHandled++ },
+        )
+
+        val key = resolver.resolve()
+
+        assertEquals(1, lostHandled)
+        assertEquals(DbKeyManager.KEY_LENGTH_BYTES, key.size)
+        assertEquals(1, store.writes)
+    }
+
+    @Test
+    fun writeFailureWipesGeneratedKeyInMemory() {
+        var capturedPlainKey: ByteArray? = null
+        val trackingCipher = object : KeyCipher {
+            override fun encrypt(plain: ByteArray): ByteArray {
+                capturedPlainKey = plain
+                return cipher.encrypt(plain)
+            }
+
+            override fun decrypt(data: ByteArray): ByteArray = cipher.decrypt(data)
+        }
+        val failingStore = object : WrappedKeyStoreIO {
+            override fun read(): ByteArray? = null
+            override fun write(wrapped: ByteArray) {
+                throw IllegalStateException("Disk full")
+            }
+            override fun delete() = Unit
+        }
+        val resolver = DatabaseKeyResolver(
+            keyStore = failingStore,
+            keyManager = DbKeyManager(trackingCipher, FakeSecureRandom(0x55)),
+        )
+
+        try {
+            resolver.resolve()
+            throw AssertionError("Expected IllegalStateException")
+        } catch (_: IllegalStateException) {
+            // Expected
+        }
+
+        assertNotNull(capturedPlainKey)
+        assertTrue(capturedPlainKey!!.all { it == 0.toByte() })
+    }
 }
+

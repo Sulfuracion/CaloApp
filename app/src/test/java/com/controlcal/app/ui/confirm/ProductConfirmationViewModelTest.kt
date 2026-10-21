@@ -303,10 +303,187 @@ class ProductConfirmationViewModelTest {
         assertTrue(state.availableMeals.all { it.isActive })
         assertTrue(state.availableMeals.any { it.id == state.selectedMeal })
     }
+
+    @Test
+    fun saveProduct_withDuplicateBarcode_setsBarcodeErrorAndDoesNotSave() = runTest {
+        val existing = Product(
+            id = 1L,
+            barcode = "8410000000001",
+            name = "Existente",
+            kcal100g = 100.0,
+            protein100g = 5.0,
+            carbs100g = 10.0,
+            fat100g = 2.0,
+            source = ProductSource.OFF,
+        )
+        fakeProductRepository.insert(existing)
+
+        val duplicateOff = OffProduct(
+            barcode = "8410000000001",
+            name = "Duplicado",
+            brand = null,
+            kcal100g = 120.0,
+            protein100g = 6.0,
+            carbs100g = 12.0,
+            fat100g = 3.0,
+        )
+        viewModel.initialize(duplicateOff)
+
+        var saved = false
+        viewModel.onConfirmAndSave { saved = true }
+        advanceUntilIdle()
+
+        assertFalse(saved)
+        assertEquals(1, fakeProductRepository.products.size)
+        assertNotNull(viewModel.uiState.value.barcodeError)
+    }
+
+    @Test
+    fun initializeFromOcr_withTargetDateAndMeal_setsTargetDateAndAddToDiary() {
+        val tempPhoto = java.io.File.createTempFile("ocr_target_test", ".jpg")
+        try {
+            val targetDate = LocalDate.of(2026, 10, 10)
+            val ocrNutrients = com.controlcal.core.ocr.model.OcrParsedNutrients(
+                kcal = 250.0,
+                protein = 12.0,
+                carbs = 30.0,
+                fat = 8.0,
+            )
+            viewModel.initializeFromOcr(
+                photoFile = tempPhoto,
+                parsedNutrients = ocrNutrients,
+                barcode = null,
+                targetDate = targetDate,
+                targetMeal = DefaultMealIds.DINNER,
+            )
+            val state = viewModel.uiState.value
+            assertEquals(targetDate, state.targetDate)
+            assertEquals(DefaultMealIds.DINNER, state.selectedMeal)
+            assertTrue(state.addToDiary)
+        } finally {
+            if (tempPhoto.exists()) tempPhoto.delete()
+        }
+    }
+
+    @Test
+    fun initializeForManualEntry_setsSourceManualAndSavesProduct() = runTest {
+        viewModel.initializeForManualEntry(
+            barcode = "8419999999999",
+            targetDate = LocalDate.of(2026, 10, 12),
+            targetMeal = DefaultMealIds.LUNCH,
+        )
+        val initialState = viewModel.uiState.value
+        assertEquals(ProductSource.MANUAL, initialState.source)
+        assertEquals("8419999999999", initialState.barcode)
+        assertTrue(initialState.addToDiary)
+        assertEquals(DefaultMealIds.LUNCH, initialState.selectedMeal)
+
+        viewModel.onNameChanged("Pechuga de pollo casera")
+        viewModel.onKcalChanged("110")
+        viewModel.onProteinChanged("23")
+        viewModel.onCarbsChanged("0")
+        viewModel.onFatChanged("1,5")
+
+        var saved = false
+        viewModel.onConfirmAndSave { saved = true }
+        advanceUntilIdle()
+
+        assertTrue(saved)
+        assertEquals(1, fakeProductRepository.products.size)
+        val created = fakeProductRepository.products.first()
+        assertEquals(ProductSource.MANUAL, created.source)
+        assertEquals("Pechuga de pollo casera", created.name)
+        assertEquals(110.0, created.kcal100g, 0.001)
+    }
+
+    @Test
+    fun initializeForEdit_updatesExistingProductAndAllowsOwnBarcode() = runTest {
+        val existing = Product(
+            id = 42L,
+            barcode = "8410000000042",
+            name = "Queso Fresco",
+            brand = "Marca A",
+            kcal100g = 100.0,
+            protein100g = 12.0,
+            carbs100g = 3.5,
+            fat100g = 4.0,
+            inPantry = true,
+            minG = 50.0,
+            maxG = 200.0,
+            source = ProductSource.OFF,
+            createdAt = 5000L,
+            updatedAt = 5000L,
+        )
+        fakeProductRepository.insert(existing)
+
+        viewModel.initializeForEdit(existing)
+        val state = viewModel.uiState.value
+        assertEquals(42L, state.editingProductId)
+        assertEquals("Queso Fresco", state.name)
+        assertFalse(state.addToDiary)
+
+        viewModel.onNameChanged("Queso Fresco Batido")
+        viewModel.onProteinChanged("8,5")
+
+        var saved = false
+        viewModel.onConfirmAndSave { saved = true }
+        advanceUntilIdle()
+
+        assertTrue(saved)
+        assertEquals(1, fakeProductRepository.products.size)
+        val updated = fakeProductRepository.products.first()
+        assertEquals(42L, updated.id)
+        assertEquals("Queso Fresco Batido", updated.name)
+        assertEquals(8.5, updated.protein100g, 0.001)
+        assertTrue(updated.inPantry)
+        assertEquals(50.0, updated.minG!!, 0.001)
+        assertEquals(5000L, updated.createdAt)
+    }
+
+    @Test
+    fun onDeleteOrArchiveProduct_archivesWhenHasEntries_andDeletesWhenNoEntries() = runTest {
+        val prodWithEntries = Product(
+            id = 10L,
+            name = "Con Historial",
+            kcal100g = 100.0,
+            protein100g = 5.0,
+            carbs100g = 10.0,
+            fat100g = 2.0,
+        )
+        val prodWithoutEntries = Product(
+            id = 11L,
+            name = "Sin Historial",
+            kcal100g = 100.0,
+            protein100g = 5.0,
+            carbs100g = 10.0,
+            fat100g = 2.0,
+        )
+        fakeProductRepository.insert(prodWithEntries)
+        fakeProductRepository.insert(prodWithoutEntries)
+        fakeProductRepository.productsWithEntries.add(10L)
+
+        // 1. Product with entries -> archived
+        viewModel.initializeForEdit(prodWithEntries)
+        var wasArchived: Boolean? = null
+        viewModel.onDeleteOrArchiveProduct { archived, _ -> wasArchived = archived }
+        advanceUntilIdle()
+
+        assertEquals(true, wasArchived)
+        assertTrue(fakeProductRepository.getById(10L)!!.archived)
+
+        // 2. Product without entries -> deleted
+        viewModel.initializeForEdit(prodWithoutEntries)
+        viewModel.onDeleteOrArchiveProduct { archived, _ -> wasArchived = archived }
+        advanceUntilIdle()
+
+        assertEquals(false, wasArchived)
+        assertEquals(null, fakeProductRepository.getById(11L))
+    }
 }
 
 private class FakeProductRepository : ProductRepository {
     val products = mutableListOf<Product>()
+    val productsWithEntries = mutableSetOf<Long>()
 
     override suspend fun getById(id: Long): Product? = products.find { it.id == id }
     override suspend fun getByBarcode(barcode: String): Product? = products.find { it.barcode == barcode }
@@ -349,7 +526,10 @@ private class FakeProductRepository : ProductRepository {
         val idx = products.indexOfFirst { it.id == id }
         if (idx >= 0) products[idx] = products[idx].copy(archived = true)
     }
-    override suspend fun hasEntries(productId: Long): Boolean = false
+    override suspend fun delete(id: Long) {
+        products.removeAll { it.id == id }
+    }
+    override suspend fun hasEntries(productId: Long): Boolean = productsWithEntries.contains(productId)
 }
 
 private class FakeMealEntryRepository : MealEntryRepository {

@@ -53,6 +53,15 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE archived = 0 ORDER BY name")
     suspend fun activeProducts(): List<ProductEntity>
 
+    @Query("SELECT * FROM products ORDER BY name")
+    suspend fun allIncludingArchived(): List<ProductEntity>
+
+    @Query("DELETE FROM products WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM products")
+    suspend fun deleteAll()
+
     @Query("SELECT * FROM products WHERE archived = 0 AND in_pantry = 1 ORDER BY name")
     suspend fun pantryProducts(): List<ProductEntity>
 

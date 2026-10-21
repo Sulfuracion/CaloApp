@@ -249,4 +249,41 @@ class QuickLogRankerTest {
         assertEquals(1, result.size)
         assertEquals(101L, result.first().productId)
     }
+
+    @Test
+    fun nullProductIdIgnoredAndModeTieBreaksByLatestLoggedAt() {
+        val now = localToMillis(2026, 10, 14, 12, 0)
+        val quickEntry = createEntry(id = 1, productId = 1L, loggedAt = now - 1000L).copy(productId = null)
+        val e1 = createEntry(id = 2, productId = 200L, grams = 50.0, loggedAt = localToMillis(2026, 10, 10, 12, 0))
+        val e2 = createEntry(id = 3, productId = 200L, grams = 80.0, loggedAt = localToMillis(2026, 10, 13, 12, 0))
+
+        val result = QuickLogRanker.rank(entries = listOf(quickEntry, e1, e2), nowMillis = now, zoneId = zoneId)
+        assertEquals(1, result.size)
+        assertEquals(200L, result.single().productId)
+        assertEquals(80.0, result.single().defaultGrams, 0.001)
+    }
+
+    @Test
+    fun rankHabitualsForMealFiltersByMealAndFallsBackToAllMeals() {
+        val now = localToMillis(2026, 10, 14, 12, 0)
+        val lunchEntry1 = createEntry(id = 1, productId = 10L, grams = 120.0, loggedAt = now - 1000L, meal = DefaultMealIds.LUNCH)
+        val lunchEntry2 = createEntry(id = 2, productId = 10L, grams = 120.0, loggedAt = now - 2000L, meal = DefaultMealIds.LUNCH)
+
+        val lunchHabituals = QuickLogRanker.rankHabitualsForMeal(
+            entries = listOf(lunchEntry1, lunchEntry2),
+            mealId = DefaultMealIds.LUNCH,
+            activeProductIds = setOf(10L),
+        )
+        assertEquals(1, lunchHabituals.size)
+        assertEquals(120.0, lunchHabituals.single().defaultGrams, 0.001)
+
+        // Fallback when dinner has no entries
+        val dinnerFallback = QuickLogRanker.rankHabitualsForMeal(
+            entries = listOf(lunchEntry1, lunchEntry2),
+            mealId = DefaultMealIds.DINNER,
+            activeProductIds = setOf(10L),
+        )
+        assertEquals(1, dinnerFallback.size)
+        assertEquals(10L, dinnerFallback.single().productId)
+    }
 }

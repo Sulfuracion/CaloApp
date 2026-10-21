@@ -21,24 +21,24 @@ object FoodPortionFormatter {
         grams: Double,
         unitG: Double? = null,
         unitName: String? = null,
+        isLiquid: Boolean = false,
     ): String {
-        val hasCustomUnit = unitG != null && unitG > 0.0
         val isNegative = grams < 0.0
+        val baseUnit = if (isLiquid) "ml" else "g"
 
-        if (hasCustomUnit) {
-            val nonNullUnitG = unitG!!
-            val units = NutritionCalculator.gramsToUnits(abs(grams), nonNullUnitG)
+        if (unitG != null && unitG > 0.0) {
+            val units = NutritionCalculator.gramsToUnits(abs(grams), unitG)
             val unitsFormatted = NumberFormatHelper.formatDecimal(units)
             val gramsFormatted = NumberFormatHelper.formatDecimal(abs(grams))
             val label = unitName?.trim()?.ifEmpty { null } ?: "ud"
 
             return if (isNegative) {
-                "-$unitsFormatted $label (-$gramsFormatted g)"
+                "-$unitsFormatted $label (-$gramsFormatted $baseUnit)"
             } else {
-                "$unitsFormatted $label ($gramsFormatted g)"
+                "$unitsFormatted $label ($gramsFormatted $baseUnit)"
             }
         }
 
-        return "${NumberFormatHelper.formatDecimal(grams)} g"
+        return "${NumberFormatHelper.formatDecimal(grams)} $baseUnit"
     }
 }

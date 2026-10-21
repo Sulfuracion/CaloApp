@@ -29,4 +29,10 @@ interface GoalProfileDao {
             "ORDER BY valid_from DESC, id DESC",
     )
     suspend fun profilesForDayTypeUpTo(dayType: DayType, date: String): List<GoalProfileEntity>
+
+    @Query("SELECT * FROM goal_profiles ORDER BY valid_from ASC, id ASC")
+    suspend fun getAll(): List<GoalProfileEntity>
+
+    @Query("DELETE FROM goal_profiles")
+    suspend fun deleteAll()
 }

@@ -197,6 +197,19 @@ class RepositoryMappingTest : DaoTestBase() {
     }
 
     @Test
+    fun dailyLogRepositorySetWaterMlAndSetNotesCreateRowIfNotExists() = runBlocking {
+        dailyLogRepo.setWaterMl("2026-10-19", 750)
+        val loadedWater = dailyLogRepo.getByDate("2026-10-19")
+        assertNotNull(loadedWater)
+        assertEquals(750, loadedWater!!.waterMl)
+
+        dailyLogRepo.setNotes("2026-10-20", "Nota sin fila previa")
+        val loadedNotes = dailyLogRepo.getByDate("2026-10-20")
+        assertNotNull(loadedNotes)
+        assertEquals("Nota sin fila previa", loadedNotes!!.notes)
+    }
+
+    @Test
     fun goalProfileRepositoryRetrievesActiveProfile() = runBlocking {
         val olderProfile = GoalProfile(
             dayType = DayType.TRAINING,

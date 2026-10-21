@@ -301,4 +301,41 @@ class MacroTetrisTest {
         println("Performance Macro Tetris (30 productos): ${elapsedMs}ms")
         assertTrue("Macro Tetris con 30 productos debe tardar menos de 100 ms (tardó ${elapsedMs}ms)", elapsedMs < 100)
     }
+
+    @Test
+    fun filtersOutArchivedAndNotInPantryProductsAndRespectsExplicitMinMaxBounds() {
+        val target = MacroTargets(kcal = 400.0, protein = 30.0, carbs = 40.0, fat = 10.0)
+        val archivedProduct = createProduct(1L, "Archivado", 200.0, 20.0, 20.0, 5.0, inPantry = true).copy(archived = true)
+        val notInPantry = createProduct(2L, "Fuera de despensa", 200.0, 20.0, 20.0, 5.0, inPantry = false)
+        val boundedProduct = createProduct(3L, "Avena acotada", 370.0, 13.0, 60.0, 7.0, minG = 40.0, maxG = 60.0)
+
+        val solution = FoodSelector.selectAndSolve(target, listOf(archivedProduct, notInPantry, boundedProduct))
+        assertEquals(1, solution.items.size)
+        val item = solution.items.single()
+        assertEquals(3L, item.product.id)
+        assertTrue(item.roundedGrams in 40.0..60.0)
+    }
+
+    @Test
+    fun dayRemainingOverloadAndClassifyFoodWorkCorrectly() {
+        val chicken = createProduct(1L, "Pollo", 110.0, 23.0, 0.0, 1.5)
+        val rice = createProduct(2L, "Arroz", 130.0, 2.7, 28.0, 0.3)
+        val oil = createProduct(3L, "Aceite", 884.0, 0.0, 0.0, 100.0)
+        val balanced = createProduct(4L, "Plato mixto", 200.0, 15.0, 20.0, 6.5)
+
+        assertEquals(FoodCategory.PROTEIN, FoodSelector.classifyFood(chicken))
+        assertEquals(FoodCategory.CARBS, FoodSelector.classifyFood(rice))
+        assertEquals(FoodCategory.FAT, FoodSelector.classifyFood(oil))
+        assertEquals(FoodCategory.BALANCED, FoodSelector.classifyFood(balanced))
+
+        val remaining = com.controlcal.core.model.DayRemaining(
+            remainingKcal = 300.0,
+            remainingProtein = 25.0,
+            remainingCarbs = 30.0,
+            remainingFat = 8.0,
+            surplusKcal = 0.0,
+        )
+        val solution = FoodSelector.selectAndSolve(remaining, listOf(chicken, rice, oil))
+        assertTrue(solution.items.isNotEmpty())
+    }
 }

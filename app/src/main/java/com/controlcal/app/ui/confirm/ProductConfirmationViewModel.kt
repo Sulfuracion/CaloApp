@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.update
 import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.nutrition.MealClassifier
 import com.controlcal.core.repo.MealConfigRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.Clock
@@ -28,12 +30,27 @@ import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
-class ProductConfirmationViewModel @Inject constructor(
+class ProductConfirmationViewModel(
     private val productRepository: ProductRepository,
     private val mealEntryRepository: MealEntryRepository,
     private val mealConfigRepository: MealConfigRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Unconfined,
 ) : ViewModel() {
+
+    @Inject
+    constructor(
+        productRepository: ProductRepository,
+        mealEntryRepository: MealEntryRepository,
+        mealConfigRepository: MealConfigRepository,
+        clock: Clock,
+    ) : this(
+        productRepository = productRepository,
+        mealEntryRepository = mealEntryRepository,
+        mealConfigRepository = mealConfigRepository,
+        clock = clock,
+        ioDispatcher = Dispatchers.IO,
+    )
 
     private val _uiState = MutableStateFlow(ProductConfirmationUiState())
     val uiState: StateFlow<ProductConfirmationUiState> = _uiState.asStateFlow()
@@ -88,13 +105,45 @@ class ProductConfirmationViewModel @Inject constructor(
                 availableMeals = activeMeals,
                 selectedMeal = selected,
                 targetDate = date,
+                addToDiary = targetMeal != null,
+            )
+            recalculatePortion(state)
+        }
+    }
+
+    fun initializeForManualEntry(
+        barcode: String? = null,
+        targetDate: LocalDate? = null,
+        targetMeal: String? = null,
+    ) {
+        val activeMeals = _uiState.value.availableMeals
+        val selected = targetMeal ?: _uiState.value.selectedMeal
+        val date = targetDate ?: LocalDate.now(clock)
+        _uiState.update {
+            val state = toManualConfirmationUiState(barcode, LocalTime.now(clock).hour).copy(
+                availableMeals = activeMeals,
+                selectedMeal = selected,
+                targetDate = date,
+                addToDiary = targetMeal != null,
+            )
+            recalculatePortion(state)
+        }
+    }
+
+    fun initializeForEdit(product: Product) {
+        val activeMeals = _uiState.value.availableMeals
+        _uiState.update {
+            val state = product.toEditConfirmationUiState().copy(
+                availableMeals = activeMeals,
+                selectedMeal = _uiState.value.selectedMeal,
+                targetDate = LocalDate.now(clock),
             )
             recalculatePortion(state)
         }
     }
 
     fun onBarcodeChanged(value: String) {
-        _uiState.update { it.copy(barcode = value) }
+        _uiState.update { it.copy(barcode = value, barcodeError = null, saveError = null) }
     }
 
     fun onNameChanged(value: String) {
@@ -292,13 +341,49 @@ class ProductConfirmationViewModel @Inject constructor(
         return revalidateOcr(updated)
     }
 
-    fun onDiscard(onFinish: () -> Unit) {
-        _uiState.value.photoFile?.let { file ->
-            if (file.exists()) {
-                file.delete()
+    fun cleanupTempPhoto() {
+        val file = _uiState.value.photoFile
+        _uiState.update { it.copy(photoFile = null) }
+        if (file != null) {
+            viewModelScope.launch(ioDispatcher) {
+                if (file.exists()) {
+                    file.delete()
+                }
             }
         }
+    }
+
+    fun onDiscard(onFinish: () -> Unit) {
+        cleanupTempPhoto()
         onFinish()
+    }
+
+    fun onDeleteOrArchiveProduct(onCompleted: (archived: Boolean, productName: String) -> Unit = { _, _ -> }) {
+        val state = _uiState.value
+        val productId = state.editingProductId ?: return
+        if (state.isSaving) return
+        val productName = state.name.trim().ifEmpty { "Producto" }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true, saveError = null) }
+            try {
+                val hasEntries = productRepository.hasEntries(productId)
+                if (hasEntries) {
+                    productRepository.archive(productId)
+                } else {
+                    productRepository.delete(productId)
+                }
+                _uiState.update { it.copy(isSaving = false, isSaved = true) }
+                onCompleted(hasEntries, productName)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        saveError = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                    )
+                }
+            }
+        }
     }
 
     fun onConfirmAndSave(onSuccess: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {}) {
@@ -329,12 +414,26 @@ class ProductConfirmationViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true) }
+            _uiState.update { it.copy(isSaving = true, barcodeError = null, saveError = null) }
             try {
+                val normalizedBarcode = state.barcode.trim().takeIf { it.isNotEmpty() }
+                val existingByBarcode = if (normalizedBarcode != null) {
+                    productRepository.getByBarcode(normalizedBarcode)
+                } else null
+                if (existingByBarcode != null && existingByBarcode.id != state.editingProductId) {
+                    _uiState.update {
+                        it.copy(
+                            isSaving = false,
+                            barcodeError = "Este código de barras ya está registrado",
+                        )
+                    }
+                    return@launch
+                }
+
                 val now = System.currentTimeMillis()
                 val product = Product(
-                    id = 0L,
-                    barcode = state.barcode.trim().takeIf { it.isNotEmpty() },
+                    id = state.editingProductId ?: 0L,
+                    barcode = normalizedBarcode,
                     name = name,
                     brand = state.brand.trim().takeIf { it.isNotEmpty() },
                     kcal100g = kcal,
@@ -346,17 +445,25 @@ class ProductConfirmationViewModel @Inject constructor(
                     satFat100g = NumberFormatHelper.parseDecimal(state.satFat100g),
                     salt100g = NumberFormatHelper.parseDecimal(state.salt100g),
                     isLiquid = state.isLiquid,
+                    inPantry = state.inPantry,
+                    minG = state.minG,
+                    maxG = state.maxG,
                     unitName = state.unitName.trim().takeIf { it.isNotEmpty() },
                     unitG = NumberFormatHelper.parseDecimal(state.unitG),
                     servingG = NumberFormatHelper.parseDecimal(state.servingG),
                     source = state.source,
-                    createdAt = now,
+                    createdAt = state.createdAt ?: now,
                     updatedAt = now,
                 )
 
-                val insertedId = productRepository.insert(product)
+                val savedProductId = if (state.editingProductId != null) {
+                    productRepository.update(product)
+                    state.editingProductId
+                } else {
+                    productRepository.insert(product)
+                }
 
-                val saveResult = if (state.addToDiary) {
+                val saveResult = if (state.addToDiary && state.editingProductId == null) {
                     val grams = NumberFormatHelper.parseDecimal(state.diaryGrams) ?: 100.0
                     val portion = NutritionCalculator.calculatePortionMacros(product, grams)
                     val targetDate = state.targetDate
@@ -373,7 +480,7 @@ class ProductConfirmationViewModel @Inject constructor(
                         id = 0L,
                         date = targetDate.toString(),
                         meal = state.selectedMeal,
-                        productId = insertedId,
+                        productId = savedProductId,
                         productName = product.name,
                         grams = grams,
                         kcal = portion.kcal,
@@ -386,16 +493,17 @@ class ProductConfirmationViewModel @Inject constructor(
                 } else null
 
                 // Delete temporary photo file after successful save
-                state.photoFile?.let { file ->
-                    if (file.exists()) {
-                        file.delete()
-                    }
-                }
+                cleanupTempPhoto()
 
                 _uiState.update { it.copy(isSaving = false, isSaved = true) }
                 onSuccess(saveResult)
             } catch (e: Exception) {
-                _uiState.update { it.copy(isSaving = false) }
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        saveError = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                    )
+                }
             }
         }
     }

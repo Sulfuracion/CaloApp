@@ -754,7 +754,7 @@ private fun AddMealDialog(
                 onClick = {
                     touched = true
                     if (isValid && !isSaving) {
-                        onConfirm(name.trim(), LocalTime.of(h!!, m!!))
+                        onConfirm(name.trim(), LocalTime.of(h, m))
                     }
                 },
                 enabled = isValid && !isSaving,
@@ -882,7 +882,7 @@ private fun ChangeMealTimeDialog(
                 onClick = {
                     touched = true
                     if (isValid && !isSaving) {
-                        onConfirm(meal.id, LocalTime.of(h!!, m!!))
+                        onConfirm(meal.id, LocalTime.of(h, m))
                     }
                 },
                 enabled = isValid && !isSaving,

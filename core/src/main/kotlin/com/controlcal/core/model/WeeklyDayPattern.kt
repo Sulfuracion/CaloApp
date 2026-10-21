@@ -36,4 +36,35 @@ data class WeeklyDayPattern(
         DayOfWeek.SATURDAY -> copy(saturday = dayType)
         DayOfWeek.SUNDAY -> copy(sunday = dayType)
     }
+
+    fun serialize(): String = listOf(
+        monday.name,
+        tuesday.name,
+        wednesday.name,
+        thursday.name,
+        friday.name,
+        saturday.name,
+        sunday.name,
+    ).joinToString(",")
+
+    companion object {
+        fun parse(raw: String?): WeeklyDayPattern {
+            if (raw.isNullOrBlank()) return WeeklyDayPattern()
+            val parts = raw.split(",")
+            if (parts.size != 7) return WeeklyDayPattern()
+            return try {
+                WeeklyDayPattern(
+                    monday = DayType.valueOf(parts[0].trim()),
+                    tuesday = DayType.valueOf(parts[1].trim()),
+                    wednesday = DayType.valueOf(parts[2].trim()),
+                    thursday = DayType.valueOf(parts[3].trim()),
+                    friday = DayType.valueOf(parts[4].trim()),
+                    saturday = DayType.valueOf(parts[5].trim()),
+                    sunday = DayType.valueOf(parts[6].trim()),
+                )
+            } catch (_: IllegalArgumentException) {
+                WeeklyDayPattern()
+            }
+        }
+    }
 }

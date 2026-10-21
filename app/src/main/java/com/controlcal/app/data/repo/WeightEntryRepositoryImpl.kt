@@ -30,6 +30,10 @@ class WeightEntryRepositoryImpl @Inject constructor(
         weightEntryDao.deleteByDate(date)
     }
 
+    override suspend fun deleteAll() {
+        weightEntryDao.deleteAll()
+    }
+
     override suspend fun moveEntry(oldDate: String, newEntry: WeightEntry) {
         weightEntryDao.moveEntry(oldDate, newEntry.toEntity())
     }

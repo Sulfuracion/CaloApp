@@ -114,4 +114,22 @@ class OcrCaptureViewModelTest {
         viewModel.onDismissError()
         assertTrue(viewModel.uiState.value.processingState is OcrProcessingState.Idle)
     }
+
+    @Test
+    fun cleanupOrphanedTempPhotos_deletesOnlyOcrTempJpgFiles() {
+        val dir = java.nio.file.Files.createTempDirectory("ocr_cache_test").toFile()
+        try {
+            val orphan1 = File(dir, "ocr_temp_111.jpg").apply { writeBytes(byteArrayOf(1)) }
+            val orphan2 = File(dir, "ocr_temp_222.jpg").apply { writeBytes(byteArrayOf(2)) }
+            val otherFile = File(dir, "keep_me.txt").apply { writeBytes(byteArrayOf(3)) }
+
+            OcrCaptureViewModel.cleanupOrphanedTempPhotos(dir)
+
+            assertFalse(orphan1.exists())
+            assertFalse(orphan2.exists())
+            assertTrue(otherFile.exists())
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
 }

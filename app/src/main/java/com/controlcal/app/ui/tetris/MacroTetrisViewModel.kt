@@ -8,6 +8,7 @@ import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.toMacroTargets
 import com.controlcal.core.nutrition.CalculateDayRemainingUseCase
 import com.controlcal.core.nutrition.GetActiveGoalProfileUseCase
+import com.controlcal.core.nutrition.GetDayTotalsUseCase
 import com.controlcal.core.nutrition.MealClassifier
 import com.controlcal.core.nutrition.NutritionCalculator
 import com.controlcal.core.nutrition.ResolveDayTypeUseCase
@@ -16,18 +17,21 @@ import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
 import com.controlcal.core.solver.FoodSelector
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
-class MacroTetrisViewModel @Inject constructor(
+class MacroTetrisViewModel(
     private val productRepository: ProductRepository,
     private val mealEntryRepository: MealEntryRepository,
     private val resolveDayTypeUseCase: ResolveDayTypeUseCase,
@@ -35,7 +39,30 @@ class MacroTetrisViewModel @Inject constructor(
     private val mealConfigRepository: MealConfigRepository,
     private val calculateDayRemainingUseCase: CalculateDayRemainingUseCase = CalculateDayRemainingUseCase(),
     private val clock: Clock = Clock.systemDefaultZone(),
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : ViewModel() {
+
+    @Inject
+    constructor(
+        productRepository: ProductRepository,
+        mealEntryRepository: MealEntryRepository,
+        resolveDayTypeUseCase: ResolveDayTypeUseCase,
+        getActiveGoalProfileUseCase: GetActiveGoalProfileUseCase,
+        mealConfigRepository: MealConfigRepository,
+        calculateDayRemainingUseCase: CalculateDayRemainingUseCase,
+        clock: Clock,
+    ) : this(
+        productRepository = productRepository,
+        mealEntryRepository = mealEntryRepository,
+        resolveDayTypeUseCase = resolveDayTypeUseCase,
+        getActiveGoalProfileUseCase = getActiveGoalProfileUseCase,
+        mealConfigRepository = mealConfigRepository,
+        calculateDayRemainingUseCase = calculateDayRemainingUseCase,
+        clock = clock,
+        defaultDispatcher = Dispatchers.Default,
+    )
+
+    private val getDayTotalsUseCase = GetDayTotalsUseCase(mealEntryRepository)
 
     private val _uiState = MutableStateFlow(MacroTetrisUiState())
     val uiState: StateFlow<MacroTetrisUiState> = _uiState.asStateFlow()
@@ -46,11 +73,11 @@ class MacroTetrisViewModel @Inject constructor(
 
     fun loadData(date: LocalDate = LocalDate.now(clock)) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, isSaved = false) }
+            _uiState.update { it.copy(selectedDate = date, isLoading = true, isSaved = false) }
 
             val dateStr = date.toString()
             val entries = mealEntryRepository.getByDate(dateStr)
-            val totals = NutritionCalculator.calculateDayTotals(dateStr, entries)
+            val totals = getDayTotalsUseCase(dateStr, entries)
             val dayType = resolveDayTypeUseCase(date)
             val activeProfile = getActiveGoalProfileUseCase(dayType, dateStr)
             val targets = activeProfile.toMacroTargets()
@@ -73,6 +100,7 @@ class MacroTetrisViewModel @Inject constructor(
 
             _uiState.update { current ->
                 current.copy(
+                    selectedDate = date,
                     isLoading = false,
                     todayRemaining = remaining,
                     targetMacros = targetMacros,
@@ -87,17 +115,21 @@ class MacroTetrisViewModel @Inject constructor(
     }
 
     fun calculate() {
-        val state = _uiState.value
-        val availableProducts = state.pantryProducts.filter { it.id !in state.excludedProductIds }
-        val solution = FoodSelector.selectAndSolve(
-            target = state.targetMacros,
-            pantryProducts = availableProducts,
-        )
-        _uiState.update {
-            it.copy(
-                solution = solution,
-                hasCalculated = true,
-            )
+        viewModelScope.launch {
+            val state = _uiState.value
+            val availableProducts = state.pantryProducts.filter { it.id !in state.excludedProductIds }
+            val solution = withContext(defaultDispatcher) {
+                FoodSelector.selectAndSolve(
+                    target = state.targetMacros,
+                    pantryProducts = availableProducts,
+                )
+            }
+            _uiState.update {
+                it.copy(
+                    solution = solution,
+                    hasCalculated = true,
+                )
+            }
         }
     }
 
@@ -121,7 +153,7 @@ class MacroTetrisViewModel @Inject constructor(
         _uiState.update { it.copy(selectedMeal = meal) }
     }
 
-    fun addToDiary(date: LocalDate = LocalDate.now(), onSuccess: (String) -> Unit = {}) {
+    fun addToDiary(date: LocalDate = _uiState.value.selectedDate, onSuccess: (String) -> Unit = {}) {
         val state = _uiState.value
         if (state.isAddingToDiary) return
         val items = state.solution?.items ?: return
@@ -130,7 +162,7 @@ class MacroTetrisViewModel @Inject constructor(
         val mealName = state.availableMeals.find { it.id == state.selectedMeal }?.name ?: state.selectedMeal
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isAddingToDiary = true) }
+            _uiState.update { it.copy(isAddingToDiary = true, message = null) }
             try {
                 val dateStr = date.toString()
                 val existingEntries = mealEntryRepository.getByDateAndMeal(dateStr, state.selectedMeal)
@@ -170,7 +202,12 @@ class MacroTetrisViewModel @Inject constructor(
                 }
                 onSuccess(mealName)
             } catch (e: Exception) {
-                _uiState.update { it.copy(isAddingToDiary = false) }
+                _uiState.update {
+                    it.copy(
+                        isAddingToDiary = false,
+                        message = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                    )
+                }
             }
         }
     }

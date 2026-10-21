@@ -32,6 +32,7 @@ object QuickLogRanker {
         nowMillis: Long = System.currentTimeMillis(),
         zoneId: ZoneId = ZoneId.systemDefault(),
         activeProductIds: Set<Long>? = null,
+        liquidProductIds: Set<Long> = emptySet(),
         limit: Int = 6,
     ): List<QuickLogSuggestion> {
         val now = Instant.ofEpochMilli(nowMillis).atZone(zoneId)
@@ -101,6 +102,7 @@ object QuickLogRanker {
                 score = totalScore,
                 targetMeal = targetMeal,
                 lastLoggedAt = latestLoggedAt,
+                isLiquid = productId in liquidProductIds,
             )
         }
 
@@ -109,6 +111,47 @@ object QuickLogRanker {
                 compareByDescending<QuickLogSuggestion> { it.score }
                     .thenByDescending { it.lastLoggedAt }
             )
+            .take(limit)
+    }
+
+    /**
+     * Computes the most frequent products and their mode (most frequent positive grams)
+     * for a given [mealId] over the provided history entries, falling back to all meals
+     * if no positive-gram entries exist for [mealId].
+     */
+    fun rankHabitualsForMeal(
+        entries: List<MealEntry>,
+        mealId: String,
+        activeProductIds: Set<Long>? = null,
+        fallbackServingByProduct: Map<Long, Double> = emptyMap(),
+        liquidProductIds: Set<Long> = emptySet(),
+        limit: Int = 6,
+    ): List<QuickLogSuggestion> {
+        val validEntries = entries.filter { entry ->
+            val pid = entry.productId ?: return@filter false
+            entry.grams > 0.0 && (activeProductIds == null || pid in activeProductIds)
+        }
+        val mealEntries = validEntries.filter { it.meal == mealId }
+        val sourceEntries = mealEntries.ifEmpty { validEntries }
+
+        return sourceEntries
+            .groupBy { it.productId!! }
+            .map { (productId, prodEntries) ->
+                val mostFrequentGrams = prodEntries
+                    .groupBy { it.grams }
+                    .maxByOrNull { it.value.size }
+                    ?.key ?: fallbackServingByProduct[productId] ?: 100.0
+                val latestEntry = prodEntries.maxByOrNull { it.loggedAt }!!
+                QuickLogSuggestion(
+                    productId = productId,
+                    productName = latestEntry.productName,
+                    defaultGrams = mostFrequentGrams,
+                    score = prodEntries.size.toDouble(),
+                    targetMeal = mealId,
+                    lastLoggedAt = latestEntry.loggedAt,
+                    isLiquid = productId in liquidProductIds,
+                )
+            }
             .take(limit)
     }
 }

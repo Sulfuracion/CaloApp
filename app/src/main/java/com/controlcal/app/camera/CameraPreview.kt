@@ -42,7 +42,9 @@ fun CameraPreview(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    val analysisExecutor = remember(imageAnalyzer != null) {
+        if (imageAnalyzer != null) Executors.newSingleThreadExecutor() else null
+    }
 
     var camera by remember { mutableStateOf<Camera?>(null) }
     var activeProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
@@ -67,7 +69,7 @@ fun CameraPreview(
             }
             activeProvider = null
             camera = null
-            analysisExecutor.shutdown()
+            analysisExecutor?.shutdown()
         }
     }
 
@@ -90,13 +92,13 @@ fun CameraPreview(
                             it.surfaceProvider = previewView.surfaceProvider
                         }
 
-                        val analysisUseCase = imageAnalyzer?.let { analyzer ->
+                        val analysisUseCase = if (imageAnalyzer != null && analysisExecutor != null) {
                             ImageAnalysis.Builder()
                                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                 .build().also { useCase ->
-                                    useCase.setAnalyzer(analysisExecutor, analyzer)
+                                    useCase.setAnalyzer(analysisExecutor, imageAnalyzer)
                                 }
-                        }
+                        } else null
 
                         val useCases = mutableListOf<UseCase>(preview)
                         if (analysisUseCase != null) {

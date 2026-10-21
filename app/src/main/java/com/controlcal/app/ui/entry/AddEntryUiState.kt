@@ -1,6 +1,7 @@
 package com.controlcal.app.ui.entry
 
 import com.controlcal.app.data.off.OffSearchItem
+import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.Product
 import java.time.LocalDate
 
@@ -15,6 +16,7 @@ data class AddEntryUiState(
     val targetDate: LocalDate = LocalDate.now(),
     val targetMealId: String = "",
     val targetMealName: String = "",
+    val availableMeals: List<ConfiguredMeal> = emptyList(),
     val searchQuery: String = "",
     val searchResults: List<Product> = emptyList(),
     val habitualFoods: List<HabitualFoodUiModel> = emptyList(),

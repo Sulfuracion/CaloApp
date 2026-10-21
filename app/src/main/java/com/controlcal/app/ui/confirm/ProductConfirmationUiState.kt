@@ -3,6 +3,7 @@ package com.controlcal.app.ui.confirm
 import com.controlcal.app.data.off.OffProduct
 import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.DefaultMealIds
+import com.controlcal.core.model.Product
 import com.controlcal.core.model.ProductSource
 import com.controlcal.core.nutrition.MealClassifier
 import com.controlcal.core.nutrition.NumberFormatHelper
@@ -12,6 +13,11 @@ import java.io.File
 import java.time.LocalTime
 
 data class ProductConfirmationUiState(
+    val editingProductId: Long? = null,
+    val inPantry: Boolean = false,
+    val minG: Double? = null,
+    val maxG: Double? = null,
+    val createdAt: Long? = null,
     val source: ProductSource = ProductSource.OFF,
     val photoFile: File? = null,
     val barcode: String = "",
@@ -45,6 +51,7 @@ data class ProductConfirmationUiState(
     val generalValidationIssues: List<String> = emptyList(),
 
     // Validation errors
+    val barcodeError: String? = null,
     val nameError: String? = null,
     val kcalError: String? = null,
     val proteinError: String? = null,
@@ -57,6 +64,7 @@ data class ProductConfirmationUiState(
     val servingError: String? = null,
     val unitGError: String? = null,
     val diaryGramsError: String? = null,
+    val saveError: String? = null,
 
     // Diary logging integration
     val addToDiary: Boolean = false,
@@ -189,5 +197,71 @@ fun toConfirmationUiStateFromOcr(
         generalValidationIssues = generalIssues,
         selectedMeal = MealClassifier.suggestMealForHour(currentHour),
         diaryGrams = "100"
+    )
+}
+
+fun toManualConfirmationUiState(
+    barcode: String? = null,
+    currentHour: Int = LocalTime.now().hour,
+): ProductConfirmationUiState {
+    return ProductConfirmationUiState(
+        editingProductId = null,
+        source = ProductSource.MANUAL,
+        photoFile = null,
+        barcode = barcode.orEmpty(),
+        name = "",
+        brand = "",
+        kcal100g = "",
+        protein100g = "",
+        carbs100g = "",
+        fat100g = "",
+        fiber100g = "",
+        sugars100g = "",
+        satFat100g = "",
+        salt100g = "",
+        isLiquid = false,
+        servingG = "",
+        unitName = "",
+        unitG = "",
+        originallyMissingName = false,
+        originallyMissingKcal = false,
+        originallyMissingProtein = false,
+        originallyMissingCarbs = false,
+        originallyMissingFat = false,
+        selectedMeal = MealClassifier.suggestMealForHour(currentHour),
+        diaryGrams = "100",
+    )
+}
+
+fun Product.toEditConfirmationUiState(): ProductConfirmationUiState {
+    return ProductConfirmationUiState(
+        editingProductId = id,
+        inPantry = inPantry,
+        minG = minG,
+        maxG = maxG,
+        createdAt = createdAt,
+        source = source,
+        photoFile = null,
+        barcode = barcode.orEmpty(),
+        name = name,
+        brand = brand.orEmpty(),
+        kcal100g = NumberFormatHelper.formatDecimal(kcal100g),
+        protein100g = NumberFormatHelper.formatDecimal(protein100g),
+        carbs100g = NumberFormatHelper.formatDecimal(carbs100g),
+        fat100g = NumberFormatHelper.formatDecimal(fat100g),
+        fiber100g = NumberFormatHelper.formatDecimal(fiber100g),
+        sugars100g = NumberFormatHelper.formatDecimal(sugars100g),
+        satFat100g = NumberFormatHelper.formatDecimal(satFat100g),
+        salt100g = NumberFormatHelper.formatDecimal(salt100g),
+        isLiquid = isLiquid,
+        servingG = NumberFormatHelper.formatDecimal(servingG),
+        unitName = unitName.orEmpty(),
+        unitG = NumberFormatHelper.formatDecimal(unitG),
+        originallyMissingName = false,
+        originallyMissingKcal = false,
+        originallyMissingProtein = false,
+        originallyMissingCarbs = false,
+        originallyMissingFat = false,
+        addToDiary = false,
     )
 }

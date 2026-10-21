@@ -34,6 +34,12 @@ interface MealEntryDao {
     @Query("SELECT * FROM meal_entries WHERE logged_at >= :sinceMillis ORDER BY logged_at DESC")
     suspend fun entriesSince(sinceMillis: Long): List<MealEntryEntity>
 
+    @Query("SELECT * FROM meal_entries ORDER BY date ASC, logged_at ASC")
+    suspend fun getAll(): List<MealEntryEntity>
+
+    @Query("DELETE FROM meal_entries")
+    suspend fun deleteAll()
+
     @Query("SELECT date FROM meal_entries WHERE date < :date AND meal = :meal ORDER BY date DESC LIMIT 1")
     suspend fun latestDateWithMealBefore(date: String, meal: String): String?
 

@@ -10,6 +10,7 @@ import com.controlcal.core.model.toMacroTargets
 import com.controlcal.core.nutrition.CalculateDayRemainingUseCase
 import com.controlcal.core.nutrition.CopyDayUseCase
 import com.controlcal.core.nutrition.GetActiveGoalProfileUseCase
+import com.controlcal.core.nutrition.GetDayTotalsUseCase
 import com.controlcal.core.nutrition.MealClassifier
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.nutrition.NutritionCalculator
@@ -69,6 +70,7 @@ class DailyPanelViewModel @Inject constructor(
 
     private val repeatMealUseCase = RepeatMealUseCase()
     private val copyDayUseCase = CopyDayUseCase()
+    private val getDayTotalsUseCase = GetDayTotalsUseCase(mealEntryRepository)
 
     private val _uiState = MutableStateFlow(DailyPanelUiState())
     val uiState: StateFlow<DailyPanelUiState> = _uiState.asStateFlow()
@@ -93,7 +95,9 @@ class DailyPanelViewModel @Inject constructor(
 
             val dateStr = date.toString()
             val entries = mealEntryRepository.getByDate(dateStr)
-            val totals = NutritionCalculator.calculateDayTotals(dateStr, entries)
+            val totals = getDayTotalsUseCase(dateStr, entries)
+            val dailyLog = dailyLogRepository.getByDate(dateStr)
+            val waterMl = dailyLog?.waterMl ?: 0
 
             val configuredMeals = mealConfigRepository.getMealConfigs()
             val activeConfigs = configuredMeals.filter { it.isActive }.sortedBy { it.startTime }
@@ -155,11 +159,14 @@ class DailyPanelViewModel @Inject constructor(
             val nowMillis = clock.millis()
             val sixtyDaysAgo = nowMillis - (60L * 24L * 60L * 60L * 1000L)
             val history = mealEntryRepository.getSince(sixtyDaysAgo)
-            val activeProducts = productRepository.getActiveProducts().map { it.id }.toSet()
+            val activeProductList = productRepository.getActiveProducts()
+            val activeProducts = activeProductList.map { it.id }.toSet()
+            val liquidProductIds = activeProductList.filter { it.isLiquid }.map { it.id }.toSet()
             val suggestions = QuickLogRanker.rank(
                 entries = history,
                 nowMillis = nowMillis,
                 activeProductIds = activeProducts,
+                liquidProductIds = liquidProductIds,
                 limit = 6,
             )
 
@@ -191,7 +198,7 @@ class DailyPanelViewModel @Inject constructor(
                 val dailyIntakes = (0 until TdeeEstimator.WINDOW_DAYS).map { offset ->
                     val d = startDate.plusDays(offset.toLong()).toString()
                     val dayEntries = mealEntryRepository.getByDate(d)
-                    val dayTotals = NutritionCalculator.calculateDayTotals(d, dayEntries)
+                    val dayTotals = getDayTotalsUseCase(d, dayEntries)
                     DailyIntake(date = d, kcal = dayTotals.totals.kcal, isComplete = dayEntries.isNotEmpty())
                 }
                 val weights = weightEntryRepository.getAll()
@@ -220,6 +227,7 @@ class DailyPanelViewModel @Inject constructor(
                     currentSlotMeal = currentSlotMeal,
                     currentSlotMealName = currentSlotMealName,
                     dayType = dayType,
+                    waterMl = waterMl,
                     activeGoalProfile = activeProfile,
                     dayRemaining = remaining,
                     tdeeProposal = tdeeProposal,
@@ -236,36 +244,20 @@ class DailyPanelViewModel @Inject constructor(
         viewModelScope.launch {
             val today = DateHelper.getToday(clock)
             val todayStr = today.toString()
-            val delta = proposal.deltaKcal
-            val minKcal = proposal.minKcalLimit
 
             val currentTraining = getActiveGoalProfileUseCase(DayType.TRAINING, todayStr)
             val currentRest = getActiveGoalProfileUseCase(DayType.REST, todayStr)
 
-            val newTrainingKcal = maxOf(minKcal, currentTraining.kcal + delta)
-            val newRestKcal = maxOf(minKcal, currentRest.kcal + delta)
-
-            val trainingRatio = if (currentTraining.kcal > 0) newTrainingKcal / currentTraining.kcal else 1.0
-            val restRatio = if (currentRest.kcal > 0) newRestKcal / currentRest.kcal else 1.0
-
-            val newTrainingProfile = GoalProfile(
-                dayType = DayType.TRAINING,
-                kcal = newTrainingKcal,
-                proteinG = (currentTraining.proteinG * trainingRatio * 10).roundToInt() / 10.0,
-                carbsG = (currentTraining.carbsG * trainingRatio * 10).roundToInt() / 10.0,
-                fatG = (currentTraining.fatG * trainingRatio * 10).roundToInt() / 10.0,
+            val newTrainingProfile = TdeeProposalCalculator.applyProposalToProfile(
+                currentProfile = currentTraining,
+                proposal = proposal,
                 validFrom = todayStr,
-                origin = GoalOrigin.TDEE,
             )
 
-            val newRestProfile = GoalProfile(
-                dayType = DayType.REST,
-                kcal = newRestKcal,
-                proteinG = (currentRest.proteinG * restRatio * 10).roundToInt() / 10.0,
-                carbsG = (currentRest.carbsG * restRatio * 10).roundToInt() / 10.0,
-                fatG = (currentRest.fatG * restRatio * 10).roundToInt() / 10.0,
+            val newRestProfile = TdeeProposalCalculator.applyProposalToProfile(
+                currentProfile = currentRest,
+                proposal = proposal,
                 validFrom = todayStr,
-                origin = GoalOrigin.TDEE,
             )
 
             goalProfileRepository.insert(newTrainingProfile)
@@ -280,6 +272,25 @@ class DailyPanelViewModel @Inject constructor(
                 )
             }
             loadDay(_uiState.value.selectedDate)
+        }
+    }
+
+    fun onAddWater(deltaMl: Int = 250) {
+        val newWaterMl = (_uiState.value.waterMl + deltaMl).coerceAtLeast(0)
+        onSetWaterMl(newWaterMl)
+    }
+
+    fun onSetWaterMl(waterMl: Int) {
+        val sanitized = waterMl.coerceAtLeast(0)
+        viewModelScope.launch {
+            val dateStr = _uiState.value.selectedDate.toString()
+            dailyLogRepository.setWaterMl(dateStr, sanitized)
+            _uiState.update { it.copy(waterMl = sanitized) }
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    UiText.StringResource(R.string.daily_panel_water_updated, sanitized)
+                )
+            )
         }
     }
 
@@ -360,6 +371,7 @@ class DailyPanelViewModel @Inject constructor(
                     grams = result.mergedEntry.grams,
                     unitG = product.unitG,
                     unitName = product.unitName,
+                    isLiquid = product.isLiquid,
                 )
                 _uiState.update {
                     it.copy(
@@ -562,6 +574,7 @@ class DailyPanelViewModel @Inject constructor(
                 grams = entry.grams,
                 unitG = product?.unitG,
                 unitName = product?.unitName,
+                isLiquid = product?.isLiquid ?: false,
             )
             loadDay(_uiState.value.selectedDate)
             _feedbackEvents.send(
@@ -583,6 +596,7 @@ class DailyPanelViewModel @Inject constructor(
                 grams = mergedEntry.grams,
                 unitG = product?.unitG,
                 unitName = product?.unitName,
+                isLiquid = product?.isLiquid ?: false,
             )
             _uiState.update {
                 it.copy(

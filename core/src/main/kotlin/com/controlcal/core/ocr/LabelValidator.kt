@@ -1,5 +1,6 @@
 package com.controlcal.core.ocr
 
+import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.ocr.model.OcrParsedNutrients
 import kotlin.math.abs
 
@@ -25,6 +26,8 @@ data class LabelValidationResult(
 )
 
 object LabelValidator {
+
+    private fun fmt(value: Double): String = NumberFormatHelper.formatDecimal(value, maxDecimals = 1)
 
     /**
      * Validates parsed nutritional values per 100g/ml according to Section 5.3 Step 7 of PLAN.md:
@@ -57,7 +60,7 @@ object LabelValidator {
                     ValidationIssue(
                         field = field,
                         rule = ValidationRule.NON_NEGATIVE,
-                        message = "$field cannot be negative: $value"
+                        message = "El valor no puede ser negativo (${fmt(value)})"
                     )
                 )
                 invalidFields.add(field)
@@ -71,7 +74,7 @@ object LabelValidator {
                     ValidationIssue(
                         field = "kcal",
                         rule = ValidationRule.KCAL_LEQ_900,
-                        message = "Kcal cannot exceed 900 per 100g: $kcal"
+                        message = "Las kcal por 100 g no pueden superar 900 (${fmt(kcal)})"
                     )
                 )
                 invalidFields.add("kcal")
@@ -95,7 +98,7 @@ object LabelValidator {
                     ValidationIssue(
                         field = field,
                         rule = ValidationRule.VALUE_LEQ_100,
-                        message = "$field per 100g cannot exceed 100g: $value"
+                        message = "El valor por 100 g no puede superar 100 g (${fmt(value)} g)"
                     )
                 )
                 invalidFields.add(field)
@@ -109,7 +112,7 @@ object LabelValidator {
                     ValidationIssue(
                         field = "satFat",
                         rule = ValidationRule.SAT_FAT_LEQ_FAT,
-                        message = "Saturated fat (${nutrients.satFat}) cannot exceed total fat (${nutrients.fat})"
+                        message = "Las grasas saturadas (${fmt(nutrients.satFat)} g) no pueden superar a las grasas totales (${fmt(nutrients.fat)} g)"
                     )
                 )
                 invalidFields.add("satFat")
@@ -123,7 +126,7 @@ object LabelValidator {
                     ValidationIssue(
                         field = "sugars",
                         rule = ValidationRule.SUGARS_LEQ_CARBS,
-                        message = "Sugars (${nutrients.sugars}) cannot exceed total carbohydrates (${nutrients.carbs})"
+                        message = "Los azúcares (${fmt(nutrients.sugars)} g) no pueden superar a los hidratos de carbono (${fmt(nutrients.carbs)} g)"
                     )
                 )
                 invalidFields.add("sugars")
@@ -144,7 +147,7 @@ object LabelValidator {
                     ValidationIssue(
                         field = null,
                         rule = ValidationRule.CALORIC_BALANCE,
-                        message = "Caloric balance mismatch: calculated $calculatedKcal kcal vs reported ${nutrients.kcal} kcal (diff: $diff > 15%)"
+                        message = "Desajuste calórico: ${fmt(calculatedKcal)} kcal calculadas frente a ${fmt(nutrients.kcal)} kcal declaradas (diferencia > 15 %)"
                     )
                 )
                 invalidFields.add("kcal")

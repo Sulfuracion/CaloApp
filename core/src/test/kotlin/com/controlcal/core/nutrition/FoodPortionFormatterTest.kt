@@ -68,4 +68,13 @@ class FoodPortionFormatterTest {
         assertEquals("100 g", FoodPortionFormatter.formatQuantity(100.0, unitG = 0.0, unitName = "pieza"))
         assertEquals("100 g", FoodPortionFormatter.formatQuantity(100.0, unitG = -10.0, unitName = "pieza"))
     }
+
+    @Test
+    fun formatLiquidQuantityUsesMilliliters() {
+        assertEquals("250 ml", FoodPortionFormatter.formatQuantity(250.0, isLiquid = true))
+        assertEquals(
+            "1 vaso (250 ml)",
+            FoodPortionFormatter.formatQuantity(250.0, unitG = 250.0, unitName = "vaso", isLiquid = true)
+        )
+    }
 }

@@ -116,6 +116,12 @@ class MealEntryRepositoryImpl @Inject constructor(
     override suspend fun getSince(sinceMillis: Long): List<MealEntry> =
         mealEntryDao.entriesSince(sinceMillis).map { it.toDomain() }
 
+    override suspend fun getAll(): List<MealEntry> =
+        mealEntryDao.getAll().map { it.toDomain() }
+
+    override suspend fun deleteAll() =
+        mealEntryDao.deleteAll()
+
     override suspend fun getLatestDateWithMealBefore(date: String, meal: String): String? =
         mealEntryDao.latestDateWithMealBefore(date, meal)
 

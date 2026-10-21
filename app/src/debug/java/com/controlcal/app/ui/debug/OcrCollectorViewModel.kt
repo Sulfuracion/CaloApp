@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 sealed interface OcrCollectorUiState {
@@ -52,8 +54,28 @@ sealed interface OcrCollectorUiState {
 class OcrCollectorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val storageHelper = OcrLabelStorageHelper(application)
-    private val cameraExecutor = Executors.newSingleThreadExecutor()
-    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private var _cameraExecutor: ExecutorService? = null
+    private val cameraExecutor: ExecutorService
+        get() {
+            val current = _cameraExecutor
+            if (current != null && !current.isShutdown) return current
+            return Executors.newSingleThreadExecutor().also { _cameraExecutor = it }
+        }
+
+    private var _recognizer: TextRecognizer? = null
+    private val recognizer: TextRecognizer
+        get() = _recognizer ?: TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).also {
+            _recognizer = it
+        }
+
+    fun releaseResources() {
+        try {
+            _recognizer?.close()
+        } catch (_: Exception) {}
+        _recognizer = null
+        _cameraExecutor?.shutdown()
+        _cameraExecutor = null
+    }
 
     private val _uiState = MutableStateFlow<OcrCollectorUiState>(createReadyState())
     val uiState: StateFlow<OcrCollectorUiState> = _uiState.asStateFlow()
@@ -230,7 +252,6 @@ class OcrCollectorViewModel(application: Application) : AndroidViewModel(applica
 
     override fun onCleared() {
         super.onCleared()
-        cameraExecutor.shutdown()
-        recognizer.close()
+        releaseResources()
     }
 }

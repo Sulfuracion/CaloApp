@@ -41,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -73,6 +74,12 @@ fun OcrCaptureRoute(
 
     LaunchedEffect(targetBarcode) {
         viewModel.setTargetBarcode(targetBarcode)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.releaseResources()
+        }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -133,7 +140,10 @@ fun OcrCaptureRoute(
             viewModel.onRetryCapture()
         },
         onDismissError = viewModel::onDismissError,
-        onBack = onBack,
+        onBack = {
+            viewModel.onCancelCapture()
+            onBack()
+        },
         modifier = modifier
     )
 }

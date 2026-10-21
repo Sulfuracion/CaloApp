@@ -20,9 +20,9 @@ Unlike most commercial nutrition apps, CaloApp ensures that personal user data (
 - **📷 Fast, Offline Barcode Scanning:** Powered by **CameraX** and bundled **ML Kit Barcode Scanning** (supporting EAN-13, EAN-8, UPC-A, UPC-E) with consecutive-frame confirmation to prevent false reads.
 - **🌐 Open Food Facts Integration:** Nutritional data lookup over secure HTTPS with resilient deserialization and seamless fallback to manual entry when offline or unlisted.
 - **⚖️ Smart Logging & Tare Mode:** Precise portion tracking in grams or serving units, with a tare mode ("subtract leftovers") that records negative entries without distorting historical macro records.
-- **🧩 Macro Tetris Solver *(In Development)*:** Quadratic optimization algorithm implemented in pure Kotlin to balance remaining daily macros with available pantry foods.
-- **🔍 On-Device Nutrition Label OCR *(In Development)*:** Automated macro extraction directly from photos of food labels without relying on cloud AI services.
-- **📈 TDEE & Weight Trend Estimation *(In Development)*:** Mathematical models in `:core` to calculate exponential moving averages of weight and suggest weekly calorie target adjustments.
+- **🧩 Macro Tetris Solver:** Quadratic optimization algorithm implemented in pure Kotlin to balance remaining daily macros with available pantry foods.
+- **🔍 On-Device Nutrition Label OCR:** Automated macro extraction directly from photos of food labels without relying on cloud AI services.
+- **📈 TDEE & Weight Trend Estimation:** Mathematical models in `:core` to calculate exponential moving averages of weight and suggest weekly calorie target adjustments.
 - **❤️ Health Connect Integration *(In Development)*:** Background synchronization of nutrition and hydration records to Android Health Connect.
 
 ---
@@ -66,7 +66,7 @@ CaloApp/
 | **Settings & Key Store** | Jetpack DataStore Preferences + Android Keystore | `1.2.1` |
 | **Camera & Scanning** | CameraX + ML Kit Barcode Scanning (bundled) | CameraX `1.6.2` / ML Kit `17.3.0` |
 | **Networking & Serialization** | OkHttp + kotlinx.serialization | OkHttp `4.12.0` / Serialization `1.11.0` |
-| **Build & Tooling** | Gradle Wrapper + Android Gradle Plugin + Version Catalog | Gradle `9.8.0` / AGP `9.4.1` |
+| **Build & Tooling** | Gradle Wrapper + Android Gradle Plugin + Version Catalog | Gradle `9.8.0` / AGP `9.2.1` |
 | **Android SDK** | `compileSdk: 37.2` · `minSdk: 28` · `targetSdk: 36` | Android 17 / API 37 |
 
 ---

@@ -15,8 +15,20 @@ package com.controlcal.app.data.security
 class DatabaseKeyResolver(
     private val keyStore: WrappedKeyStoreIO,
     private val keyManager: DbKeyManager,
+    private val hasExistingDatabase: () -> Boolean = { false },
     private val onKeyLost: () -> Unit = {},
 ) {
+
+    constructor(
+        keyStore: WrappedKeyStoreIO,
+        keyManager: DbKeyManager,
+        onKeyLost: () -> Unit,
+    ) : this(
+        keyStore = keyStore,
+        keyManager = keyManager,
+        hasExistingDatabase = { false },
+        onKeyLost = onKeyLost,
+    )
 
     /** The plain SQLCipher passphrase; the caller must wipe it after opening. */
     fun resolve(): ByteArray {
@@ -31,12 +43,23 @@ class DatabaseKeyResolver(
                 createAndStore()
             }
         }
+        if (hasExistingDatabase()) {
+            // The wrapped key entry was lost (e.g. DataStore file corruption reset)
+            // while an old encrypted database still exists on disk: delete it first.
+            onKeyLost()
+        }
         return createAndStore()
     }
 
     private fun createAndStore(): ByteArray {
         val key = keyManager.generateKey()
-        keyStore.write(keyManager.wrap(key))
-        return key
+        try {
+            keyStore.write(keyManager.wrap(key))
+            return key
+        } catch (t: Throwable) {
+            keyManager.wipe(key)
+            throw t
+        }
     }
 }
+

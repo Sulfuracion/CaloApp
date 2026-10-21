@@ -22,7 +22,7 @@
     <string name="scanner_barcode_scan_again">Escanear otro código</string>
     <string name="scanner_searching_product">Buscando producto…</string>
     <string name="scanner_product_already_saved_title">Producto ya registrado</string>
-    <string name="scanner_product_already_saved_subtitle">%1$s · %2$s kcal/100 g</string>
+    <string name="scanner_product_already_saved_subtitle">%1$s kcal · %2$s g prot / 100 g</string>
     <string name="scanner_product_already_saved_add_action">Añadir al diario</string>
     <string name="scanner_product_offline_title">Sin conexión a internet</string>
     <string name="scanner_product_offline_message">No ha sido posible consultar Open Food Facts sin conexión. Puedes dar de alta el producto manualmente.</string>
@@ -74,6 +74,7 @@
     <string name="confirm_product_field_required">Campo obligatorio</string>
     <string name="confirm_product_field_invalid_number">Número no válido</string>
     <string name="confirm_product_field_non_negative">El valor no puede ser negativo</string>
+    <string name="confirm_product_barcode_duplicate_error">Este código de barras ya está registrado</string>
     <string name="confirm_product_saved_success">Producto guardado correctamente</string>
 
     <!-- Pantalla Acerca de -->
@@ -160,6 +161,11 @@
     <string name="daily_panel_protein_label">Prot</string>
     <string name="daily_panel_carbs_label">Carb</string>
     <string name="daily_panel_fat_label">Gras</string>
+    <string name="daily_panel_water_title">Agua</string>
+    <string name="daily_panel_water_summary">%1$d ml · %2$d vasos (250 ml)</string>
+    <string name="daily_panel_water_add_action">+ 250 ml</string>
+    <string name="daily_panel_water_subtract_action">− 250 ml</string>
+    <string name="daily_panel_water_updated">Agua registrada: %1$d ml</string>
 
     <!-- Peso y Tendencia (Tarea 4.2) -->
     <string name="weight_title">Peso y tendencia</string>
@@ -399,7 +405,7 @@
     <string name="meal_detail_switch_meal">Cambiar comida</string>
     <string name="meal_detail_repeat_meal_action">Repetir esta comida</string>
     <string name="meal_detail_copy_yesterday_action">Copiar el día de ayer</string>
-    <string name="meal_detail_sobras_badge">Sobras</string>
+    <string name="meal_detail_tare_badge">Sobras</string>
     <string name="meal_detail_delete_food_description">Eliminar %1$s</string>
     <string name="meal_detail_options_menu">Más opciones</string>
 
@@ -483,4 +489,15 @@
     <string name="feedback_macro_tetris_added">Alimentos de Macro Tetris añadidos a %1$s</string>
     <string name="feedback_save_error">Error al guardar. Comprueba los datos e inténtalo de nuevo</string>
     <string name="feedback_action_undo">Deshacer</string>
+    <string name="edit_product_title">Editar producto</string>
+    <string name="confirm_product_delete_action">Eliminar o archivar producto</string>
+    <string name="confirm_product_delete_dialog_title">¿Eliminar producto?</string>
+    <string name="confirm_product_delete_dialog_message">¿Seguro que deseas eliminar «%1$s»? Si tiene entradas registradas en el diario, se archivará para conservar tu historial.</string>
+    <string name="confirm_product_delete_confirm">Eliminar</string>
+    <string name="confirm_product_archived_feedback">«%1$s» archivado para conservar el historial</string>
+    <string name="confirm_product_deleted_feedback">«%1$s» eliminado</string>
+    <string name="feedback_product_updated">Producto actualizado: %1$s</string>
+    <string name="feedback_product_archived">«%1$s» archivado para conservar el historial</string>
+    <string name="feedback_product_deleted">«%1$s» eliminado</string>
+    <string name="pantry_edit_nutrition_action">Editar datos nutricionales</string>
 </resources>

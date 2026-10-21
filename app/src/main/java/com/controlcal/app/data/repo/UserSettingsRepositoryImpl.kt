@@ -58,34 +58,8 @@ class UserSettingsRepositoryImpl @Inject constructor(
     companion object {
         const val DEFAULT_MIN_KCAL = 1200.0
 
-        fun serializePattern(pattern: WeeklyDayPattern): String {
-            return listOf(
-                pattern.monday.name,
-                pattern.tuesday.name,
-                pattern.wednesday.name,
-                pattern.thursday.name,
-                pattern.friday.name,
-                pattern.saturday.name,
-                pattern.sunday.name,
-            ).joinToString(",")
-        }
+        fun serializePattern(pattern: WeeklyDayPattern): String = pattern.serialize()
 
-        fun parsePattern(raw: String): WeeklyDayPattern {
-            val parts = raw.split(",")
-            if (parts.size != 7) return WeeklyDayPattern()
-            return try {
-                WeeklyDayPattern(
-                    monday = DayType.valueOf(parts[0]),
-                    tuesday = DayType.valueOf(parts[1]),
-                    wednesday = DayType.valueOf(parts[2]),
-                    thursday = DayType.valueOf(parts[3]),
-                    friday = DayType.valueOf(parts[4]),
-                    saturday = DayType.valueOf(parts[5]),
-                    sunday = DayType.valueOf(parts[6]),
-                )
-            } catch (_: IllegalArgumentException) {
-                WeeklyDayPattern()
-            }
-        }
+        fun parsePattern(raw: String): WeeklyDayPattern = WeeklyDayPattern.parse(raw)
     }
 }

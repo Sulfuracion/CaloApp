@@ -207,9 +207,11 @@ private fun ChartCanvasWithScrubber(
                     contentDescription = chartDescription
                 }
                 .pointerInput(points) {
+                    val padLeft = 44.dp.toPx()
+                    val padRight = 16.dp.toPx()
                     detectTapGestures(
                         onPress = { offset ->
-                            val index = findClosestPointIndex(offset.x, size.width.toFloat(), points)
+                            val index = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points)
                             selectedPointIndex = index
                             tryAwaitRelease()
                             selectedPointIndex = null
@@ -217,12 +219,14 @@ private fun ChartCanvasWithScrubber(
                     )
                 }
                 .pointerInput(points) {
+                    val padLeft = 44.dp.toPx()
+                    val padRight = 16.dp.toPx()
                     detectDragGestures(
                         onDragStart = { offset ->
-                            selectedPointIndex = findClosestPointIndex(offset.x, size.width.toFloat(), points)
+                            selectedPointIndex = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points)
                         },
                         onDrag = { change, _ ->
-                            selectedPointIndex = findClosestPointIndex(change.position.x, size.width.toFloat(), points)
+                            selectedPointIndex = findClosestPointIndex(change.position.x, size.width.toFloat(), padLeft, padRight, points)
                         },
                         onDragEnd = { selectedPointIndex = null },
                         onDragCancel = { selectedPointIndex = null },
@@ -479,6 +483,8 @@ private fun ChartCanvasWithScrubber(
 private fun findClosestPointIndex(
     touchX: Float,
     canvasWidth: Float,
+    paddingLeft: Float,
+    paddingRight: Float,
     points: List<WeightTrendPoint>,
 ): Int {
     if (points.isEmpty()) return 0
@@ -486,8 +492,6 @@ private fun findClosestPointIndex(
     val endDay = LocalDate.parse(points.last().date).toEpochDay()
     val totalDays = (endDay - startDay).coerceAtLeast(1)
 
-    val paddingLeft = 44f
-    val paddingRight = 16f
     val chartWidth = (canvasWidth - paddingLeft - paddingRight).coerceAtLeast(1f)
 
     var closestIndex = 0

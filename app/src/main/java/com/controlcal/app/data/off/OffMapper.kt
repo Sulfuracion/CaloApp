@@ -1,9 +1,9 @@
 package com.controlcal.app.data.off
 
+import com.controlcal.core.nutrition.OffParsingHelper
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,7 +18,6 @@ class OffMapper @Inject constructor(
             coerceInputValues = true
         }
 
-        private const val KJ_TO_KCAL = 4.184
         private const val MAX_SEARCH_RESULTS = 20
     }
 
@@ -79,7 +78,7 @@ class OffMapper @Inject constructor(
         val energyKj = nutriments?.getDoubleOrNull("energy-kj_100g")
             ?: nutriments?.getDoubleOrNull("energy_100g")
 
-        val kcal = energyKcal ?: energyKj?.let { it / KJ_TO_KCAL }
+        val kcal = energyKcal ?: energyKj?.let { OffParsingHelper.convertKjToKcal(it) }
 
         return OffProduct(
             barcode = barcode,
@@ -93,8 +92,8 @@ class OffMapper @Inject constructor(
             sugars100g = nutriments?.getDoubleOrNull("sugars_100g"),
             satFat100g = nutriments?.getDoubleOrNull("saturated-fat_100g"),
             salt100g = nutriments?.getDoubleOrNull("salt_100g"),
-            servingG = parseServingGrams(productDto.servingSize),
-            isLiquid = parseIsLiquid(productDto.servingSize, productDto.quantity)
+            servingG = OffParsingHelper.parseServingGrams(productDto.servingSize),
+            isLiquid = OffParsingHelper.parseIsLiquid(productDto.servingSize, productDto.quantity)
         )
     }
 
@@ -104,21 +103,5 @@ class OffMapper @Inject constructor(
             return element.content.trim().replace(',', '.').toDoubleOrNull()
         }
         return null
-    }
-
-    private fun parseServingGrams(servingSize: String?): Double? {
-        if (servingSize.isNullOrBlank()) return null
-        val regex = Regex("""(?i)(\d+(?:[.,]\d+)?)\s*(?:g|ml)\b""")
-        val match = regex.find(servingSize) ?: return null
-        return match.groupValues[1].replace(',', '.').toDoubleOrNull()
-    }
-
-    private fun parseIsLiquid(servingSize: String?, quantity: String?): Boolean {
-        val combined = "${servingSize.orEmpty()} ${quantity.orEmpty()}".lowercase(Locale.ROOT)
-        return combined.contains("ml") ||
-            combined.contains("cl") ||
-            combined.contains("litro") ||
-            combined.contains("liter") ||
-            Regex("""\b\d+(?:[.,]\d+)?\s*l\b""").containsMatchIn(combined)
     }
 }

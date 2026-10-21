@@ -61,9 +61,23 @@ class DataStoreWrappedKeyStoreTest {
         assertArrayEquals(ByteArray(48) { 0x0F }, read)
     }
 
+    @Test
+    fun readMigratesFromLegacyStoreAndClearsLegacyEntry() {
+        val legacyOnlyWrapper = DataStoreWrappedKeyStore(legacyDataStore)
+        val key = ByteArray(32) { (it + 10).toByte() }
+        legacyOnlyWrapper.write(key)
+
+        val migrated = store.read()
+
+        assertArrayEquals(key, migrated)
+        assertNull(legacyOnlyWrapper.read())
+        assertArrayEquals(key, DataStoreWrappedKeyStore(dataStore).read())
+    }
+
     companion object {
         // One DataStore instance per file, shared by every test in the class.
         private lateinit var dataStore: DataStore<Preferences>
+        private lateinit var legacyDataStore: DataStore<Preferences>
         private lateinit var store: DataStoreWrappedKeyStore
 
         @BeforeClass
@@ -71,8 +85,11 @@ class DataStoreWrappedKeyStoreTest {
         fun createStore() {
             val context = ApplicationProvider.getApplicationContext<Context>()
             val file = File(context.filesDir, "test_key_store.preferences_pb").apply { delete() }
+            val legacyFile = File(context.filesDir, "test_legacy_store.preferences_pb").apply { delete() }
             dataStore = PreferenceDataStoreFactory.create { file }
-            store = DataStoreWrappedKeyStore(dataStore)
+            legacyDataStore = PreferenceDataStoreFactory.create { legacyFile }
+            store = DataStoreWrappedKeyStore(dataStore, legacyDataStore)
         }
     }
 }
+

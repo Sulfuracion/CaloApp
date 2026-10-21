@@ -133,4 +133,23 @@ class LabelValidatorTest {
         val result = LabelValidator.validate(nutrients)
         assertTrue(result.isValid)
     }
+
+    @Test
+    fun validationMessagesAreInSpanishWithCommaDecimals() {
+        val nutrients = OcrParsedNutrients(
+            kcal = 100.0,
+            protein = 5.0,
+            carbs = 10.2,
+            fat = 2.0,
+            sugars = 15.5,
+            satFat = 3.5,
+        )
+        val result = LabelValidator.validate(nutrients)
+        assertFalse(result.isValid)
+        val sugarsIssue = result.issues.first { it.rule == ValidationRule.SUGARS_LEQ_CARBS }
+        assertTrue(sugarsIssue.message.contains("15,5"))
+        assertTrue(sugarsIssue.message.contains("10,2"))
+        val satFatIssue = result.issues.first { it.rule == ValidationRule.SAT_FAT_LEQ_FAT }
+        assertTrue(satFatIssue.message.contains("3,5"))
+    }
 }
