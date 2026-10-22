@@ -1,6 +1,7 @@
 package com.controlcal.app.data.repo
 
-import androidx.room.withTransaction
+import androidx.room.immediateTransaction
+import androidx.room.useWriterConnection
 import com.controlcal.app.data.db.ControlCalDatabase
 import com.controlcal.app.data.db.dao.DailyLogDao
 import com.controlcal.app.data.db.dao.MealEntryDao
@@ -44,39 +45,43 @@ class MealEntryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun save(entry: MealEntry): MealEntrySaveResult {
-        return database.withTransaction {
-            ensureDailyLogExists(entry.date)
-            val existing = mealEntryDao.entriesForDateAndMeal(entry.date, entry.meal).map { it.toDomain() }
-            val candidate = MealEntryMerger.findMergeCandidate(existing, entry)
-            if (candidate != null) {
-                val merged = MealEntryMerger.merge(candidate, entry)
-                mealEntryDao.update(merged.toEntity())
-                MealEntrySaveResult.Merged(mergedEntry = merged, previousEntry = candidate)
-            } else {
-                val id = mealEntryDao.insert(entry.toEntity())
-                MealEntrySaveResult.Created(entry.copy(id = id))
-            }
-        }
-    }
-
-    override suspend fun saveAll(entries: List<MealEntry>): List<MealEntrySaveResult> {
-        if (entries.isEmpty()) return emptyList()
-        return database.withTransaction {
-            val results = mutableListOf<MealEntrySaveResult>()
-            for (entry in entries) {
+        return database.useWriterConnection { transactor ->
+            transactor.immediateTransaction {
                 ensureDailyLogExists(entry.date)
                 val existing = mealEntryDao.entriesForDateAndMeal(entry.date, entry.meal).map { it.toDomain() }
                 val candidate = MealEntryMerger.findMergeCandidate(existing, entry)
                 if (candidate != null) {
                     val merged = MealEntryMerger.merge(candidate, entry)
                     mealEntryDao.update(merged.toEntity())
-                    results.add(MealEntrySaveResult.Merged(mergedEntry = merged, previousEntry = candidate))
+                    MealEntrySaveResult.Merged(mergedEntry = merged, previousEntry = candidate)
                 } else {
                     val id = mealEntryDao.insert(entry.toEntity())
-                    results.add(MealEntrySaveResult.Created(entry.copy(id = id)))
+                    MealEntrySaveResult.Created(entry.copy(id = id))
                 }
             }
-            results
+        }
+    }
+
+    override suspend fun saveAll(entries: List<MealEntry>): List<MealEntrySaveResult> {
+        if (entries.isEmpty()) return emptyList()
+        return database.useWriterConnection { transactor ->
+            transactor.immediateTransaction {
+                val results = mutableListOf<MealEntrySaveResult>()
+                for (entry in entries) {
+                    ensureDailyLogExists(entry.date)
+                    val existing = mealEntryDao.entriesForDateAndMeal(entry.date, entry.meal).map { it.toDomain() }
+                    val candidate = MealEntryMerger.findMergeCandidate(existing, entry)
+                    if (candidate != null) {
+                        val merged = MealEntryMerger.merge(candidate, entry)
+                        mealEntryDao.update(merged.toEntity())
+                        results.add(MealEntrySaveResult.Merged(mergedEntry = merged, previousEntry = candidate))
+                    } else {
+                        val id = mealEntryDao.insert(entry.toEntity())
+                        results.add(MealEntrySaveResult.Created(entry.copy(id = id)))
+                    }
+                }
+                results
+            }
         }
     }
 
