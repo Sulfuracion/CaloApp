@@ -67,8 +67,8 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun ControlCalTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Keep the product palette stable; callers can opt into Android wallpaper colors explicitly.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

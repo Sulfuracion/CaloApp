@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">ControlCal</string>
+    <string name="app_logo_content_description">Marca de ControlCal</string>
     <string name="scanner_title">Escanear código</string>
     <string name="scanner_back">Volver</string>
     <string name="scanner_permission_rationale_title">Permiso de cámara necesario</string>
@@ -74,6 +75,7 @@
     <string name="confirm_product_field_required">Campo obligatorio</string>
     <string name="confirm_product_field_invalid_number">Número no válido</string>
     <string name="confirm_product_field_non_negative">El valor no puede ser negativo</string>
+    <string name="confirm_product_field_positive">Debe ser mayor que 0</string>
     <string name="confirm_product_barcode_duplicate_error">Este código de barras ya está registrado</string>
     <string name="confirm_product_saved_success">Producto guardado correctamente</string>
 
@@ -103,6 +105,17 @@
     <string name="debug_ocr_confirm_delete_title">¿Descartar última captura?</string>
     <string name="debug_ocr_confirm_delete_message">Se eliminarán los archivos %1$s y %2$s.</string>
     <string name="debug_ocr_delete_confirm_action">Eliminar</string>
+    <string name="debug_ocr_error_title">Error de captura</string>
+    <string name="debug_ocr_photo_error">No se pudo tomar la fotografía. Inténtalo de nuevo.</string>
+    <string name="debug_ocr_error_recognition">No se pudo reconocer el texto de la etiqueta.</string>
+    <string name="debug_ocr_error_processing">No se pudo procesar la captura.</string>
+    <string name="debug_ocr_next_file">Siguiente: %1$s.jpg</string>
+    <string name="debug_ocr_photo_badge">FOTO</string>
+    <string name="debug_ocr_adb_command_label">Comando ADB para descargar:</string>
+    <string name="debug_ocr_retry_action">Reintentar</string>
+    <string name="debug_ocr_mobile_path_label">Ruta en el móvil:</string>
+    <string name="debug_ocr_copy_to_pc_label">Copiar al PC mediante ADB:</string>
+    <string name="debug_ocr_close_action">Cerrar</string>
     <string name="debug_ocr_cancel_action">Cancelar</string>
     <string name="debug_ocr_viewfinder_hint">Encuadra la tabla nutricional en el recuadro</string>
     <string name="debug_ocr_error_capture">Error al capturar o analizar: %1$s</string>
@@ -115,6 +128,9 @@
     <string name="ocr_capture_processing">Analizando tabla nutricional…</string>
     <string name="ocr_capture_no_data_title">No se detectó información nutricional</string>
     <string name="ocr_capture_no_data_message">No se pudieron reconocer datos de la tabla. Puedes reintentar con mejor iluminación y enfoque, o continuar rellenando los campos a mano con la foto de referencia.</string>
+    <string name="ocr_capture_error_photo">No se pudo tomar la fotografía. Inténtalo de nuevo.</string>
+    <string name="ocr_capture_error_recognition">No se pudo reconocer el texto de la etiqueta. Prueba con mejor enfoque e iluminación.</string>
+    <string name="ocr_capture_error_processing">No se pudo procesar la imagen. Inténtalo de nuevo.</string>
     <string name="ocr_capture_retry_action">Repetir foto</string>
     <string name="ocr_capture_continue_manual_action">Continuar con la foto</string>
     <string name="ocr_capture_permission_rationale_title">Permiso de cámara necesario</string>
@@ -135,6 +151,12 @@
     <string name="confirm_product_sat_fat_warning">Las grasas saturadas no pueden superar a las grasas totales.</string>
     <string name="confirm_product_value_100g_warning">Ningún nutriente por 100 g puede superar 100 g.</string>
     <string name="confirm_product_kcal_900_warning">Las calorías por 100 g no pueden superar 900 kcal.</string>
+    <string name="confirm_product_ocr_non_negative">El valor no puede ser negativo (%1$s)</string>
+    <string name="confirm_product_ocr_kcal_limit">Las kcal por 100 g no pueden superar 900 (%1$s)</string>
+    <string name="confirm_product_ocr_value_limit">El valor por 100 g no puede superar 100 g (%1$s g)</string>
+    <string name="confirm_product_ocr_sat_fat_limit">Las grasas saturadas (%1$s g) no pueden superar a las grasas totales (%2$s g)</string>
+    <string name="confirm_product_ocr_sugars_limit">Los azúcares (%1$s g) no pueden superar a los hidratos de carbono (%2$s g)</string>
+    <string name="confirm_product_ocr_caloric_balance">Desajuste calórico: %1$s kcal calculadas frente a %2$s kcal declaradas (diferencia superior al 15 %%)</string>
 
     <!-- Panel diario y Registro rápido (Tarea 4.1) -->
     <string name="daily_panel_title">Diario</string>
@@ -184,6 +206,13 @@
     <string name="weight_chart_legend_trend">Tendencia (EMA)</string>
     <string name="weight_chart_empty">No hay pesajes en este período</string>
     <string name="weight_chart_insufficient">Registra al menos 2 pesajes para ver la línea de tendencia</string>
+    <string name="weight_chart_accessibility_empty">Gráfica de peso y tendencia</string>
+    <string name="weight_chart_accessibility_summary">Gráfica de peso y tendencia EMA. Total de pesajes: %1$d. Último pesaje: %2$s kg. Tendencia actual: %3$s kg, %4$s.</string>
+    <string name="weight_chart_change_increase">aumento de %1$s kg</string>
+    <string name="weight_chart_change_decrease">descenso de %1$s kg</string>
+    <string name="weight_chart_change_stable">estable</string>
+    <string name="weight_chart_select_point">Mostrar pesaje %1$d del %2$s</string>
+    <string name="weight_chart_tooltip">%1$s: %2$s kg (tendencia: %3$s kg)</string>
     <string name="weight_history_title">Historial de pesajes</string>
     <string name="weight_history_empty">No hay pesajes registrados</string>
     <string name="weight_history_trend_label">Tendencia: %1$s kg</string>

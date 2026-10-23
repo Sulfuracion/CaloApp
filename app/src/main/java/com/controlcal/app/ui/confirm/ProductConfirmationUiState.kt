@@ -1,6 +1,7 @@
 package com.controlcal.app.ui.confirm
 
 import com.controlcal.app.data.off.OffProduct
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.Product
@@ -47,24 +48,24 @@ data class ProductConfirmationUiState(
     val dubiousFields: Set<String> = emptySet(),
     val approximations: Set<String> = emptySet(),
     val ocrConfidence: Map<String, Float> = emptyMap(),
-    val validationIssues: Map<String, String> = emptyMap(),
-    val generalValidationIssues: List<String> = emptyList(),
+    val validationIssues: Map<String, UiText> = emptyMap(),
+    val generalValidationIssues: List<UiText> = emptyList(),
 
     // Validation errors
-    val barcodeError: String? = null,
-    val nameError: String? = null,
-    val kcalError: String? = null,
-    val proteinError: String? = null,
-    val carbsError: String? = null,
-    val fatError: String? = null,
-    val fiberError: String? = null,
-    val sugarsError: String? = null,
-    val satFatError: String? = null,
-    val saltError: String? = null,
-    val servingError: String? = null,
-    val unitGError: String? = null,
-    val diaryGramsError: String? = null,
-    val saveError: String? = null,
+    val barcodeError: UiText? = null,
+    val nameError: UiText? = null,
+    val kcalError: UiText? = null,
+    val proteinError: UiText? = null,
+    val carbsError: UiText? = null,
+    val fatError: UiText? = null,
+    val fiberError: UiText? = null,
+    val sugarsError: UiText? = null,
+    val satFatError: UiText? = null,
+    val saltError: UiText? = null,
+    val servingError: UiText? = null,
+    val unitGError: UiText? = null,
+    val diaryGramsError: UiText? = null,
+    val saveError: UiText? = null,
 
     // Diary logging integration
     val addToDiary: Boolean = false,
@@ -147,15 +148,15 @@ fun toConfirmationUiStateFromOcr(
     currentHour: Int = LocalTime.now().hour
 ): ProductConfirmationUiState {
     val validationResult = LabelValidator.validate(parsed)
-    val validationMap = mutableMapOf<String, String>()
-    val generalIssues = mutableListOf<String>()
+    val validationMap = mutableMapOf<String, UiText>()
+    val generalIssues = mutableListOf<UiText>()
 
     for (issue in validationResult.issues) {
         val field = issue.field
         if (field != null) {
-            validationMap[field] = issue.message
+            validationMap[field] = issue.toUiText()
         } else {
-            generalIssues.add(issue.message)
+            generalIssues.add(issue.toUiText())
         }
     }
 

@@ -70,3 +70,7 @@ __pycache__/
 # Local debug captures and temporary dumps
 ocr_labels/
 
+# Agent tools, local brainstorms and scratch
+.superpowers/
+.impeccable/critique/
+

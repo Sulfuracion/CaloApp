@@ -2,7 +2,9 @@ package com.controlcal.app.ui.confirm
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.controlcal.app.R
 import com.controlcal.app.data.off.OffProduct
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
 import com.controlcal.core.model.ProductSource
@@ -148,7 +150,7 @@ class ProductConfirmationViewModel(
 
     fun onNameChanged(value: String) {
         _uiState.update { current ->
-            val error = if (value.isBlank()) "Campo obligatorio" else null
+            val error = if (value.isBlank()) UiText.StringResource(R.string.confirm_product_field_required) else null
             current.copy(name = value, nameError = error)
         }
     }
@@ -161,9 +163,9 @@ class ProductConfirmationViewModel(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = when {
-                value.isBlank() -> "Campo obligatorio"
-                parsed == null -> "Número no válido"
-                parsed < 0 -> "No puede ser negativo"
+                value.isBlank() -> UiText.StringResource(R.string.confirm_product_field_required)
+                parsed == null -> UiText.StringResource(R.string.confirm_product_field_invalid_number)
+                parsed < 0 -> UiText.StringResource(R.string.confirm_product_field_non_negative)
                 else -> null
             }
             val updated = current.copy(kcal100g = value, kcalError = error)
@@ -175,9 +177,9 @@ class ProductConfirmationViewModel(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = when {
-                value.isBlank() -> "Campo obligatorio"
-                parsed == null -> "Número no válido"
-                parsed < 0 -> "No puede ser negativo"
+                value.isBlank() -> UiText.StringResource(R.string.confirm_product_field_required)
+                parsed == null -> UiText.StringResource(R.string.confirm_product_field_invalid_number)
+                parsed < 0 -> UiText.StringResource(R.string.confirm_product_field_non_negative)
                 else -> null
             }
             val updated = current.copy(protein100g = value, proteinError = error)
@@ -189,9 +191,9 @@ class ProductConfirmationViewModel(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = when {
-                value.isBlank() -> "Campo obligatorio"
-                parsed == null -> "Número no válido"
-                parsed < 0 -> "No puede ser negativo"
+                value.isBlank() -> UiText.StringResource(R.string.confirm_product_field_required)
+                parsed == null -> UiText.StringResource(R.string.confirm_product_field_invalid_number)
+                parsed < 0 -> UiText.StringResource(R.string.confirm_product_field_non_negative)
                 else -> null
             }
             val updated = current.copy(carbs100g = value, carbsError = error)
@@ -203,9 +205,9 @@ class ProductConfirmationViewModel(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = when {
-                value.isBlank() -> "Campo obligatorio"
-                parsed == null -> "Número no válido"
-                parsed < 0 -> "No puede ser negativo"
+                value.isBlank() -> UiText.StringResource(R.string.confirm_product_field_required)
+                parsed == null -> UiText.StringResource(R.string.confirm_product_field_invalid_number)
+                parsed < 0 -> UiText.StringResource(R.string.confirm_product_field_non_negative)
                 else -> null
             }
             val updated = current.copy(fat100g = value, fatError = error)
@@ -216,7 +218,9 @@ class ProductConfirmationViewModel(
     fun onFiberChanged(value: String) {
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
-            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
+            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) {
+                UiText.StringResource(R.string.confirm_product_field_invalid_number)
+            } else null
             val updated = current.copy(fiber100g = value, fiberError = error)
             revalidateOcr(updated)
         }
@@ -225,7 +229,9 @@ class ProductConfirmationViewModel(
     fun onSugarsChanged(value: String) {
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
-            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
+            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) {
+                UiText.StringResource(R.string.confirm_product_field_invalid_number)
+            } else null
             val updated = current.copy(sugars100g = value, sugarsError = error)
             revalidateOcr(updated)
         }
@@ -234,7 +240,9 @@ class ProductConfirmationViewModel(
     fun onSatFatChanged(value: String) {
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
-            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
+            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) {
+                UiText.StringResource(R.string.confirm_product_field_invalid_number)
+            } else null
             val updated = current.copy(satFat100g = value, satFatError = error)
             revalidateOcr(updated)
         }
@@ -243,7 +251,9 @@ class ProductConfirmationViewModel(
     fun onSaltChanged(value: String) {
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
-            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) "Número no válido" else null
+            val error = if (value.isNotBlank() && (parsed == null || parsed < 0)) {
+                UiText.StringResource(R.string.confirm_product_field_invalid_number)
+            } else null
             val updated = current.copy(salt100g = value, saltError = error)
             revalidateOcr(updated)
         }
@@ -256,7 +266,9 @@ class ProductConfirmationViewModel(
     fun onServingChanged(value: String) {
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
-            val error = if (value.isNotBlank() && (parsed == null || parsed <= 0)) "Número no válido" else null
+            val error = if (value.isNotBlank() && (parsed == null || parsed <= 0)) {
+                UiText.StringResource(R.string.confirm_product_field_invalid_number)
+            } else null
             current.copy(servingG = value, servingError = error)
         }
     }
@@ -268,7 +280,9 @@ class ProductConfirmationViewModel(
     fun onUnitGChanged(value: String) {
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
-            val error = if (value.isNotBlank() && (parsed == null || parsed <= 0)) "Número no válido" else null
+            val error = if (value.isNotBlank() && (parsed == null || parsed <= 0)) {
+                UiText.StringResource(R.string.confirm_product_field_invalid_number)
+            } else null
             current.copy(unitG = value, unitGError = error)
         }
     }
@@ -285,9 +299,9 @@ class ProductConfirmationViewModel(
         _uiState.update { current ->
             val parsed = NumberFormatHelper.parseDecimal(value)
             val error = when {
-                value.isBlank() -> "Campo obligatorio"
-                parsed == null -> "Número no válido"
-                parsed <= 0 -> "Debe ser mayor que 0"
+                value.isBlank() -> UiText.StringResource(R.string.confirm_product_field_required)
+                parsed == null -> UiText.StringResource(R.string.confirm_product_field_invalid_number)
+                parsed <= 0 -> UiText.StringResource(R.string.confirm_product_field_positive)
                 else -> null
             }
             val updated = current.copy(diaryGrams = value, diaryGramsError = error)
@@ -299,15 +313,15 @@ class ProductConfirmationViewModel(
         if (state.source != ProductSource.OCR) return state
         val parsed = state.toParsedNutrients()
         val validationResult = LabelValidator.validate(parsed)
-        val validationMap = mutableMapOf<String, String>()
-        val generalIssues = mutableListOf<String>()
+        val validationMap = mutableMapOf<String, UiText>()
+        val generalIssues = mutableListOf<UiText>()
 
         for (issue in validationResult.issues) {
             val field = issue.field
             if (field != null) {
-                validationMap[field] = issue.message
+                validationMap[field] = issue.toUiText()
             } else {
-                generalIssues.add(issue.message)
+                generalIssues.add(issue.toUiText())
             }
         }
         return state.copy(
@@ -379,7 +393,7 @@ class ProductConfirmationViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        saveError = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                        saveError = UiText.StringResource(R.string.feedback_save_error),
                     )
                 }
             }
@@ -403,11 +417,11 @@ class ProductConfirmationViewModel(
             // Highlight validation errors on mandatory fields
             _uiState.update {
                 it.copy(
-                    nameError = if (name.isEmpty()) "Campo obligatorio" else it.nameError,
-                    kcalError = if (kcal == null || kcal < 0) "Campo obligatorio" else it.kcalError,
-                    proteinError = if (protein == null || protein < 0) "Campo obligatorio" else it.proteinError,
-                    carbsError = if (carbs == null || carbs < 0) "Campo obligatorio" else it.carbsError,
-                    fatError = if (fat == null || fat < 0) "Campo obligatorio" else it.fatError,
+                    nameError = if (name.isEmpty()) UiText.StringResource(R.string.confirm_product_field_required) else it.nameError,
+                    kcalError = if (kcal == null || kcal < 0) UiText.StringResource(R.string.confirm_product_field_required) else it.kcalError,
+                    proteinError = if (protein == null || protein < 0) UiText.StringResource(R.string.confirm_product_field_required) else it.proteinError,
+                    carbsError = if (carbs == null || carbs < 0) UiText.StringResource(R.string.confirm_product_field_required) else it.carbsError,
+                    fatError = if (fat == null || fat < 0) UiText.StringResource(R.string.confirm_product_field_required) else it.fatError,
                 )
             }
             return
@@ -424,7 +438,7 @@ class ProductConfirmationViewModel(
                     _uiState.update {
                         it.copy(
                             isSaving = false,
-                            barcodeError = "Este código de barras ya está registrado",
+                            barcodeError = UiText.StringResource(R.string.confirm_product_barcode_duplicate_error),
                         )
                     }
                     return@launch
@@ -501,7 +515,7 @@ class ProductConfirmationViewModel(
                 _uiState.update {
                     it.copy(
                         isSaving = false,
-                        saveError = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                        saveError = UiText.StringResource(R.string.feedback_save_error),
                     )
                 }
             }

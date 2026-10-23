@@ -1,5 +1,6 @@
 package com.controlcal.app.ui.ocr
 
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.app.ui.scanner.CameraPermissionState
 import com.controlcal.core.ocr.model.OcrParsedNutrients
 import java.io.File
@@ -17,7 +18,7 @@ sealed interface OcrProcessingState {
         val photoFile: File,
         val barcode: String? = null
     ) : OcrProcessingState
-    data class Error(val message: String) : OcrProcessingState
+    data class Error(val message: UiText) : OcrProcessingState
 }
 
 data class OcrCaptureUiState(

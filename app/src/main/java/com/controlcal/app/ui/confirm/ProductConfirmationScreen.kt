@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -69,18 +71,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.controlcal.app.R
-import com.controlcal.app.data.off.OffProduct
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.ProductSource
 import com.controlcal.core.nutrition.NumberFormatHelper
-import com.controlcal.core.ocr.model.OcrParsedNutrients
 import java.io.File
-
-data class OcrConfirmationData(
-    val photoFile: File,
-    val parsedNutrients: OcrParsedNutrients,
-    val barcode: String? = null
-)
 
 @Composable
 fun ProductConfirmationRoute(
@@ -89,8 +84,6 @@ fun ProductConfirmationRoute(
     onDiscard: () -> Unit,
     onNavigateToOcrCapture: (String?) -> Unit = {},
     onProductDeletedOrArchived: (archived: Boolean, productName: String) -> Unit = { _, _ -> },
-    offProduct: OffProduct? = null,
-    ocrData: OcrConfirmationData? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -183,6 +176,8 @@ fun ProductConfirmationScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
+                .imePadding()
+                .navigationBarsPadding()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -250,7 +245,7 @@ fun ProductConfirmationScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         uiState.generalValidationIssues.forEach { issue ->
                             Text(
-                                text = "• $issue",
+                                text = "• ${issue.asString()}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
@@ -267,7 +262,7 @@ fun ProductConfirmationScreen(
                     )
                 ) {
                     Text(
-                        text = uiState.saveError,
+                        text = uiState.saveError.asString(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.padding(16.dp)
@@ -288,7 +283,7 @@ fun ProductConfirmationScreen(
                 label = { Text(stringResource(R.string.confirm_product_field_barcode)) },
                 modifier = Modifier.fillMaxWidth(),
                 isError = uiState.barcodeError != null,
-                supportingText = uiState.barcodeError?.let { { Text(it) } },
+                supportingText = uiState.barcodeError?.let { { Text(it.asString()) } },
                 singleLine = true
             )
 
@@ -300,7 +295,12 @@ fun ProductConfirmationScreen(
                 modifier = Modifier.fillMaxWidth(),
                 isError = nameHasError,
                 supportingText = if (nameHasError) {
-                    { Text(uiState.nameError ?: stringResource(R.string.confirm_product_field_required)) }
+                    {
+                        Text(
+                            uiState.nameError?.asString()
+                                ?: stringResource(R.string.confirm_product_field_required)
+                        )
+                    }
                 } else null,
                 singleLine = true
             )
@@ -364,7 +364,7 @@ fun ProductConfirmationScreen(
                     supportingText = kcalMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (kcalIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -391,7 +391,7 @@ fun ProductConfirmationScreen(
                     supportingText = proteinMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (proteinIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -424,7 +424,7 @@ fun ProductConfirmationScreen(
                     supportingText = carbsMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (carbsIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -451,7 +451,7 @@ fun ProductConfirmationScreen(
                     supportingText = fatMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (fatIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -484,7 +484,7 @@ fun ProductConfirmationScreen(
                     supportingText = fiberMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (fiberIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -511,7 +511,7 @@ fun ProductConfirmationScreen(
                     supportingText = sugarsMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (sugarsIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -544,7 +544,7 @@ fun ProductConfirmationScreen(
                     supportingText = satFatMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (satFatIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -571,7 +571,7 @@ fun ProductConfirmationScreen(
                     supportingText = saltMsg?.let { msg ->
                         {
                             Text(
-                                text = msg,
+                                text = msg.asString(),
                                 color = if (saltIsError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             )
                         }
@@ -594,7 +594,7 @@ fun ProductConfirmationScreen(
                 label = { Text(stringResource(R.string.confirm_product_field_serving_g)) },
                 modifier = Modifier.fillMaxWidth(),
                 isError = uiState.servingError != null,
-                supportingText = uiState.servingError?.let { { Text(it) } },
+                supportingText = uiState.servingError?.let { { Text(it.asString()) } },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true
             )
@@ -617,7 +617,7 @@ fun ProductConfirmationScreen(
                     label = { Text(stringResource(R.string.confirm_product_field_unit_g)) },
                     modifier = Modifier.weight(1f),
                     isError = uiState.unitGError != null,
-                    supportingText = uiState.unitGError?.let { { Text(it) } },
+                    supportingText = uiState.unitGError?.let { { Text(it.asString()) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true
                 )
@@ -679,7 +679,7 @@ fun ProductConfirmationScreen(
                                 label = { Text(stringResource(R.string.confirm_product_quantity_label)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 isError = uiState.diaryGramsError != null,
-                                supportingText = uiState.diaryGramsError?.let { { Text(it) } },
+                                supportingText = uiState.diaryGramsError?.let { { Text(it.asString()) } },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 singleLine = true
                             )
@@ -771,21 +771,21 @@ fun ProductConfirmationScreen(
 
 private fun resolveNutrientSupport(
     key: String,
-    rawError: String?,
-    validationIssue: String?,
+    rawError: UiText?,
+    validationIssue: UiText?,
     isDubious: Boolean,
     isApproximate: Boolean,
     isRequired: Boolean,
     valueText: String
-): Pair<Boolean, String?> {
+): Pair<Boolean, UiText?> {
     val isMissing = isRequired && valueText.isBlank()
     val isError = rawError != null || isMissing || validationIssue != null
     val message = when {
         rawError != null -> rawError
-        isMissing -> "Campo obligatorio"
+        isMissing -> UiText.StringResource(R.string.confirm_product_field_required)
         validationIssue != null -> validationIssue
-        isApproximate -> "Valor aproximado (<0,5 g)"
-        isDubious -> "Valor dudoso por OCR · Comprueba con la foto"
+        isApproximate -> UiText.StringResource(R.string.confirm_product_field_approximate)
+        isDubious -> UiText.StringResource(R.string.confirm_product_field_dubious)
         else -> null
     }
     return isError to message

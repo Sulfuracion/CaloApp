@@ -48,7 +48,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -167,23 +167,16 @@ fun DailyPanelScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.daily_panel_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        DateNavigator(
-                            selectedDate = uiState.selectedDate,
-                            isToday = uiState.isToday,
-                            onPreviousDay = onPreviousDay,
-                            onNextDay = onNextDay,
-                            onSelectToday = onSelectToday,
-                            onDateSelected = onDateSelected,
-                        )
-                    }
+                    DateNavigator(
+                        selectedDate = uiState.selectedDate,
+                        isToday = uiState.isToday,
+                        onPreviousDay = onPreviousDay,
+                        onNextDay = onNextDay,
+                        onSelectToday = onSelectToday,
+                        onDateSelected = onDateSelected,
+                    )
                 },
                 actions = {
                     IconButton(
@@ -422,7 +415,7 @@ private fun DateNavigator(
                 role = Role.Button,
                 onClickLabel = stringResource(R.string.date_picker_select_date),
                 onClick = { showDatePicker = true },
-            ),
+            ).heightIn(min = 48.dp).padding(horizontal = 4.dp),
         )
         IconButton(
             onClick = onNextDay,
@@ -737,8 +730,10 @@ private fun QuickLogChip(
 ) {
     Surface(
         modifier = modifier
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(8.dp))
             .combinedClickable(
+                role = Role.Button,
                 onClick = onTap,
                 onLongClick = onLongPress,
             ),
@@ -781,7 +776,7 @@ private fun MealCard(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onCardClick),
+            .clickable(role = Role.Button, onClick = onCardClick),
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(

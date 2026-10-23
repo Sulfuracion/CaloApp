@@ -7,12 +7,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.controlcal.app.data.off.OffProduct
 import com.controlcal.app.ui.about.AboutScreen
-import com.controlcal.app.ui.confirm.OcrConfirmationData
 import com.controlcal.app.ui.confirm.ProductConfirmationRoute
 import com.controlcal.app.ui.confirm.ProductConfirmationViewModel
 import com.controlcal.app.ui.debug.DebugFeatures
@@ -79,12 +75,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ControlCalTheme {
-                var currentDestination by remember { mutableStateOf(MainDestination.DAILY_PANEL) }
-                var selectedOffProduct by remember { mutableStateOf<OffProduct?>(null) }
-                var selectedOcrData by remember { mutableStateOf<OcrConfirmationData?>(null) }
-                var manualEntryBarcode by remember { mutableStateOf<String?>(null) }
-                var activeMealContext by remember { mutableStateOf<MealEntryContext?>(null) }
-                var returnToPantryAfterConfirmation by remember { mutableStateOf(false) }
+                val navigationState = rememberMainNavigationState()
+                var currentDestination by navigationState::currentDestination
+                var manualEntryBarcode by navigationState::manualEntryBarcode
+                var activeMealContext by navigationState::activeMealContext
+                var returnToPantryAfterConfirmation by navigationState::returnToPantryAfterConfirmation
 
                 val navigateBack: () -> Unit = {
                     when (currentDestination) {
@@ -118,8 +113,6 @@ class MainActivity : ComponentActivity() {
                         }
                         MainDestination.PRODUCT_CONFIRMATION -> {
                             confirmationViewModel.cleanupTempPhoto()
-                            selectedOffProduct = null
-                            selectedOcrData = null
                             if (returnToPantryAfterConfirmation) {
                                 returnToPantryAfterConfirmation = false
                                 pantryViewModel.loadProducts()
@@ -233,8 +226,6 @@ class MainActivity : ComponentActivity() {
                                 currentDestination = MainDestination.OCR_CAPTURE
                             },
                             onNavigateToManualEntry = {
-                                selectedOffProduct = null
-                                selectedOcrData = null
                                 manualEntryBarcode = null
                                 returnToPantryAfterConfirmation = false
                                 val ctx = activeMealContext
@@ -247,8 +238,6 @@ class MainActivity : ComponentActivity() {
                                 currentDestination = MainDestination.PRODUCT_CONFIRMATION
                             },
                             onNavigateToConfirmation = { offProduct ->
-                                selectedOffProduct = offProduct
-                                selectedOcrData = null
                                 returnToPantryAfterConfirmation = false
                                 val ctx = activeMealContext
                                 val selectedMeal = addEntryViewModel.uiState.value.targetMealId.ifEmpty { ctx?.mealId }
@@ -299,8 +288,6 @@ class MainActivity : ComponentActivity() {
                             viewModel = scannerViewModel,
                             onBack = navigateBack,
                             onNavigateToConfirmation = { offProduct ->
-                                selectedOffProduct = offProduct
-                                selectedOcrData = null
                                 val ctx = activeMealContext
                                 confirmationViewModel.initialize(offProduct, ctx?.date, ctx?.mealId)
                                 currentDestination = MainDestination.PRODUCT_CONFIRMATION
@@ -309,8 +296,6 @@ class MainActivity : ComponentActivity() {
                                 currentDestination = MainDestination.ABOUT
                             },
                             onNavigateToManualEntry = { barcode ->
-                                selectedOffProduct = null
-                                selectedOcrData = null
                                 manualEntryBarcode = barcode
                                 returnToPantryAfterConfirmation = false
                                 val ctx = activeMealContext
@@ -337,12 +322,6 @@ class MainActivity : ComponentActivity() {
                             targetBarcode = manualEntryBarcode,
                             onBack = navigateBack,
                             onNavigateToConfirmation = { photoFile, parsedNutrients, barcode ->
-                                selectedOffProduct = null
-                                selectedOcrData = OcrConfirmationData(
-                                    photoFile = photoFile,
-                                    parsedNutrients = parsedNutrients,
-                                    barcode = barcode
-                                )
                                 val ctx = activeMealContext
                                 confirmationViewModel.initializeFromOcr(
                                     photoFile = photoFile,
@@ -357,19 +336,13 @@ class MainActivity : ComponentActivity() {
                     }
 
                     MainDestination.PRODUCT_CONFIRMATION -> {
-                        val offProduct = selectedOffProduct
-                        val ocrData = selectedOcrData
                         ProductConfirmationRoute(
-                            offProduct = offProduct,
-                            ocrData = ocrData,
                             viewModel = confirmationViewModel,
                             onNavigateToOcrCapture = { barcode ->
                                 manualEntryBarcode = barcode
                                 currentDestination = MainDestination.OCR_CAPTURE
                             },
                             onProductDeletedOrArchived = { archived, productName ->
-                                selectedOffProduct = null
-                                selectedOcrData = null
                                 val feedbackRes = if (archived) {
                                     R.string.feedback_product_archived
                                 } else {
@@ -398,8 +371,6 @@ class MainActivity : ComponentActivity() {
                             onConfirmed = { saveResult ->
                                 val savedProductName = confirmationViewModel.uiState.value.name.trim()
                                 val wasEditing = confirmationViewModel.uiState.value.editingProductId != null
-                                selectedOffProduct = null
-                                selectedOcrData = null
                                 if (returnToPantryAfterConfirmation) {
                                     returnToPantryAfterConfirmation = false
                                     pantryViewModel.loadProducts()
@@ -497,15 +468,11 @@ class MainActivity : ComponentActivity() {
                             viewModel = pantryViewModel,
                             onBack = navigateBack,
                             onEditNutrition = { product ->
-                                selectedOffProduct = null
-                                selectedOcrData = null
                                 returnToPantryAfterConfirmation = true
                                 confirmationViewModel.initializeForEdit(product)
                                 currentDestination = MainDestination.PRODUCT_CONFIRMATION
                             },
                             onCreateProduct = {
-                                selectedOffProduct = null
-                                selectedOcrData = null
                                 manualEntryBarcode = null
                                 returnToPantryAfterConfirmation = true
                                 confirmationViewModel.initializeForManualEntry(

@@ -41,13 +41,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.controlcal.app.R
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.tdee.WeightTrendPoint
@@ -181,21 +181,66 @@ private fun ChartCanvasWithScrubber(
     val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     val outlineVariantColor = MaterialTheme.colorScheme.outlineVariant
     val surfaceColor = MaterialTheme.colorScheme.surface
+    val axisLabelStyle = MaterialTheme.typography.labelSmall.copy(
+        color = onSurfaceColor.copy(alpha = 0.6f),
+    )
+    val tooltipStyle = MaterialTheme.typography.labelMedium.copy(
+        fontWeight = FontWeight.SemiBold,
+        color = onPrimaryContainerColor,
+    )
 
     val dateFormatter = remember {
         DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("es-ES"))
     }
+    val parsedDates = remember(points) {
+        points.map { LocalDate.parse(it.date) }
+    }
 
     val latestPoint = points.lastOrNull()
     val earliestPoint = points.firstOrNull()
-    val chartDescription = remember(points, latestPoint, earliestPoint) {
-        if (latestPoint != null && earliestPoint != null) {
-            val netChange = latestPoint.trendKg - earliestPoint.trendKg
-            val changeFormatted = NumberFormatHelper.formatDecimal(abs(netChange))
-            val changeDirection = if (netChange > 0.05) "aumento de $changeFormatted kg" else if (netChange < -0.05) "descenso de $changeFormatted kg" else "estable"
-            "Gráfica de peso y tendencia EMA. Total de pesajes: ${points.size}. Último pesaje: ${NumberFormatHelper.formatDecimal(latestPoint.weightKg)} kg. Tendencia actual: ${NumberFormatHelper.formatDecimal(latestPoint.trendKg)} kg, $changeDirection."
-        } else {
-            "Gráfica de peso y tendencia"
+    val changeDirection = if (latestPoint != null && earliestPoint != null) {
+        val netChange = latestPoint.trendKg - earliestPoint.trendKg
+        val changeFormatted = NumberFormatHelper.formatDecimal(abs(netChange))
+        when {
+            netChange > 0.05 -> stringResource(R.string.weight_chart_change_increase, changeFormatted)
+            netChange < -0.05 -> stringResource(R.string.weight_chart_change_decrease, changeFormatted)
+            else -> stringResource(R.string.weight_chart_change_stable)
+        }
+    } else {
+        stringResource(R.string.weight_chart_change_stable)
+    }
+    val chartDescription = if (latestPoint != null && earliestPoint != null) {
+        stringResource(
+            R.string.weight_chart_accessibility_summary,
+            points.size,
+            NumberFormatHelper.formatDecimal(latestPoint.weightKg),
+            NumberFormatHelper.formatDecimal(latestPoint.trendKg),
+            changeDirection,
+        )
+    } else {
+        stringResource(R.string.weight_chart_accessibility_empty)
+    }
+    val pointActions = points.mapIndexed { index, _ ->
+        CustomAccessibilityAction(
+            label = stringResource(
+                R.string.weight_chart_select_point,
+                index + 1,
+                parsedDates[index].format(dateFormatter),
+            ),
+            action = {
+                selectedPointIndex = index
+                true
+            },
+        )
+    }
+    val selectedTooltipText = selectedPointIndex?.let { index ->
+        points.getOrNull(index)?.let { point ->
+            stringResource(
+                R.string.weight_chart_tooltip,
+                parsedDates[index].format(dateFormatter),
+                NumberFormatHelper.formatDecimal(point.weightKg),
+                NumberFormatHelper.formatDecimal(point.trendKg),
+            )
         }
     }
 
@@ -205,13 +250,14 @@ private fun ChartCanvasWithScrubber(
                 .fillMaxSize()
                 .semantics {
                     contentDescription = chartDescription
+                    customActions = pointActions
                 }
                 .pointerInput(points) {
                     val padLeft = 44.dp.toPx()
                     val padRight = 16.dp.toPx()
                     detectTapGestures(
                         onPress = { offset ->
-                            val index = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points)
+                            val index = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points, parsedDates)
                             selectedPointIndex = index
                             tryAwaitRelease()
                             selectedPointIndex = null
@@ -223,10 +269,10 @@ private fun ChartCanvasWithScrubber(
                     val padRight = 16.dp.toPx()
                     detectDragGestures(
                         onDragStart = { offset ->
-                            selectedPointIndex = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points)
+                            selectedPointIndex = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points, parsedDates)
                         },
                         onDrag = { change, _ ->
-                            selectedPointIndex = findClosestPointIndex(change.position.x, size.width.toFloat(), padLeft, padRight, points)
+                            selectedPointIndex = findClosestPointIndex(change.position.x, size.width.toFloat(), padLeft, padRight, points, parsedDates)
                         },
                         onDragEnd = { selectedPointIndex = null },
                         onDragCancel = { selectedPointIndex = null },
@@ -251,8 +297,8 @@ private fun ChartCanvasWithScrubber(
             val maxY = maxVal + (span * 0.15)
             val yRange = (maxY - minY).coerceAtLeast(0.1)
 
-            val startEpochDay = LocalDate.parse(points.first().date).toEpochDay()
-            val endEpochDay = LocalDate.parse(points.last().date).toEpochDay()
+            val startEpochDay = parsedDates.first().toEpochDay()
+            val endEpochDay = parsedDates.last().toEpochDay()
             val totalDays = (endEpochDay - startEpochDay).coerceAtLeast(1)
 
             fun xForEpochDay(epochDay: Long): Float {
@@ -267,10 +313,6 @@ private fun ChartCanvasWithScrubber(
 
             // 1. Draw horizontal grid lines & Y labels (4 lines)
             val gridSteps = 3
-            val labelStyle = TextStyle(
-                fontSize = 10.sp,
-                color = onSurfaceColor.copy(alpha = 0.6f),
-            )
             for (step in 0..gridSteps) {
                 val fraction = step.toFloat() / gridSteps.toFloat()
                 val weightStep = minY + (fraction * yRange)
@@ -286,12 +328,12 @@ private fun ChartCanvasWithScrubber(
 
                 // Label
                 val labelText = NumberFormatHelper.formatDecimal(weightStep)
-                val measured = textMeasurer.measure(labelText, style = labelStyle)
+                val measured = textMeasurer.measure(labelText, style = axisLabelStyle)
                 drawText(
                     textMeasurer = textMeasurer,
                     text = labelText,
                     topLeft = Offset(paddingLeft - measured.size.width - 4.dp.toPx(), y - (measured.size.height / 2)),
-                    style = labelStyle,
+                    style = axisLabelStyle,
                 )
             }
 
@@ -307,7 +349,7 @@ private fun ChartCanvasWithScrubber(
 
             for (i in 1 until points.size) {
                 val pt = points[i]
-                val epochDay = LocalDate.parse(pt.date).toEpochDay()
+                val epochDay = parsedDates[i].toEpochDay()
                 val x = xForEpochDay(epochDay)
                 val y = yForWeight(pt.trendKg)
                 trendPath.lineTo(x, y)
@@ -315,7 +357,7 @@ private fun ChartCanvasWithScrubber(
             }
 
             val lastPt = points.last()
-            val lastEpochDay = LocalDate.parse(lastPt.date).toEpochDay()
+            val lastEpochDay = parsedDates.last().toEpochDay()
             val lastX = xForEpochDay(lastEpochDay)
             trendFillPath.lineTo(lastX, paddingTop + chartHeight)
             trendFillPath.close()
@@ -348,9 +390,9 @@ private fun ChartCanvasWithScrubber(
             for (i in 0 until points.size - 1) {
                 val current = points[i]
                 val next = points[i + 1]
-                val x1 = xForEpochDay(LocalDate.parse(current.date).toEpochDay())
+                val x1 = xForEpochDay(parsedDates[i].toEpochDay())
                 val y1 = yForWeight(current.weightKg)
-                val x2 = xForEpochDay(LocalDate.parse(next.date).toEpochDay())
+                val x2 = xForEpochDay(parsedDates[i + 1].toEpochDay())
                 val y2 = yForWeight(next.weightKg)
 
                 drawLine(
@@ -361,8 +403,9 @@ private fun ChartCanvasWithScrubber(
                 )
             }
 
-            for (pt in points) {
-                val x = xForEpochDay(LocalDate.parse(pt.date).toEpochDay())
+            for (i in points.indices) {
+                val pt = points[i]
+                val x = xForEpochDay(parsedDates[i].toEpochDay())
                 val y = yForWeight(pt.weightKg)
 
                 // Outer border circle
@@ -388,22 +431,22 @@ private fun ChartCanvasWithScrubber(
 
             for (idx in dateIndices) {
                 val pt = points[idx]
-                val parsed = LocalDate.parse(pt.date)
+                val parsed = parsedDates[idx]
                 val text = parsed.format(dateFormatter)
-                val measured = textMeasurer.measure(text, style = labelStyle)
+                val measured = textMeasurer.measure(text, style = axisLabelStyle)
                 val x = xForEpochDay(parsed.toEpochDay()) - (measured.size.width / 2)
                 drawText(
                     textMeasurer = textMeasurer,
                     text = text,
                     topLeft = Offset(x.coerceIn(paddingLeft, canvasWidth - paddingRight - measured.size.width), canvasHeight - paddingBottom + 6.dp.toPx()),
-                    style = labelStyle,
+                    style = axisLabelStyle,
                 )
             }
 
             // 5. Draw scrubber highlight and tooltip if active
             selectedPointIndex?.let { idx ->
                 val selectedPoint = points.getOrNull(idx) ?: return@let
-                val parsedDate = LocalDate.parse(selectedPoint.date)
+                val parsedDate = parsedDates[idx]
                 val x = xForEpochDay(parsedDate.toEpochDay())
                 val yRaw = yForWeight(selectedPoint.weightKg)
                 val yTrend = yForWeight(selectedPoint.trendKg)
@@ -442,16 +485,8 @@ private fun ChartCanvasWithScrubber(
                 )
 
                 // Scrubber tooltip box
-                val dateStr = parsedDate.format(dateFormatter)
-                val weightStr = NumberFormatHelper.formatDecimal(selectedPoint.weightKg)
-                val trendStr = NumberFormatHelper.formatDecimal(selectedPoint.trendKg)
-                val tooltipText = "$dateStr: $weightStr kg (Tend: $trendStr kg)"
+                val tooltipText = selectedTooltipText ?: return@let
 
-                val tooltipStyle = TextStyle(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = onPrimaryContainerColor,
-                )
                 val tooltipMeasured = textMeasurer.measure(tooltipText, style = tooltipStyle)
                 val tooltipWidth = tooltipMeasured.size.width + 16.dp.toPx()
                 val tooltipHeight = tooltipMeasured.size.height + 8.dp.toPx()
@@ -486,10 +521,11 @@ private fun findClosestPointIndex(
     paddingLeft: Float,
     paddingRight: Float,
     points: List<WeightTrendPoint>,
+    parsedDates: List<LocalDate>,
 ): Int {
     if (points.isEmpty()) return 0
-    val startDay = LocalDate.parse(points.first().date).toEpochDay()
-    val endDay = LocalDate.parse(points.last().date).toEpochDay()
+    val startDay = parsedDates.first().toEpochDay()
+    val endDay = parsedDates.last().toEpochDay()
     val totalDays = (endDay - startDay).coerceAtLeast(1)
 
     val chartWidth = (canvasWidth - paddingLeft - paddingRight).coerceAtLeast(1f)
@@ -498,7 +534,7 @@ private fun findClosestPointIndex(
     var minDiff = Float.MAX_VALUE
 
     for (i in points.indices) {
-        val day = LocalDate.parse(points[i].date).toEpochDay()
+        val day = parsedDates[i].toEpochDay()
         val x = paddingLeft + ((day - startDay).toFloat() / totalDays.toFloat()) * chartWidth
         val diff = abs(touchX - x)
         if (diff < minDiff) {

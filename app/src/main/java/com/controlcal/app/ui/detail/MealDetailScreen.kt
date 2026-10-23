@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -160,8 +163,9 @@ fun MealDetailScreen(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
+                                    .heightIn(min = 48.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .clickable { onToggleDropdown(true) }
+                                    .clickable(role = Role.Button) { onToggleDropdown(true) }
                                     .padding(horizontal = 4.dp, vertical = 2.dp),
                             ) {
                                 Text(
@@ -197,29 +201,26 @@ fun MealDetailScreen(
 
                         Spacer(modifier = Modifier.width(8.dp))
 
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onOpenTimePicker() }
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                                .heightIn(min = 48.dp)
+                                .clickable(role = Role.Button) { onOpenTimePicker() }
+                                .padding(horizontal = 4.dp),
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_schedule),
-                                    contentDescription = stringResource(R.string.meal_detail_time_picker_description),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = uiState.formattedMealTime,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(R.drawable.ic_schedule),
+                                contentDescription = stringResource(R.string.meal_detail_time_picker_description),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = uiState.formattedMealTime,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 },
@@ -539,7 +540,7 @@ private fun MealDetailEntryRow(
             .fillMaxWidth()
             .then(
                 if (item.isQuickCalories) {
-                    Modifier.clickable(onClick = onEditClick)
+                    Modifier.clickable(role = Role.Button, onClick = onEditClick)
                 } else {
                     Modifier
                 }
@@ -758,6 +759,7 @@ private fun QuickCaloriesDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .imePadding()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

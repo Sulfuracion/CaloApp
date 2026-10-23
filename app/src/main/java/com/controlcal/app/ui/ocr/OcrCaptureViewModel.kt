@@ -6,6 +6,8 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.app.ui.scanner.CameraPermissionState
 import com.controlcal.core.ocr.NutritionLabelParser
 import com.controlcal.core.ocr.model.OcrBox
@@ -181,7 +183,7 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
                     _uiState.update {
                         it.copy(
                             processingState = OcrProcessingState.Error(
-                                exception.localizedMessage ?: "Error al tomar la fotografía"
+                                UiText.StringResource(R.string.ocr_capture_error_photo)
                             )
                         )
                     }
@@ -245,7 +247,7 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
                         _uiState.update {
                             it.copy(
                                 processingState = OcrProcessingState.Error(
-                                    error.localizedMessage ?: "Error en el reconocimiento de texto"
+                                    UiText.StringResource(R.string.ocr_capture_error_recognition)
                                 )
                             )
                         }
@@ -255,7 +257,7 @@ class OcrCaptureViewModel @Inject constructor() : ViewModel() {
                 _uiState.update {
                     it.copy(
                         processingState = OcrProcessingState.Error(
-                            e.localizedMessage ?: "Error al procesar la imagen"
+                            UiText.StringResource(R.string.ocr_capture_error_processing)
                         )
                     )
                 }

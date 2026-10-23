@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -340,7 +341,8 @@ private fun OcrCameraContent(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(bottom = 36.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             FilledIconButton(
@@ -411,7 +413,7 @@ private fun OcrCameraContent(
             AlertDialog(
                 onDismissRequest = onDismissError,
                 title = { Text(text = stringResource(R.string.scanner_product_error_title)) },
-                text = { Text(text = processingState.message) },
+                text = { Text(text = processingState.message.asString()) },
                 confirmButton = {
                     Button(onClick = onDismissError) {
                         Text(text = stringResource(R.string.confirm_product_discard_button))

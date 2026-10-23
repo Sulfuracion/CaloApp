@@ -232,7 +232,7 @@ fun OcrCollectorScreen(
                     modifier = Modifier.padding(bottom = 20.dp)
                 ) {
                     Text(
-                        text = "Siguiente: ${uiState.nextBaseName}.jpg",
+                        text = stringResource(R.string.debug_ocr_next_file, uiState.nextBaseName),
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
@@ -287,7 +287,7 @@ fun OcrCollectorScreen(
                         )
                     ) {
                         Text(
-                            text = "FOTO",
+                            text = stringResource(R.string.debug_ocr_photo_badge),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -380,7 +380,7 @@ fun OcrCollectorScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "Comando ADB para descargar:",
+                                text = stringResource(R.string.debug_ocr_adb_command_label),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -422,11 +422,11 @@ fun OcrCollectorScreen(
         if (uiState is OcrCollectorUiState.Error) {
             AlertDialog(
                 onDismissRequest = onRetryReady,
-                title = { Text(text = "Error de captura") },
-                text = { Text(text = uiState.message) },
+                title = { Text(text = stringResource(R.string.debug_ocr_error_title)) },
+                text = { Text(text = uiState.message.asString()) },
                 confirmButton = {
                     Button(onClick = onRetryReady) {
-                        Text(text = "Reintentar")
+                        Text(text = stringResource(R.string.debug_ocr_retry_action))
                     }
                 }
             )
@@ -482,7 +482,7 @@ fun OcrCollectorScreen(
                 text = {
                     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                         Text(
-                            text = "Ruta en el móvil:",
+                            text = stringResource(R.string.debug_ocr_mobile_path_label),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -496,7 +496,7 @@ fun OcrCollectorScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "Copiar al PC mediante ADB:",
+                            text = stringResource(R.string.debug_ocr_copy_to_pc_label),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -526,7 +526,7 @@ fun OcrCollectorScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showFolderInfoDialog = false }) {
-                        Text(text = "Cerrar")
+                        Text(text = stringResource(R.string.debug_ocr_close_action))
                     }
                 }
             )

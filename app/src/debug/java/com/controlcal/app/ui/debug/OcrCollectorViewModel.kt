@@ -6,6 +6,8 @@ import android.media.ExifInterface
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.controlcal.app.R
+import com.controlcal.app.ui.feedback.UiText
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
@@ -46,7 +48,7 @@ sealed interface OcrCollectorUiState {
     ) : OcrCollectorUiState
 
     data class Error(
-        val message: String,
+        val message: UiText,
         val savedCount: Int
     ) : OcrCollectorUiState
 }
@@ -133,7 +135,7 @@ class OcrCollectorViewModel(application: Application) : AndroidViewModel(applica
             },
             onError = { error ->
                 _uiState.value = OcrCollectorUiState.Error(
-                    message = error.localizedMessage ?: "Error al capturar la imagen",
+                    message = UiText.StringResource(R.string.debug_ocr_photo_error),
                     savedCount = storageHelper.countSavedLabels()
                 )
             }
@@ -193,13 +195,13 @@ class OcrCollectorViewModel(application: Application) : AndroidViewModel(applica
                     }
                     .addOnFailureListener { error ->
                         _uiState.value = OcrCollectorUiState.Error(
-                            message = error.localizedMessage ?: "Error en el reconocimiento de texto",
+                            message = UiText.StringResource(R.string.debug_ocr_error_recognition),
                             savedCount = storageHelper.countSavedLabels()
                         )
                     }
             } catch (t: Throwable) {
                 _uiState.value = OcrCollectorUiState.Error(
-                    message = t.localizedMessage ?: "Error al procesar la captura",
+                    message = UiText.StringResource(R.string.debug_ocr_error_processing),
                     savedCount = storageHelper.countSavedLabels()
                 )
             }
