@@ -56,6 +56,8 @@ enum class MainDestination {
     MACRO_TETRIS,
     SAVED_MEALS,
     SUPPLEMENTS,
+    RECIPES,
+    RECIPE_EDITOR,
 }
 
 @AndroidEntryPoint
@@ -73,6 +75,8 @@ class MainActivity : ComponentActivity() {
     private val macroTetrisViewModel: MacroTetrisViewModel by viewModels()
     private val savedMealsViewModel: com.controlcal.app.ui.savedmeals.SavedMealsViewModel by viewModels()
     private val supplementsViewModel: com.controlcal.app.ui.supplement.SupplementsViewModel by viewModels()
+    private val recipesViewModel: com.controlcal.app.ui.recipes.RecipesViewModel by viewModels()
+    private val recipeEditorViewModel: com.controlcal.app.ui.recipes.editor.RecipeEditorViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -162,6 +166,29 @@ class MainActivity : ComponentActivity() {
                             dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
                             currentDestination = MainDestination.DAILY_PANEL
                         }
+                        MainDestination.RECIPES -> {
+                            if (navigationState.openedRecipesFromAddEntry) {
+                                navigationState.openedRecipesFromAddEntry = false
+                                val ctx = activeMealContext
+                                if (ctx != null) {
+                                    addEntryViewModel.initialize(ctx.date, ctx.mealId)
+                                }
+                                currentDestination = MainDestination.ADD_ENTRY
+                            } else {
+                                dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                                currentDestination = MainDestination.DAILY_PANEL
+                            }
+                        }
+                        MainDestination.RECIPE_EDITOR -> {
+                            if (navigationState.returnToPantryAfterRecipeEditor) {
+                                navigationState.returnToPantryAfterRecipeEditor = false
+                                pantryViewModel.loadProducts()
+                                currentDestination = MainDestination.PANTRY
+                            } else {
+                                recipesViewModel.loadRecipes()
+                                currentDestination = MainDestination.RECIPES
+                            }
+                        }
                     }
                 }
 
@@ -185,6 +212,11 @@ class MainActivity : ComponentActivity() {
                             onNavigateToPantry = {
                                 pantryViewModel.loadProducts()
                                 currentDestination = MainDestination.PANTRY
+                            },
+                            onNavigateToRecipes = {
+                                navigationState.openedRecipesFromAddEntry = false
+                                recipesViewModel.loadRecipes()
+                                currentDestination = MainDestination.RECIPES
                             },
                             onNavigateToSavedMeals = {
                                 savedMealsViewModel.loadMeals()
@@ -271,6 +303,11 @@ class MainActivity : ComponentActivity() {
                             onNavigateToSavedMeals = {
                                 savedMealsViewModel.loadMeals()
                                 currentDestination = MainDestination.SAVED_MEALS
+                            },
+                            onNavigateToRecipes = {
+                                navigationState.openedRecipesFromAddEntry = true
+                                recipesViewModel.loadRecipes()
+                                currentDestination = MainDestination.RECIPES
                             },
                             onSavedMealAdded = { resolvedMeal, results ->
                                 val ctx = activeMealContext
@@ -508,9 +545,15 @@ class MainActivity : ComponentActivity() {
                             viewModel = pantryViewModel,
                             onBack = navigateBack,
                             onEditNutrition = { product ->
-                                returnToPantryAfterConfirmation = true
-                                confirmationViewModel.initializeForEdit(product)
-                                currentDestination = MainDestination.PRODUCT_CONFIRMATION
+                                if (product.source == com.controlcal.core.model.ProductSource.RECIPE) {
+                                    navigationState.returnToPantryAfterRecipeEditor = true
+                                    recipeEditorViewModel.initializeByProductId(product.id)
+                                    currentDestination = MainDestination.RECIPE_EDITOR
+                                } else {
+                                    returnToPantryAfterConfirmation = true
+                                    confirmationViewModel.initializeForEdit(product)
+                                    currentDestination = MainDestination.PRODUCT_CONFIRMATION
+                                }
                             },
                             onCreateProduct = {
                                 manualEntryBarcode = null
@@ -559,6 +602,40 @@ class MainActivity : ComponentActivity() {
                         com.controlcal.app.ui.supplement.SupplementsRoute(
                             viewModel = supplementsViewModel,
                             onBack = navigateBack,
+                        )
+                    }
+
+                    MainDestination.RECIPES -> {
+                        com.controlcal.app.ui.recipes.RecipesRoute(
+                            viewModel = recipesViewModel,
+                            onBack = navigateBack,
+                            onCreateRecipe = {
+                                navigationState.returnToPantryAfterRecipeEditor = false
+                                recipeEditorViewModel.initialize(null)
+                                currentDestination = MainDestination.RECIPE_EDITOR
+                            },
+                            onEditRecipe = { recipeId ->
+                                navigationState.returnToPantryAfterRecipeEditor = false
+                                recipeEditorViewModel.initialize(recipeId)
+                                currentDestination = MainDestination.RECIPE_EDITOR
+                            },
+                        )
+                    }
+
+                    MainDestination.RECIPE_EDITOR -> {
+                        com.controlcal.app.ui.recipes.editor.RecipeEditorRoute(
+                            viewModel = recipeEditorViewModel,
+                            onBack = navigateBack,
+                            onRecipeSaved = { _ ->
+                                if (navigationState.returnToPantryAfterRecipeEditor) {
+                                    navigationState.returnToPantryAfterRecipeEditor = false
+                                    pantryViewModel.loadProducts()
+                                    currentDestination = MainDestination.PANTRY
+                                } else {
+                                    recipesViewModel.loadRecipes()
+                                    currentDestination = MainDestination.RECIPES
+                                }
+                            },
                         )
                     }
                 }

@@ -15,6 +15,8 @@ class MainNavigationState(
     activeMealContext: MealEntryContext? = null,
     manualEntryBarcode: String? = null,
     returnToPantryAfterConfirmation: Boolean = false,
+    returnToPantryAfterRecipeEditor: Boolean = false,
+    openedRecipesFromAddEntry: Boolean = false,
 ) {
     private var destinationStack by mutableStateOf(
         initialBackStack.ifEmpty { listOf(initialDestination) },
@@ -38,6 +40,8 @@ class MainNavigationState(
     var activeMealContext by mutableStateOf(activeMealContext)
     var manualEntryBarcode by mutableStateOf(manualEntryBarcode)
     var returnToPantryAfterConfirmation by mutableStateOf(returnToPantryAfterConfirmation)
+    var returnToPantryAfterRecipeEditor by mutableStateOf(returnToPantryAfterRecipeEditor)
+    var openedRecipesFromAddEntry by mutableStateOf(openedRecipesFromAddEntry)
 }
 
 private val mainNavigationStateSaver = Saver<MainNavigationState, List<Any?>>(
@@ -48,6 +52,8 @@ private val mainNavigationStateSaver = Saver<MainNavigationState, List<Any?>>(
             state.activeMealContext?.mealId,
             state.manualEntryBarcode,
             state.returnToPantryAfterConfirmation,
+            state.returnToPantryAfterRecipeEditor,
+            state.openedRecipesFromAddEntry,
         )
     },
     restore = { values ->
@@ -74,6 +80,8 @@ private val mainNavigationStateSaver = Saver<MainNavigationState, List<Any?>>(
             },
             manualEntryBarcode = values.getOrNull(3) as? String,
             returnToPantryAfterConfirmation = values.getOrNull(4) as? Boolean ?: false,
+            returnToPantryAfterRecipeEditor = values.getOrNull(5) as? Boolean ?: false,
+            openedRecipesFromAddEntry = values.getOrNull(6) as? Boolean ?: false,
         )
     },
 )

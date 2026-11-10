@@ -12,6 +12,7 @@ import com.controlcal.app.data.db.dao.DailyLogDao
 import com.controlcal.app.data.db.dao.GoalProfileDao
 import com.controlcal.app.data.db.dao.MealEntryDao
 import com.controlcal.app.data.db.dao.ProductDao
+import com.controlcal.app.data.db.dao.RecipeDao
 import com.controlcal.app.data.db.dao.SavedMealDao
 import com.controlcal.app.data.db.dao.SupplementDao
 import com.controlcal.app.data.db.dao.WeightEntryDao
@@ -19,6 +20,8 @@ import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
 import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
+import com.controlcal.app.data.db.entity.RecipeEntity
+import com.controlcal.app.data.db.entity.RecipeIngredientEntity
 import com.controlcal.app.data.db.entity.SavedMealEntity
 import com.controlcal.app.data.db.entity.SavedMealItemEntity
 import com.controlcal.app.data.db.entity.SupplementEntity
@@ -32,6 +35,8 @@ import com.controlcal.core.backup.BackupMealEntryDto
 import com.controlcal.core.backup.BackupPayload
 import com.controlcal.core.backup.BackupPreferencesDto
 import com.controlcal.core.backup.BackupProductDto
+import com.controlcal.core.backup.BackupRecipeDto
+import com.controlcal.core.backup.BackupRecipeIngredientDto
 import com.controlcal.core.backup.BackupSavedMealDto
 import com.controlcal.core.backup.BackupSavedMealItemDto
 import com.controlcal.core.backup.BackupSupplementDto
@@ -60,6 +65,7 @@ class BackupManager @Inject constructor(
     private val goalProfileDao: GoalProfileDao,
     private val savedMealDao: SavedMealDao,
     private val supplementDao: SupplementDao,
+    private val recipeDao: RecipeDao,
     private val reminderScheduler: SupplementReminderScheduler,
     private val dataStore: DataStore<Preferences>,
 ) {
@@ -127,11 +133,15 @@ class BackupManager @Inject constructor(
             val savedMealItemEntities = payload.savedMealItems.map { it.toEntity() }
             val supplementEntities = payload.supplements.map { it.toEntity() }
             val supplementIntakeEntities = payload.supplementIntakes.map { it.toEntity() }
+            val recipeEntities = payload.recipes.map { it.toEntity() }
+            val recipeIngredientEntities = payload.recipeIngredients.map { it.toEntity() }
 
             database.withTransaction {
                 // Delete dependent tables first (reverse FK order)
                 supplementDao.deleteAllIntakes()
                 supplementDao.deleteAll()
+                recipeDao.deleteAllIngredients()
+                recipeDao.deleteAll()
                 savedMealDao.deleteAllItems()
                 savedMealDao.deleteAllMeals()
                 mealEntryDao.deleteAll()
@@ -143,6 +153,14 @@ class BackupManager @Inject constructor(
                 // Insert parent tables before child tables
                 if (productEntities.isNotEmpty()) {
                     productDao.insertAll(productEntities)
+                }
+                if (recipeEntities.isNotEmpty()) {
+                    for (recipe in recipeEntities) {
+                        recipeDao.insertRecipe(recipe)
+                    }
+                }
+                if (recipeIngredientEntities.isNotEmpty()) {
+                    recipeDao.insertIngredients(recipeIngredientEntities)
                 }
                 if (dailyLogEntities.isNotEmpty()) {
                     dailyLogDao.insertAll(dailyLogEntities)
@@ -199,6 +217,10 @@ class BackupManager @Inject constructor(
         val supplements = supplementDao.getAll().map { it.toBackupDto() }
         val supplementIntakes = supplementDao.getAllIntakes().map { it.toBackupDto() }
 
+        val recipesWithIngredients = recipeDao.getAllWithIngredients(includeArchived = true)
+        val backupRecipes = recipesWithIngredients.map { it.recipe.toBackupDto() }
+        val backupRecipeIngredients = recipesWithIngredients.flatMap { it.ingredients.map { item -> item.toBackupDto() } }
+
         val prefs = dataStore.data.first()
         val preferences = BackupPreferencesDto(
             weeklyPattern = prefs[weeklyPatternKey],
@@ -222,11 +244,13 @@ class BackupManager @Inject constructor(
             savedMealItems = backupSavedMealItems,
             supplements = supplements,
             supplementIntakes = supplementIntakes,
+            recipes = backupRecipes,
+            recipeIngredients = backupRecipeIngredients,
         )
     }
 
     companion object {
-        const val CURRENT_ROOM_SCHEMA_VERSION = 5
+        const val CURRENT_ROOM_SCHEMA_VERSION = 6
 
         private fun ProductEntity.toBackupDto(): BackupProductDto = BackupProductDto(
             id = id,
@@ -450,6 +474,46 @@ class BackupManager @Inject constructor(
             scheduledTime = scheduledTime,
             status = status,
             recordedAt = recordedAt,
+        )
+
+        private fun RecipeEntity.toBackupDto(): BackupRecipeDto = BackupRecipeDto(
+            id = id,
+            productId = productId,
+            name = name,
+            cookedWeightG = cookedWeightG,
+            servings = servings,
+            notes = notes,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            archived = archived,
+        )
+
+        private fun BackupRecipeDto.toEntity(): RecipeEntity = RecipeEntity(
+            id = id,
+            productId = productId,
+            name = name,
+            cookedWeightG = cookedWeightG,
+            servings = servings,
+            notes = notes,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            archived = archived,
+        )
+
+        private fun RecipeIngredientEntity.toBackupDto(): BackupRecipeIngredientDto = BackupRecipeIngredientDto(
+            id = id,
+            recipeId = recipeId,
+            position = position,
+            productId = productId,
+            grams = grams,
+        )
+
+        private fun BackupRecipeIngredientDto.toEntity(): RecipeIngredientEntity = RecipeIngredientEntity(
+            id = id,
+            recipeId = recipeId,
+            position = position,
+            productId = productId,
+            grams = grams,
         )
     }
 }

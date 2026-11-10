@@ -6,6 +6,7 @@ import com.controlcal.app.data.db.dao.DailyLogDao
 import com.controlcal.app.data.db.dao.GoalProfileDao
 import com.controlcal.app.data.db.dao.MealEntryDao
 import com.controlcal.app.data.db.dao.ProductDao
+import com.controlcal.app.data.db.dao.RecipeDao
 import com.controlcal.app.data.db.dao.SavedMealDao
 import com.controlcal.app.data.db.dao.SupplementDao
 import com.controlcal.app.data.db.dao.WeightEntryDao
@@ -13,6 +14,8 @@ import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
 import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
+import com.controlcal.app.data.db.entity.RecipeEntity
+import com.controlcal.app.data.db.entity.RecipeIngredientEntity
 import com.controlcal.app.data.db.entity.SavedMealEntity
 import com.controlcal.app.data.db.entity.SavedMealItemEntity
 import com.controlcal.app.data.db.entity.SupplementEntity
@@ -36,8 +39,10 @@ import com.controlcal.app.data.db.entity.WeightEntryEntity
         SavedMealItemEntity::class,
         SupplementEntity::class,
         SupplementIntakeEntity::class,
+        RecipeEntity::class,
+        RecipeIngredientEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class ControlCalDatabase : RoomDatabase() {
@@ -55,6 +60,8 @@ abstract class ControlCalDatabase : RoomDatabase() {
     abstract fun savedMealDao(): SavedMealDao
 
     abstract fun supplementDao(): SupplementDao
+
+    abstract fun recipeDao(): RecipeDao
 
     companion object {
         const val NAME = "controlcal.db"

@@ -421,4 +421,130 @@ class ControlCalDatabaseMigrationTest {
         assertEquals(0, intakesAfterDelete.getInt(0))
         intakesAfterDelete.close()
     }
+
+    @Test
+    fun migrate5To6PreservesAllRowsAndAddsRecipeTables() {
+        // Step 1: Create database in version 5
+        val dbV5 = helper.createDatabase(TEST_DB, 5)
+
+        dbV5.execSQL(
+            """
+            INSERT INTO products (
+                id, name, kcal_100g, protein_100g, carbs_100g, fat_100g,
+                is_liquid, in_pantry, source, archived, created_at, updated_at
+            ) VALUES (1, 'Arroz', 350.0, 7.0, 78.0, 1.0, 0, 1, 'MANUAL', 0, 1000, 1000)
+            """.trimIndent()
+        )
+        dbV5.execSQL(
+            """
+            INSERT INTO products (
+                id, name, kcal_100g, protein_100g, carbs_100g, fat_100g,
+                is_liquid, in_pantry, source, archived, created_at, updated_at
+            ) VALUES (2, 'Pollo', 165.0, 31.0, 0.0, 3.6, 0, 1, 'MANUAL', 0, 1000, 1000)
+            """.trimIndent()
+        )
+        dbV5.execSQL("INSERT INTO daily_logs (date, day_type, water_ml, steps) VALUES ('2026-11-10', 'REST', 1500, 8000)")
+        dbV5.execSQL(
+            """
+            INSERT INTO meal_entries (
+                id, date, meal, product_id, product_name,
+                grams, kcal, protein, carbs, fat, logged_at
+            ) VALUES (1, '2026-11-10', 'LUNCH', 1, 'Arroz', 100.0, 350.0, 7.0, 78.0, 1.0, 1000)
+            """.trimIndent()
+        )
+        dbV5.execSQL("INSERT INTO saved_meals (id, name, created_at, updated_at, use_count) VALUES (1, 'Almuerzo habitual', 1000, 1000, 0)")
+        dbV5.execSQL(
+            """
+            INSERT INTO supplements (
+                id, name, dose_amount, dose_unit, schedule_type, start_date, times, active, reminders_enabled, created_at, updated_at
+            ) VALUES (1, 'Vitamina D3', 2000.0, 'UI', 'DAILY', '2026-11-01', '["09:00"]', 1, 1, 1000, 1000)
+            """.trimIndent()
+        )
+        dbV5.close()
+
+        // Step 2: Migrate to version 6 and validate against schema 6.json
+        val migratedDb = helper.runMigrationsAndValidate(TEST_DB, 6, true, MIGRATION_5_6)
+
+        // Step 3: Verify existing data preserved
+        val prodCursor = migratedDb.query("SELECT COUNT(*) FROM products")
+        assertTrue(prodCursor.moveToFirst())
+        assertEquals(2, prodCursor.getInt(0))
+        prodCursor.close()
+
+        val stepsCursor = migratedDb.query("SELECT steps FROM daily_logs WHERE date = '2026-11-10'")
+        assertTrue(stepsCursor.moveToFirst())
+        assertEquals(8000, stepsCursor.getInt(0))
+        stepsCursor.close()
+
+        val suppCursor = migratedDb.query("SELECT name FROM supplements WHERE id = 1")
+        assertTrue(suppCursor.moveToFirst())
+        assertEquals("Vitamina D3", suppCursor.getString(0))
+        suppCursor.close()
+
+        // Step 4: Insert a recipe product with source = 'RECIPE'
+        migratedDb.execSQL(
+            """
+            INSERT INTO products (
+                id, name, kcal_100g, protein_100g, carbs_100g, fat_100g,
+                is_liquid, unit_name, unit_g, serving_g, in_pantry, source, archived, created_at, updated_at
+            ) VALUES (3, 'Pollo con arroz', 150.0, 15.0, 20.0, 2.0, 0, 'ración', 250.0, 250.0, 0, 'RECIPE', 0, 2000, 2000)
+            """.trimIndent()
+        )
+
+        // Step 5: Insert recipe and ingredients
+        migratedDb.execSQL(
+            """
+            INSERT INTO recipes (
+                id, product_id, name, cooked_weight_g, servings, notes, created_at, updated_at, archived
+            ) VALUES (1, 3, 'Pollo con arroz', 500.0, 2.0, 'Receta casera', 2000, 2000, 0)
+            """.trimIndent()
+        )
+
+        migratedDb.execSQL(
+            """
+            INSERT INTO recipe_ingredients (
+                id, recipe_id, position, product_id, grams
+            ) VALUES (1, 1, 0, 2, 200.0)
+            """.trimIndent()
+        )
+        migratedDb.execSQL(
+            """
+            INSERT INTO recipe_ingredients (
+                id, recipe_id, position, product_id, grams
+            ) VALUES (2, 1, 1, 1, 100.0)
+            """.trimIndent()
+        )
+
+        val recipeCursor = migratedDb.query("SELECT name, cooked_weight_g, servings FROM recipes WHERE id = 1")
+        assertTrue(recipeCursor.moveToFirst())
+        assertEquals("Pollo con arroz", recipeCursor.getString(0))
+        assertEquals(500.0, recipeCursor.getDouble(1), 0.001)
+        assertEquals(2.0, recipeCursor.getDouble(2), 0.001)
+        recipeCursor.close()
+
+        val ingsCursor = migratedDb.query("SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = 1")
+        assertTrue(ingsCursor.moveToFirst())
+        assertEquals(2, ingsCursor.getInt(0))
+        ingsCursor.close()
+
+        // Step 6: Verify unique constraint on product_id
+        assertFailsWith<SQLiteConstraintException> {
+            migratedDb.execSQL(
+                """
+                INSERT INTO recipes (
+                    id, product_id, name, created_at, updated_at, archived
+                ) VALUES (2, 3, 'Duplicado', 3000, 3000, 0)
+                """.trimIndent()
+            )
+        }
+
+        // Step 7: Verify CASCADE delete on recipe_ingredients
+        migratedDb.execSQL("PRAGMA foreign_keys = ON")
+        migratedDb.execSQL("DELETE FROM recipes WHERE id = 1")
+
+        val ingsAfterDelete = migratedDb.query("SELECT COUNT(*) FROM recipe_ingredients WHERE recipe_id = 1")
+        assertTrue(ingsAfterDelete.moveToFirst())
+        assertEquals(0, ingsAfterDelete.getInt(0))
+        ingsAfterDelete.close()
+    }
 }

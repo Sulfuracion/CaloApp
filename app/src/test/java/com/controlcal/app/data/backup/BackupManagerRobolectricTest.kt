@@ -81,6 +81,7 @@ class BackupManagerRobolectricTest {
             goalProfileDao = db.goalProfileDao(),
             savedMealDao = db.savedMealDao(),
             supplementDao = db.supplementDao(),
+            recipeDao = db.recipeDao(),
             reminderScheduler = com.controlcal.app.reminder.SupplementReminderScheduler(context, db.supplementDao()),
             dataStore = dataStore,
         )
@@ -256,6 +257,26 @@ class BackupManagerRobolectricTest {
         )
         db.supplementDao().insertIntake(intake)
 
+        val recipe = com.controlcal.app.data.db.entity.RecipeEntity(
+            id = 80L,
+            productId = 10L,
+            name = "Avena con leche",
+            cookedWeightG = 250.0,
+            servings = 1.0,
+            notes = "Desayuno",
+            createdAt = 1000L,
+            updatedAt = 1000L,
+        )
+        db.recipeDao().insertRecipe(recipe)
+        val recipeIng = com.controlcal.app.data.db.entity.RecipeIngredientEntity(
+            id = 801L,
+            recipeId = 80L,
+            position = 0,
+            productId = 10L,
+            grams = 50.0,
+        )
+        db.recipeDao().insertIngredients(listOf(recipeIng))
+
         // 2. Export to byte stream
         val outStream = ByteArrayOutputStream()
         manager.exportBackup(password, outStream)
@@ -265,6 +286,8 @@ class BackupManagerRobolectricTest {
         // 3. Clear all database tables and DataStore
         db.supplementDao().deleteAllIntakes()
         db.supplementDao().deleteAll()
+        db.recipeDao().deleteAllIngredients()
+        db.recipeDao().deleteAll()
         db.savedMealDao().deleteAllItems()
         db.savedMealDao().deleteAllMeals()
         db.mealEntryDao().deleteAll()
@@ -276,6 +299,7 @@ class BackupManagerRobolectricTest {
 
         assertEquals(0, db.supplementDao().getAll().size)
         assertEquals(0, db.supplementDao().getAllIntakes().size)
+        assertEquals(0, db.recipeDao().getAllWithIngredients(includeArchived = true).size)
         assertEquals(0, db.savedMealDao().getAllWithItems().size)
         assertEquals(0, db.productDao().allIncludingArchived().size)
         assertEquals(0, db.dailyLogDao().getAll().size)
@@ -291,12 +315,14 @@ class BackupManagerRobolectricTest {
         assertEquals(1, summary.dayCount)
         assertEquals(3, summary.mealEntryCount)
         assertEquals(1, summary.weightEntryCount)
-        assertEquals(5, summary.schemaVersion)
+        assertEquals(6, summary.schemaVersion)
         assertEquals(1, summary.supplementCount)
         assertEquals(1, payload.savedMeals.size)
         assertEquals(1, payload.savedMealItems.size)
         assertEquals(1, payload.supplements.size)
         assertEquals(1, payload.supplementIntakes.size)
+        assertEquals(1, payload.recipes.size)
+        assertEquals(1, payload.recipeIngredients.size)
 
         // 5. Restore backup
         manager.restoreBackup(payload)
@@ -464,20 +490,20 @@ class BackupManagerRobolectricTest {
 
     @Test
     fun restore_rejectsNewerSchemaVersion() = runTest {
-        val payloadV6 = BackupPayload(
+        val payloadV7 = BackupPayload(
             backupFormatVersion = 1,
-            schemaVersion = 6, // Future schema version
+            schemaVersion = 7, // Future schema version
             createdAt = 1800000000L,
             appVersion = "2.0",
         )
 
         try {
-            manager.restoreBackup(payloadV6)
+            manager.restoreBackup(payloadV7)
             fail("Expected NewerSchemaVersionException")
         } catch (e: NewerSchemaVersionException) {
             assertEquals("Actualiza la app para importar esta copia", e.message)
-            assertEquals(6, e.backupSchemaVersion)
-            assertEquals(5, e.currentSchemaVersion)
+            assertEquals(7, e.backupSchemaVersion)
+            assertEquals(6, e.currentSchemaVersion)
         }
     }
 

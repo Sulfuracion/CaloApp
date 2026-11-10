@@ -43,6 +43,9 @@ interface MealEntryDao {
     @Query("SELECT date FROM meal_entries WHERE date < :date AND meal = :meal ORDER BY date DESC LIMIT 1")
     suspend fun latestDateWithMealBefore(date: String, meal: String): String?
 
+    @Query("SELECT COUNT(*) FROM meal_entries WHERE product_id = :productId")
+    suspend fun countByProductId(productId: Long): Int
+
     @Query("SELECT COUNT(*) FROM meal_entries WHERE meal = :meal")
     suspend fun countForMeal(meal: String): Int
 

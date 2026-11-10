@@ -30,9 +30,10 @@ data class BackupPayload(
     val savedMealItems: List<BackupSavedMealItemDto> = emptyList(),
     val supplements: List<BackupSupplementDto> = emptyList(),
     val supplementIntakes: List<BackupSupplementIntakeDto> = emptyList(),
+    val recipes: List<BackupRecipeDto> = emptyList(),
+    val recipeIngredients: List<BackupRecipeIngredientDto> = emptyList(),
     // Extension points for future features:
     val customMeals: List<String> = emptyList(),
-    val recipes: List<String> = emptyList(),
 )
 
 @Serializable
@@ -162,4 +163,26 @@ data class BackupSupplementIntakeDto(
     val scheduledTime: String,
     val status: String,
     val recordedAt: Long,
+)
+
+@Serializable
+data class BackupRecipeDto(
+    val id: Long,
+    val productId: Long,
+    val name: String,
+    val cookedWeightG: Double? = null,
+    val servings: Double? = null,
+    val notes: String? = null,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val archived: Boolean = false,
+)
+
+@Serializable
+data class BackupRecipeIngredientDto(
+    val id: Long,
+    val recipeId: Long,
+    val position: Int,
+    val productId: Long,
+    val grams: Double,
 )

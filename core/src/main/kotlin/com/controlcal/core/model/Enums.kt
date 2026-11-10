@@ -11,6 +11,7 @@ enum class ProductSource {
     MANUAL,
     OFF,
     OCR,
+    RECIPE,
 }
 
 /** Where a goal profile came from. */

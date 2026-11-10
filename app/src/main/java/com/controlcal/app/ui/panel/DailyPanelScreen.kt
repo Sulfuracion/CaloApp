@@ -94,6 +94,7 @@ fun DailyPanelRoute(
     onNavigateToScanner: () -> Unit,
     onNavigateToWeight: () -> Unit = {},
     onNavigateToPantry: () -> Unit = {},
+    onNavigateToRecipes: () -> Unit = {},
     onNavigateToSavedMeals: () -> Unit = {},
     onNavigateToSupplements: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
@@ -116,6 +117,7 @@ fun DailyPanelRoute(
         onNavigateToScanner = onNavigateToScanner,
         onNavigateToWeight = onNavigateToWeight,
         onNavigateToPantry = onNavigateToPantry,
+        onNavigateToRecipes = onNavigateToRecipes,
         onNavigateToSavedMeals = onNavigateToSavedMeals,
         onNavigateToSupplements = onNavigateToSupplements,
         onNavigateToSettings = onNavigateToSettings,
@@ -157,6 +159,7 @@ fun DailyPanelScreen(
     onNavigateToScanner: () -> Unit,
     onNavigateToWeight: () -> Unit,
     onNavigateToPantry: () -> Unit,
+    onNavigateToRecipes: () -> Unit = {},
     onNavigateToSavedMeals: () -> Unit = {},
     onNavigateToSupplements: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
@@ -244,6 +247,20 @@ fun DailyPanelScreen(
                                 onClick = {
                                     showOptionsMenu = false
                                     onNavigateToPantry()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.recipes_title)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_recipe),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    onNavigateToRecipes()
                                 },
                             )
                             DropdownMenuItem(

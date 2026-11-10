@@ -11,6 +11,7 @@ import javax.inject.Singleton
 class ProductRepositoryImpl @Inject constructor(
     private val productDao: ProductDao,
     private val mealEntryDao: MealEntryDao,
+    private val recipeRepositoryProvider: javax.inject.Provider<com.controlcal.core.repo.RecipeRepository>? = null,
 ) : ProductRepository {
 
     override suspend fun getById(id: Long): Product? =
@@ -49,8 +50,10 @@ class ProductRepositoryImpl @Inject constructor(
     override suspend fun insert(product: Product): Long =
         productDao.insert(product.toEntity())
 
-    override suspend fun update(product: Product) =
+    override suspend fun update(product: Product) {
         productDao.update(product.toEntity())
+        recipeRepositoryProvider?.get()?.recalculateRecipesUsingProduct(product.id)
+    }
 
     override suspend fun archive(id: Long) =
         productDao.archive(id)

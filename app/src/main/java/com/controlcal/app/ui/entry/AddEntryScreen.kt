@@ -66,6 +66,7 @@ fun AddEntryRoute(
     onNavigateToManualEntry: () -> Unit,
     onNavigateToConfirmation: (OffProduct) -> Unit,
     onNavigateToSavedMeals: () -> Unit = {},
+    onNavigateToRecipes: () -> Unit = {},
     onEntryAdded: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {},
     onSavedMealAdded: (com.controlcal.core.model.ResolvedSavedMeal, List<com.controlcal.core.nutrition.MealEntrySaveResult>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
@@ -95,6 +96,7 @@ fun AddEntryRoute(
         onNavigateToOcrCapture = onNavigateToOcrCapture,
         onNavigateToManualEntry = onNavigateToManualEntry,
         onNavigateToSavedMeals = onNavigateToSavedMeals,
+        onNavigateToRecipes = onNavigateToRecipes,
         onSearchQueryChanged = viewModel::onSearchQueryChanged,
         onSelectProduct = viewModel::onSelectProductForPortion,
         onQuickAddHabitual = { habitual ->
@@ -130,6 +132,7 @@ fun AddEntryScreen(
     onNavigateToOcrCapture: () -> Unit,
     onNavigateToManualEntry: () -> Unit,
     onNavigateToSavedMeals: () -> Unit = {},
+    onNavigateToRecipes: () -> Unit = {},
     onSearchQueryChanged: (String) -> Unit,
     onSelectProduct: (Product) -> Unit,
     onQuickAddHabitual: (HabitualFoodUiModel) -> Unit,
@@ -236,6 +239,49 @@ fun AddEntryScreen(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                 )
+            }
+
+            if (uiState.searchQuery.isEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = onNavigateToRecipes,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_recipe),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.recipes_title),
+                                maxLines = 1,
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = onNavigateToManualEntry,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_add),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.add_entry_create_manual_action),
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
             }
 
             // Saved Meals section when query is empty (above habituals)
@@ -690,11 +736,30 @@ private fun ProductRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    if (product.source == com.controlcal.core.model.ProductSource.RECIPE) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.recipes_item_badge),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                }
                 val brandText = if (!product.brand.isNullOrBlank()) "${product.brand} · " else ""
                 val unitG = product.unitG
                 val unitText = if (unitG != null && unitG > 0) {

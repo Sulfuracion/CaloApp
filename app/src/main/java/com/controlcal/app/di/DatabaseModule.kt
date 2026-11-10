@@ -100,4 +100,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSupplementDao(db: ControlCalDatabase) = db.supplementDao()
+
+    @Provides
+    fun provideRecipeDao(db: ControlCalDatabase) = db.recipeDao()
 }

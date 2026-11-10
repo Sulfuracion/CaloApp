@@ -196,3 +196,61 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         exec("CREATE INDEX IF NOT EXISTS `index_supplement_intakes_scheduled_date` ON `supplement_intakes` (`scheduled_date`)")
     }
 }
+
+/**
+ * Migration from version 5 to 6 (Task 4: Recetas con cálculo automático por 100 g):
+ * - Table `recipes`: id, product_id (FK unique to products), name, cooked_weight_g, servings, notes,
+ *   created_at, updated_at, archived.
+ * - Table `recipe_ingredients`: id, recipe_id (FK to recipes CASCADE), position, product_id (FK to products), grams.
+ * - Unique index on `recipes(product_id)`.
+ * - Index on `recipes(name)`.
+ * - Indices on `recipe_ingredients(recipe_id)` and `recipe_ingredients(product_id)`.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        migrateSql { sql -> db.execSQL(sql) }
+    }
+
+    override fun migrate(connection: SQLiteConnection) {
+        migrateSql { sql -> connection.execSQL(sql) }
+    }
+
+    private inline fun migrateSql(exec: (String) -> Unit) {
+        exec(
+            """
+            CREATE TABLE IF NOT EXISTS `recipes` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `product_id` INTEGER NOT NULL,
+                `name` TEXT NOT NULL,
+                `cooked_weight_g` REAL,
+                `servings` REAL,
+                `notes` TEXT,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `archived` INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY(`product_id`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+            )
+            """.trimIndent()
+        )
+
+        exec("CREATE UNIQUE INDEX IF NOT EXISTS `index_recipes_product_id` ON `recipes` (`product_id`)")
+        exec("CREATE INDEX IF NOT EXISTS `index_recipes_name` ON `recipes` (`name`)")
+
+        exec(
+            """
+            CREATE TABLE IF NOT EXISTS `recipe_ingredients` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `recipe_id` INTEGER NOT NULL,
+                `position` INTEGER NOT NULL,
+                `product_id` INTEGER NOT NULL,
+                `grams` REAL NOT NULL,
+                FOREIGN KEY(`recipe_id`) REFERENCES `recipes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(`product_id`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+            )
+            """.trimIndent()
+        )
+
+        exec("CREATE INDEX IF NOT EXISTS `index_recipe_ingredients_recipe_id` ON `recipe_ingredients` (`recipe_id`)")
+        exec("CREATE INDEX IF NOT EXISTS `index_recipe_ingredients_product_id` ON `recipe_ingredients` (`product_id`)")
+    }
+}

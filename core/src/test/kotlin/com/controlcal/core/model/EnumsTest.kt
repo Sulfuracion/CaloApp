@@ -29,7 +29,7 @@ class EnumsTest {
     @Test
     fun `product source names are the schema contract`() {
         assertArrayEquals(
-            arrayOf("MANUAL", "OFF", "OCR"),
+            arrayOf("MANUAL", "OFF", "OCR", "RECIPE"),
             ProductSource.entries.map { it.name }.toTypedArray(),
         )
     }
