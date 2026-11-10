@@ -620,4 +620,41 @@
     <string name="backup_notice_overdue">Hace más de 14 días que no realizas una copia de seguridad.</string>
     <string name="backup_notice_never">Aún no has realizado ninguna copia de seguridad de tus datos.</string>
     <string name="backup_notice_action">Hacer copia</string>
+
+    <!-- Mis comidas (comidas guardadas - Tarea 3) -->
+    <string name="saved_meals_title">Mis comidas</string>
+    <string name="saved_meals_action">Mis comidas</string>
+    <string name="saved_meals_manage_action">Gestionar</string>
+    <string name="saved_meals_save_current_action">Guardar como Mi comida</string>
+    <string name="saved_meals_save_dialog_title">Guardar como Mi comida</string>
+    <string name="saved_meals_save_dialog_label">Nombre de la comida</string>
+    <string name="saved_meals_save_dialog_placeholder">Ej. Espaguetis con salchicha</string>
+    <string name="saved_meals_save_dialog_confirm">Guardar</string>
+    <string name="saved_meals_save_dialog_cancel">Cancelar</string>
+    <string name="saved_meals_rename_dialog_title">Renombrar comida</string>
+    <string name="saved_meals_delete_dialog_title">¿Eliminar «%1$s»?</string>
+    <string name="saved_meals_delete_dialog_message">Esta comida guardada se eliminará definitivamente. Las entradas registradas previamente en el diario no se verán afectadas.</string>
+    <string name="saved_meals_delete_confirm">Eliminar</string>
+    <string name="saved_meals_saved_feedback">Comida guardada: %1$s</string>
+    <string name="saved_meals_renamed_feedback">Comida renombrada: %1$s</string>
+    <string name="saved_meals_deleted_feedback">Comida eliminada: %1$s</string>
+    <string name="saved_meals_updated_feedback">Comida actualizada</string>
+    <string name="saved_meals_empty_title">No tienes comidas guardadas</string>
+    <string name="saved_meals_empty_subtitle">Guarda combinaciones habituales de alimentos desde el detalle de cualquier comida para registrarlas de un toque.</string>
+    <string name="saved_meals_error_name_blank">Introduce un nombre para la comida</string>
+    <string name="saved_meals_error_name_exists">Ya existe una comida con este nombre</string>
+    <string name="saved_meals_error_no_items">No hay alimentos válidos en esta comida para guardar</string>
+    <string name="saved_meals_archived_product_warning">Contiene alimentos archivados</string>
+    <string name="saved_meals_archived_product_notice">Aviso: contiene alimentos archivados. Se registrarán con sus últimos valores guardados.</string>
+    <string name="saved_meals_log_dialog_title">Registrar «%1$s»</string>
+    <string name="saved_meals_log_multiplier_label">Multiplicador</string>
+    <string name="saved_meals_log_dialog_confirm">Añadir al diario</string>
+    <string name="saved_meals_log_success_feedback">Añadida comida: %1$s</string>
+    <string name="saved_meals_undo_action">Deshacer</string>
+    <string name="saved_meals_edit_grams_title">Modificar cantidad</string>
+    <string name="saved_meals_add_item_action">Añadir alimento</string>
+    <string name="saved_meals_add_item_title">Añadir alimento a «%1$s»</string>
+    <string name="saved_meals_remove_item_action">Eliminar de la comida</string>
+    <string name="saved_meals_error_cannot_remove_last_item">Una comida guardada debe contener al menos un alimento</string>
+    <string name="saved_meals_search_header">Mis comidas</string>
 </resources>

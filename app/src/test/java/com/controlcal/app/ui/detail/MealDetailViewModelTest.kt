@@ -1,15 +1,20 @@
 package com.controlcal.app.ui.detail
 
+import com.controlcal.app.test.FakeSavedMealRepository
 import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.DefaultMeals
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
+import com.controlcal.core.model.SavedMeal
+import com.controlcal.core.model.SavedMealItem
+import com.controlcal.core.repo.SavedMealRepository
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -34,6 +39,7 @@ class MealDetailViewModelTest {
     private lateinit var fakeMealEntryRepository: FakeMealEntryRepository
     private lateinit var fakeProductRepository: FakeProductRepository
     private lateinit var fakeMealConfigRepository: FakeMealConfigRepository
+    private lateinit var fakeSavedMealRepository: FakeSavedMealRepository
     private lateinit var viewModel: MealDetailViewModel
 
     private val testClock = Clock.fixed(Instant.parse("2026-10-15T12:00:00Z"), ZoneId.of("UTC"))
@@ -68,11 +74,13 @@ class MealDetailViewModelTest {
 
         fakeProductRepository.products.add(sampleProduct)
         fakeProductRepository.products.add(sampleProductWithUnit)
+        fakeSavedMealRepository = FakeSavedMealRepository()
 
         viewModel = MealDetailViewModel(
             mealEntryRepository = fakeMealEntryRepository,
             mealConfigRepository = fakeMealConfigRepository,
             productRepository = fakeProductRepository,
+            savedMealRepository = fakeSavedMealRepository,
             clock = testClock,
         )
     }
@@ -682,6 +690,187 @@ class MealDetailViewModelTest {
         assertEquals(8.05, state.totals.protein, 0.01)
         assertEquals(52.0, state.totals.carbs, 0.01)
         assertEquals(2.45, state.totals.fat, 0.01)
+    }
+
+    @Test
+    fun openSaveAsMealDialog_resetsStateAndSetsSuggestedName() = runTest {
+        fakeMealEntryRepository.insert(
+            MealEntry(
+                id = 1L,
+                date = "2026-10-15",
+                meal = DefaultMealIds.LUNCH,
+                productId = sampleProduct.id,
+                productName = sampleProduct.name,
+                grams = 200.0,
+                kcal = 260.0,
+                protein = 5.4,
+                carbs = 56.0,
+                fat = 0.6,
+                loggedAt = 1000L,
+            )
+        )
+        viewModel.initialize(testDate, DefaultMealIds.LUNCH)
+        advanceUntilIdle()
+
+        viewModel.onOpenSaveAsMealDialog()
+        val state = viewModel.uiState.value
+        assertTrue(state.showSaveAsMealDialog)
+        assertEquals("", state.saveAsMealName)
+        assertEquals(null, state.saveAsMealNameError)
+    }
+
+    @Test
+    fun openSaveAsMealDialog_withEmptyEntries_emitsErrorFeedbackAndDoesNotOpenDialog() = runTest {
+        viewModel.initialize(testDate, DefaultMealIds.LUNCH)
+        advanceUntilIdle()
+
+        val events = mutableListOf<com.controlcal.app.ui.feedback.UiFeedbackEvent>()
+        backgroundScope.launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.feedbackEvents.collect { events.add(it) }
+        }
+
+        viewModel.onOpenSaveAsMealDialog()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.showSaveAsMealDialog)
+        assertTrue(events.any { it is com.controlcal.app.ui.feedback.UiFeedbackEvent.Error })
+    }
+
+    @Test
+    fun confirmSaveAsMeal_withDuplicateName_setsError() = runTest {
+        fakeMealEntryRepository.insert(
+            MealEntry(
+                id = 1L,
+                date = "2026-10-15",
+                meal = DefaultMealIds.LUNCH,
+                productId = sampleProduct.id,
+                productName = sampleProduct.name,
+                grams = 200.0,
+                kcal = 260.0,
+                protein = 5.4,
+                carbs = 56.0,
+                fat = 0.6,
+                loggedAt = 1000L,
+            )
+        )
+        fakeSavedMealRepository.saveMeal(
+            SavedMeal(
+                id = 1L,
+                name = "Tortilla con queso",
+                createdAt = 1000L,
+                updatedAt = 1000L,
+                lastUsedAt = null,
+                useCount = 0,
+                items = emptyList(),
+            )
+        )
+        viewModel.initialize(testDate, DefaultMealIds.LUNCH)
+        advanceUntilIdle()
+
+        viewModel.onOpenSaveAsMealDialog()
+        viewModel.onSaveAsMealNameChanged("tortilla con queso")
+        viewModel.onConfirmSaveAsMeal()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.showSaveAsMealDialog)
+        assertEquals("Ya existe una comida con este nombre", state.saveAsMealNameError)
+        assertEquals(1, fakeSavedMealRepository.savedMeals.size)
+    }
+
+    @Test
+    fun confirmSaveAsMeal_withTares_aggregatesPositiveAndDiscardsNonPositive() = runTest {
+        val polloProduct = Product(
+            id = 3L,
+            name = "Pechuga de pollo",
+            kcal100g = 120.0,
+            protein100g = 25.0,
+            carbs100g = 0.0,
+            fat100g = 2.0,
+        )
+        fakeProductRepository.products.add(polloProduct)
+
+        // Arroz: 200g - 50g tare = 150g net
+        fakeMealEntryRepository.insert(
+            MealEntry(
+                id = 1L,
+                date = "2026-10-15",
+                meal = DefaultMealIds.LUNCH,
+                productId = sampleProduct.id,
+                productName = sampleProduct.name,
+                grams = 200.0,
+                kcal = 260.0,
+                protein = 5.4,
+                carbs = 56.0,
+                fat = 0.6,
+                loggedAt = 1000L,
+            )
+        )
+        fakeMealEntryRepository.insert(
+            MealEntry(
+                id = 2L,
+                date = "2026-10-15",
+                meal = DefaultMealIds.LUNCH,
+                productId = sampleProduct.id,
+                productName = sampleProduct.name,
+                grams = -50.0,
+                kcal = -65.0,
+                protein = -1.35,
+                carbs = -14.0,
+                fat = -0.15,
+                loggedAt = 2000L,
+            )
+        )
+        // Pollo: 100g - 100g tare = 0g net (should be discarded)
+        fakeMealEntryRepository.insert(
+            MealEntry(
+                id = 3L,
+                date = "2026-10-15",
+                meal = DefaultMealIds.LUNCH,
+                productId = polloProduct.id,
+                productName = polloProduct.name,
+                grams = 100.0,
+                kcal = 120.0,
+                protein = 25.0,
+                carbs = 0.0,
+                fat = 2.0,
+                loggedAt = 3000L,
+            )
+        )
+        fakeMealEntryRepository.insert(
+            MealEntry(
+                id = 4L,
+                date = "2026-10-15",
+                meal = DefaultMealIds.LUNCH,
+                productId = polloProduct.id,
+                productName = polloProduct.name,
+                grams = -100.0,
+                kcal = -120.0,
+                protein = -25.0,
+                carbs = 0.0,
+                fat = -2.0,
+                loggedAt = 4000L,
+            )
+        )
+
+        viewModel.initialize(testDate, DefaultMealIds.LUNCH)
+        advanceUntilIdle()
+
+        viewModel.onOpenSaveAsMealDialog()
+        viewModel.onSaveAsMealNameChanged("Arroz con tara descontada")
+        viewModel.onConfirmSaveAsMeal()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.showSaveAsMealDialog)
+        assertEquals(1, fakeSavedMealRepository.savedMeals.size)
+
+        val saved = fakeSavedMealRepository.savedMeals[0]
+        assertEquals("Arroz con tara descontada", saved.name)
+        assertEquals(1, saved.items.size)
+        assertEquals(sampleProduct.id, saved.items[0].productId)
+        assertEquals(150.0, saved.items[0].grams, 0.001)
     }
 }
 

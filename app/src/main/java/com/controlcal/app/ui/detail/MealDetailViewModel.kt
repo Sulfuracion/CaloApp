@@ -14,12 +14,14 @@ import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.nutrition.NutritionCalculator
 import com.controlcal.core.nutrition.QuickCaloriesValidator
 import com.controlcal.core.nutrition.RepeatMealUseCase
+import com.controlcal.core.nutrition.SavedMealCalculator
 import com.controlcal.app.R
 import com.controlcal.app.ui.feedback.UiFeedbackEvent
 import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
+import com.controlcal.core.repo.SavedMealRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +42,7 @@ class MealDetailViewModel @Inject constructor(
     private val mealEntryRepository: MealEntryRepository,
     private val mealConfigRepository: MealConfigRepository,
     private val productRepository: ProductRepository,
+    private val savedMealRepository: SavedMealRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
 
@@ -362,6 +365,27 @@ class MealDetailViewModel @Inject constructor(
                     ),
                     actionLabel = UiText.StringResource(R.string.feedback_action_undo),
                     onAction = { onUndoMerge() },
+                )
+            )
+        }
+    }
+
+    fun notifySavedMealAdded(meal: com.controlcal.core.model.ResolvedSavedMeal, results: List<com.controlcal.core.nutrition.MealEntrySaveResult>) {
+        viewModelScope.launch {
+            loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.StringResource(
+                        R.string.saved_meals_log_success_feedback,
+                        meal.meal.name,
+                    ),
+                    actionLabel = UiText.StringResource(R.string.saved_meals_undo_action),
+                    onAction = {
+                        viewModelScope.launch {
+                            mealEntryRepository.revertSaveResults(results)
+                            loadMealInternal(_uiState.value.date, _uiState.value.currentMealId)
+                        }
+                    },
                 )
             )
         }
@@ -831,6 +855,112 @@ class MealDetailViewModel @Inject constructor(
                 showQuickCaloriesDialog = false,
                 editingQuickCaloriesEntry = null,
             )
+        }
+    }
+
+    fun onOpenSaveAsMealDialog() {
+        val rawEntries = _uiState.value.entries.map { it.entry }
+        val preview = SavedMealCalculator.createFromEntries("temp", rawEntries)
+        if (preview == null || preview.items.isEmpty()) {
+            viewModelScope.launch {
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.saved_meals_error_no_items)
+                    )
+                )
+            }
+            return
+        }
+        _uiState.update {
+            it.copy(
+                showSaveAsMealDialog = true,
+                saveAsMealName = "",
+                saveAsMealNameError = null,
+            )
+        }
+    }
+
+    fun onSaveAsMealNameChanged(name: String) {
+        _uiState.update {
+            it.copy(
+                saveAsMealName = name,
+                saveAsMealNameError = null,
+            )
+        }
+    }
+
+    fun onDismissSaveAsMealDialog() {
+        _uiState.update {
+            it.copy(
+                showSaveAsMealDialog = false,
+                saveAsMealName = "",
+                saveAsMealNameError = null,
+            )
+        }
+    }
+
+    fun onConfirmSaveAsMeal() {
+        val state = _uiState.value
+        val name = state.saveAsMealName.trim()
+        if (name.isEmpty()) {
+            _uiState.update {
+                it.copy(saveAsMealNameError = "Introduce un nombre para la comida")
+            }
+            return
+        }
+
+        if (state.isSaving) return
+
+        viewModelScope.launch {
+            if (savedMealRepository.isNameTaken(name)) {
+                _uiState.update {
+                    it.copy(saveAsMealNameError = "Ya existe una comida con este nombre")
+                }
+                return@launch
+            }
+
+            val rawEntries = state.entries.map { it.entry }
+            val savedMeal = SavedMealCalculator.createFromEntries(name, rawEntries)
+            if (savedMeal == null) {
+                _uiState.update {
+                    it.copy(
+                        showSaveAsMealDialog = false,
+                        saveAsMealName = "",
+                        saveAsMealNameError = null,
+                    )
+                }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.saved_meals_error_no_items)
+                    )
+                )
+                return@launch
+            }
+
+            _uiState.update { it.copy(isSaving = true) }
+            try {
+                savedMealRepository.saveMeal(savedMeal)
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        showSaveAsMealDialog = false,
+                        saveAsMealName = "",
+                        saveAsMealNameError = null,
+                    )
+                }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Success(
+                        UiText.StringResource(R.string.saved_meals_saved_feedback, name)
+                    )
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false) }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Error(
+                        UiText.StringResource(R.string.feedback_save_error)
+                    )
+                )
+            }
         }
     }
 

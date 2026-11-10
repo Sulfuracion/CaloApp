@@ -54,6 +54,7 @@ enum class MainDestination {
     SETTINGS,
     PANTRY,
     MACRO_TETRIS,
+    SAVED_MEALS,
 }
 
 @AndroidEntryPoint
@@ -69,6 +70,7 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
     private val pantryViewModel: PantryViewModel by viewModels()
     private val macroTetrisViewModel: MacroTetrisViewModel by viewModels()
+    private val savedMealsViewModel: com.controlcal.app.ui.savedmeals.SavedMealsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -150,6 +152,10 @@ class MainActivity : ComponentActivity() {
                             dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
                             currentDestination = MainDestination.DAILY_PANEL
                         }
+                        MainDestination.SAVED_MEALS -> {
+                            dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
                     }
                 }
 
@@ -173,6 +179,10 @@ class MainActivity : ComponentActivity() {
                             onNavigateToPantry = {
                                 pantryViewModel.loadProducts()
                                 currentDestination = MainDestination.PANTRY
+                            },
+                            onNavigateToSavedMeals = {
+                                savedMealsViewModel.loadMeals()
+                                currentDestination = MainDestination.SAVED_MEALS
                             },
                             onNavigateToSettings = {
                                 settingsViewModel.loadSettings()
@@ -247,6 +257,26 @@ class MainActivity : ComponentActivity() {
                                     targetMeal = selectedMeal,
                                 )
                                 currentDestination = MainDestination.PRODUCT_CONFIRMATION
+                            },
+                            onNavigateToSavedMeals = {
+                                savedMealsViewModel.loadMeals()
+                                currentDestination = MainDestination.SAVED_MEALS
+                            },
+                            onSavedMealAdded = { resolvedMeal, results ->
+                                val ctx = activeMealContext
+                                val selectedMealId = addEntryViewModel.uiState.value.targetMealId.ifEmpty { ctx?.mealId ?: "" }
+                                if (ctx != null) {
+                                    val updatedCtx = ctx.copy(mealId = selectedMealId.ifEmpty { ctx.mealId })
+                                    activeMealContext = updatedCtx
+                                    mealDetailViewModel.initialize(updatedCtx.date, updatedCtx.mealId)
+                                    dailyPanelViewModel.loadDay(updatedCtx.date)
+                                    mealDetailViewModel.notifySavedMealAdded(resolvedMeal, results)
+                                    currentDestination = MainDestination.MEAL_DETAIL
+                                } else {
+                                    dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                                    dailyPanelViewModel.notifySavedMealAdded(resolvedMeal, results)
+                                    currentDestination = MainDestination.DAILY_PANEL
+                                }
                             },
                             onEntryAdded = { saveResult ->
                                 val ctx = activeMealContext
@@ -505,6 +535,13 @@ class MainActivity : ComponentActivity() {
                                 )
                                 currentDestination = MainDestination.DAILY_PANEL
                             },
+                        )
+                    }
+
+                    MainDestination.SAVED_MEALS -> {
+                        com.controlcal.app.ui.savedmeals.SavedMealsRoute(
+                            viewModel = savedMealsViewModel,
+                            onBack = navigateBack,
                         )
                     }
                 }

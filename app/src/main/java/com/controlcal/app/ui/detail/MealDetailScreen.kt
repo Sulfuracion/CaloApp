@@ -113,6 +113,10 @@ fun MealDetailRoute(
         onCopyYesterday = viewModel::onCopyYesterday,
         onToggleDropdown = viewModel::onToggleDropdown,
         onToggleOptionsMenu = viewModel::onToggleOptionsMenu,
+        onOpenSaveAsMealDialog = viewModel::onOpenSaveAsMealDialog,
+        onSaveAsMealNameChanged = viewModel::onSaveAsMealNameChanged,
+        onDismissSaveAsMealDialog = viewModel::onDismissSaveAsMealDialog,
+        onConfirmSaveAsMeal = viewModel::onConfirmSaveAsMeal,
         modifier = modifier,
     )
 }
@@ -149,6 +153,10 @@ fun MealDetailScreen(
     onCopyYesterday: () -> Unit,
     onToggleDropdown: (Boolean) -> Unit,
     onToggleOptionsMenu: (Boolean) -> Unit,
+    onOpenSaveAsMealDialog: () -> Unit = {},
+    onSaveAsMealNameChanged: (String) -> Unit = {},
+    onDismissSaveAsMealDialog: () -> Unit = {},
+    onConfirmSaveAsMeal: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -269,6 +277,13 @@ fun MealDetailScreen(
                             DropdownMenuItem(
                                 text = { Text(text = stringResource(R.string.meal_detail_copy_yesterday_action)) },
                                 onClick = onCopyYesterday,
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.saved_meals_save_current_action)) },
+                                onClick = {
+                                    onToggleOptionsMenu(false)
+                                    onOpenSaveAsMealDialog()
+                                },
                             )
                         }
                     }
@@ -410,6 +425,69 @@ fun MealDetailScreen(
             onDismiss = onDismissQuickCaloriesDialog,
         )
     }
+
+    if (uiState.showSaveAsMealDialog) {
+        SaveAsMealDialog(
+            name = uiState.saveAsMealName,
+            nameError = uiState.saveAsMealNameError,
+            isSaving = uiState.isSaving,
+            onNameChanged = onSaveAsMealNameChanged,
+            onConfirm = onConfirmSaveAsMeal,
+            onDismiss = onDismissSaveAsMealDialog,
+        )
+    }
+}
+
+@Composable
+private fun SaveAsMealDialog(
+    name: String,
+    nameError: String?,
+    isSaving: Boolean,
+    onNameChanged: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isSaving) onDismiss() },
+        title = {
+            Text(
+                text = stringResource(R.string.saved_meals_save_dialog_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChanged,
+                    label = { Text(stringResource(R.string.saved_meals_save_dialog_label)) },
+                    placeholder = { Text(stringResource(R.string.saved_meals_save_dialog_placeholder)) },
+                    isError = nameError != null,
+                    supportingText = nameError?.let { { Text(it) } },
+                    singleLine = true,
+                    enabled = !isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isSaving && name.isNotBlank(),
+            ) {
+                Text(text = stringResource(R.string.saved_meals_save_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isSaving,
+            ) {
+                Text(text = stringResource(R.string.saved_meals_save_dialog_cancel))
+            }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

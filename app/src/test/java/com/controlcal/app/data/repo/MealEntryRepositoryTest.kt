@@ -405,4 +405,90 @@ class MealEntryRepositoryTest : DaoTestBase() {
         assertEquals(150.0, inDb[0].grams, 0.001)
         assertEquals(555.0, inDb[0].kcal, 0.001)
     }
+
+    @Test
+    fun saveAll_and_revertSaveResults_restoresExactPreviousState() = runBlocking {
+        // Product 2: Huevo
+        val eggProductId = db.productDao().insert(
+            ProductEntity(
+                name = "Huevo",
+                brand = null,
+                kcal100g = 150.0,
+                protein100g = 12.5,
+                carbs100g = 0.5,
+                fat100g = 10.0,
+                source = ProductSource.MANUAL,
+                createdAt = 1000L,
+                updatedAt = 1000L,
+            )
+        )
+
+        // Initial state: 50g of oats already logged
+        repository.save(
+            MealEntry(
+                id = 0L,
+                date = "2026-10-17",
+                meal = "BREAKFAST",
+                productId = testProductId,
+                productName = "Avena",
+                grams = 50.0,
+                kcal = 185.0,
+                protein = 6.5,
+                carbs = 30.0,
+                fat = 3.5,
+                loggedAt = 1000L,
+            )
+        )
+
+        val batchToSave = listOf(
+            MealEntry(
+                id = 0L,
+                date = "2026-10-17",
+                meal = "BREAKFAST",
+                productId = testProductId,
+                productName = "Avena",
+                grams = 100.0,
+                kcal = 370.0,
+                protein = 13.0,
+                carbs = 60.0,
+                fat = 7.0,
+                loggedAt = 2000L,
+            ),
+            MealEntry(
+                id = 0L,
+                date = "2026-10-17",
+                meal = "BREAKFAST",
+                productId = eggProductId,
+                productName = "Huevo",
+                grams = 60.0,
+                kcal = 90.0,
+                protein = 7.5,
+                carbs = 0.3,
+                fat = 6.0,
+                loggedAt = 2000L,
+            ),
+        )
+
+        // Save batch (1 merged, 1 created)
+        val saveResults = repository.saveAll(batchToSave)
+        assertEquals(2, saveResults.size)
+        assertTrue(saveResults[0] is MealEntrySaveResult.Merged)
+        assertTrue(saveResults[1] is MealEntrySaveResult.Created)
+
+        var currentEntries = repository.getByDateAndMeal("2026-10-17", "BREAKFAST")
+        assertEquals(2, currentEntries.size)
+        val oatsEntry = currentEntries.find { it.productId == testProductId }!!
+        assertEquals(150.0, oatsEntry.grams, 0.001)
+        val eggEntry = currentEntries.find { it.productId == eggProductId }!!
+        assertEquals(60.0, eggEntry.grams, 0.001)
+
+        // Revert batch
+        repository.revertSaveResults(saveResults)
+
+        currentEntries = repository.getByDateAndMeal("2026-10-17", "BREAKFAST")
+        assertEquals(1, currentEntries.size)
+        assertEquals(testProductId, currentEntries[0].productId)
+        assertEquals(50.0, currentEntries[0].grams, 0.001)
+        assertEquals(185.0, currentEntries[0].kcal, 0.001)
+    }
 }

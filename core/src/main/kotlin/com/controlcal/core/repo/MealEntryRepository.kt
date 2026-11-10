@@ -24,6 +24,15 @@ interface MealEntryRepository {
         return entries.map { save(it) }
     }
 
+    suspend fun revertSaveResults(results: List<MealEntrySaveResult>) {
+        for (result in results.asReversed()) {
+            when (result) {
+                is MealEntrySaveResult.Created -> delete(result.entry)
+                is MealEntrySaveResult.Merged -> update(result.previousEntry)
+            }
+        }
+    }
+
     suspend fun update(entry: MealEntry)
     suspend fun delete(entry: MealEntry)
     suspend fun getByDate(date: String): List<MealEntry>

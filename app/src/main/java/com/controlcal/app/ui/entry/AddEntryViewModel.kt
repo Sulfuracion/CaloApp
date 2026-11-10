@@ -4,14 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
+import com.controlcal.core.model.ResolvedSavedMeal
 import com.controlcal.core.nutrition.FoodPortionFormatter
+import com.controlcal.core.nutrition.MealEntrySaveResult
+import com.controlcal.core.nutrition.MealTimeCalculator
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.nutrition.NutritionCalculator
+import com.controlcal.core.nutrition.SavedMealCalculator
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
+import com.controlcal.core.repo.SavedMealRepository
 import com.controlcal.core.search.ProductSearchEngine
+import com.controlcal.core.search.TextNormalizer
 import com.controlcal.core.suggest.QuickLogRanker
+import com.controlcal.core.suggest.SavedMealRanker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +48,7 @@ class AddEntryViewModel(
     private val productRepository: ProductRepository,
     private val mealEntryRepository: MealEntryRepository,
     private val mealConfigRepository: MealConfigRepository,
+    private val savedMealRepository: SavedMealRepository,
     private val offClient: OffClient,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
@@ -51,12 +59,14 @@ class AddEntryViewModel(
         productRepository: ProductRepository,
         mealEntryRepository: MealEntryRepository,
         mealConfigRepository: MealConfigRepository,
+        savedMealRepository: SavedMealRepository,
         offClient: OffClient,
         clock: Clock,
     ) : this(
         productRepository = productRepository,
         mealEntryRepository = mealEntryRepository,
         mealConfigRepository = mealConfigRepository,
+        savedMealRepository = savedMealRepository,
         offClient = offClient,
         clock = clock,
         defaultDispatcher = Dispatchers.Default,
@@ -67,6 +77,7 @@ class AddEntryViewModel(
 
     private val searchQueryFlow = MutableStateFlow("")
     private var cachedActiveProducts: List<Product> = emptyList()
+    private var cachedAllProducts: Map<Long, Product> = emptyMap()
     private var cachedRecentProductIds: List<Long> = emptyList()
 
     init {
@@ -104,7 +115,9 @@ class AddEntryViewModel(
             val mealName = configs.find { it.id == mealId }?.name ?: mealId
 
             cachedActiveProducts = productRepository.getActiveProducts()
+            cachedAllProducts = productRepository.getAllIncludingArchived().associateBy { it.id }
             loadHabitualFoods(mealId)
+            loadSavedMeals()
             executeSearch("")
 
             _uiState.update {
@@ -274,9 +287,22 @@ class AddEntryViewModel(
         _uiState.update { it.copy(offSearchMessage = null) }
     }
 
+    suspend fun loadSavedMeals() {
+        if (cachedAllProducts.isEmpty()) {
+            cachedAllProducts = productRepository.getAllIncludingArchived().associateBy { it.id }
+        }
+        val rawMeals = savedMealRepository.getAll()
+        val resolved = rawMeals.map { SavedMealCalculator.resolveMeal(it, cachedAllProducts, multiplier = 1.0) }
+        val ranked = SavedMealRanker.rankResolved(resolved)
+        _uiState.update { it.copy(savedMeals = ranked) }
+    }
+
     private suspend fun executeSearch(query: String) {
         if (cachedActiveProducts.isEmpty()) {
             cachedActiveProducts = productRepository.getActiveProducts()
+        }
+        if (cachedAllProducts.isEmpty()) {
+            cachedAllProducts = productRepository.getAllIncludingArchived().associateBy { it.id }
         }
         val results = withContext(defaultDispatcher) {
             ProductSearchEngine.search(
@@ -285,7 +311,20 @@ class AddEntryViewModel(
                 recentProductIds = cachedRecentProductIds,
             )
         }
-        _uiState.update { it.copy(searchResults = results) }
+        val filteredMeals = if (query.isBlank()) {
+            emptyList()
+        } else {
+            val normalizedQuery = TextNormalizer.normalize(query)
+            _uiState.value.savedMeals.filter { meal ->
+                TextNormalizer.normalize(meal.meal.name).contains(normalizedQuery, ignoreCase = true)
+            }
+        }
+        _uiState.update {
+            it.copy(
+                searchResults = results,
+                filteredSavedMeals = filteredMeals,
+            )
+        }
     }
 
     fun onSelectProductForPortion(product: Product, initialGrams: Double? = null) {
@@ -482,6 +521,105 @@ class AddEntryViewModel(
 
     fun onDismissPortionDialog() {
         _uiState.update { it.copy(selectedProductForPortion = null) }
+    }
+
+    fun onSelectSavedMealForLog(meal: ResolvedSavedMeal) {
+        val reResolved = SavedMealCalculator.resolveMeal(meal.meal, cachedAllProducts, multiplier = 1.0)
+        _uiState.update {
+            it.copy(
+                selectedSavedMealForLog = reResolved,
+                savedMealMultiplier = 1.0,
+                customSavedMealMultiplierText = "",
+            )
+        }
+    }
+
+    fun onSavedMealMultiplierSelected(multiplier: Double) {
+        val current = _uiState.value.selectedSavedMealForLog ?: return
+        val reResolved = SavedMealCalculator.resolveMeal(current.meal, cachedAllProducts, multiplier = multiplier)
+        _uiState.update {
+            it.copy(
+                selectedSavedMealForLog = reResolved,
+                savedMealMultiplier = multiplier,
+                customSavedMealMultiplierText = "",
+            )
+        }
+    }
+
+    fun onCustomSavedMealMultiplierChanged(text: String) {
+        val current = _uiState.value.selectedSavedMealForLog ?: return
+        val parsed = NumberFormatHelper.parseDecimal(text)
+        val mult = if (parsed != null && parsed > 0.0) parsed else 1.0
+        val reResolved = SavedMealCalculator.resolveMeal(current.meal, cachedAllProducts, multiplier = mult)
+        _uiState.update {
+            it.copy(
+                selectedSavedMealForLog = reResolved,
+                savedMealMultiplier = mult,
+                customSavedMealMultiplierText = text,
+            )
+        }
+    }
+
+    fun onDismissSavedMealDialog() {
+        _uiState.update {
+            it.copy(
+                selectedSavedMealForLog = null,
+                savedMealMultiplier = 1.0,
+                customSavedMealMultiplierText = "",
+            )
+        }
+    }
+
+    fun onConfirmLogSavedMeal(onSuccess: (ResolvedSavedMeal, List<MealEntrySaveResult>) -> Unit = { _, _ -> }) {
+        val state = _uiState.value
+        if (state.isSaving) return
+        val selected = state.selectedSavedMealForLog ?: return
+        val multiplier = state.savedMealMultiplier
+        if (multiplier <= 0.0) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true) }
+            try {
+                val existingEntries = mealEntryRepository.getByDateAndMeal(state.targetDate.toString(), state.targetMealId)
+                val configuredStartTime = mealConfigRepository.getMealConfigs().find { it.id == state.targetMealId }?.startTime
+                val loggedAt = MealTimeCalculator.calculateLoggedAt(
+                    date = state.targetDate,
+                    existingEntries = existingEntries,
+                    configuredStartTime = configuredStartTime,
+                    zoneId = clock.zone,
+                    clock = clock,
+                )
+
+                val entries = SavedMealCalculator.buildMealEntries(
+                    meal = selected.meal,
+                    productsById = cachedAllProducts,
+                    multiplier = multiplier,
+                    date = state.targetDate.toString(),
+                    mealId = state.targetMealId,
+                    loggedAt = loggedAt,
+                )
+
+                val results = mealEntryRepository.saveAll(entries)
+                savedMealRepository.recordMealUsage(selected.meal.id, clock.millis())
+
+                loadSavedMeals()
+
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        selectedSavedMealForLog = null,
+                    )
+                }
+                onSuccess(selected, results)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSaving = false,
+                        userMessage = "Error al guardar. Comprueba los datos e inténtalo de nuevo",
+                    )
+                }
+            }
+        }
     }
 
     fun onMessageConsumed() {

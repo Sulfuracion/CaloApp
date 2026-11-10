@@ -1,13 +1,17 @@
 package com.controlcal.app.ui.entry
 
+import com.controlcal.app.test.FakeSavedMealRepository
 import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.DefaultMeals
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.Product
+import com.controlcal.core.model.SavedMeal
+import com.controlcal.core.model.SavedMealItem
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.ProductRepository
+import com.controlcal.core.repo.SavedMealRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -39,6 +43,7 @@ class AddEntryViewModelTest {
     private lateinit var fakeMealEntryRepository: FakeMealEntryRepository
     private lateinit var fakeProductRepository: FakeProductRepository
     private lateinit var fakeMealConfigRepository: FakeMealConfigRepository
+    private lateinit var fakeSavedMealRepository: FakeSavedMealRepository
     private lateinit var fakeOffClient: FakeOffClient
     private lateinit var viewModel: AddEntryViewModel
 
@@ -76,11 +81,13 @@ class AddEntryViewModelTest {
 
         fakeProductRepository.products.add(sampleProduct)
         fakeProductRepository.products.add(sampleProductWithUnit)
+        fakeSavedMealRepository = FakeSavedMealRepository()
 
         viewModel = AddEntryViewModel(
             productRepository = fakeProductRepository,
             mealEntryRepository = fakeMealEntryRepository,
             mealConfigRepository = fakeMealConfigRepository,
+            savedMealRepository = fakeSavedMealRepository,
             offClient = fakeOffClient,
             clock = testClock,
             defaultDispatcher = testDispatcher,
@@ -551,6 +558,154 @@ class AddEntryViewModelTest {
         assertEquals(0, fakeOffClient.barcodeCallCount)
         val result = checkNotNull(confirmedProduct)
         assertEquals("Producto completo", result.name)
+    }
+
+    @Test
+    fun initialize_loadsSavedMealsRankedByRecencyAndFrequency() = runTest {
+        val meal1 = SavedMeal(
+            id = 1L,
+            name = "Desayuno clásico",
+            createdAt = 1000L,
+            updatedAt = 1000L,
+            lastUsedAt = 1000L,
+            useCount = 5,
+            items = listOf(
+                SavedMealItem(1, 1, 0, sampleProduct.id, sampleProduct.name, 50.0, null, null, null, null)
+            ),
+        )
+        val meal2 = SavedMeal(
+            id = 2L,
+            name = "Batido proteico",
+            createdAt = 2000L,
+            updatedAt = 2000L,
+            lastUsedAt = 5000L,
+            useCount = 1,
+            items = listOf(
+                SavedMealItem(2, 2, 0, sampleProduct.id, sampleProduct.name, 100.0, null, null, null, null)
+            ),
+        )
+        fakeSavedMealRepository.saveMeal(meal1)
+        fakeSavedMealRepository.saveMeal(meal2)
+
+        viewModel.initialize(testDate, DefaultMealIds.BREAKFAST)
+        advanceUntilIdle()
+
+        val saved = viewModel.uiState.value.savedMeals
+        assertEquals(2, saved.size)
+        // meal2 was used at 5000L > 1000L
+        assertEquals(2L, saved[0].meal.id)
+        assertEquals(1L, saved[1].meal.id)
+    }
+
+    @Test
+    fun searchQuery_filtersSavedMealsByName() = runTest {
+        val meal1 = SavedMeal(
+            id = 1L,
+            name = "Tortilla de patatas",
+            createdAt = 1000L,
+            updatedAt = 1000L,
+            lastUsedAt = null,
+            useCount = 0,
+            items = listOf(
+                SavedMealItem(1, 1, 0, sampleProduct.id, sampleProduct.name, 50.0, null, null, null, null)
+            ),
+        )
+        val meal2 = SavedMeal(
+            id = 2L,
+            name = "Espaguetis boloñesa",
+            createdAt = 2000L,
+            updatedAt = 2000L,
+            lastUsedAt = null,
+            useCount = 0,
+            items = listOf(
+                SavedMealItem(2, 2, 0, sampleProduct.id, sampleProduct.name, 100.0, null, null, null, null)
+            ),
+        )
+        fakeSavedMealRepository.saveMeal(meal1)
+        fakeSavedMealRepository.saveMeal(meal2)
+
+        viewModel.initialize(testDate, DefaultMealIds.LUNCH)
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChanged("tortilla")
+        advanceUntilIdle()
+
+        val filtered = viewModel.uiState.value.filteredSavedMeals
+        assertEquals(1, filtered.size)
+        assertEquals("Tortilla de patatas", filtered[0].meal.name)
+    }
+
+    @Test
+    fun onSelectSavedMealForLog_and_multiplier_scalesPreview() = runTest {
+        val meal = SavedMeal(
+            id = 1L,
+            name = "Avena con huevo",
+            createdAt = 1000L,
+            updatedAt = 1000L,
+            lastUsedAt = null,
+            useCount = 0,
+            items = listOf(
+                // 100g avena (370 kcal)
+                SavedMealItem(1, 1, 0, sampleProduct.id, sampleProduct.name, 100.0, null, null, null, null)
+            ),
+        )
+        fakeSavedMealRepository.saveMeal(meal)
+
+        viewModel.initialize(testDate, DefaultMealIds.BREAKFAST)
+        advanceUntilIdle()
+
+        val resolved = viewModel.uiState.value.savedMeals[0]
+        viewModel.onSelectSavedMealForLog(resolved)
+
+        var selected = viewModel.uiState.value.selectedSavedMealForLog
+        assertNotNull(selected)
+        assertEquals(1.0, viewModel.uiState.value.savedMealMultiplier, 0.001)
+        assertEquals(370.0, selected!!.totalKcal, 0.01)
+
+        // Select 2.0 multiplier
+        viewModel.onSavedMealMultiplierSelected(2.0)
+        selected = viewModel.uiState.value.selectedSavedMealForLog
+        assertEquals(2.0, viewModel.uiState.value.savedMealMultiplier, 0.001)
+        assertEquals(740.0, selected!!.totalKcal, 0.01)
+    }
+
+    @Test
+    fun onConfirmLogSavedMeal_insertsEntriesAndRecordsUsage() = runTest {
+        val meal = SavedMeal(
+            id = 1L,
+            name = "Avena con huevo",
+            createdAt = 1000L,
+            updatedAt = 1000L,
+            lastUsedAt = null,
+            useCount = 0,
+            items = listOf(
+                SavedMealItem(1, 1, 0, sampleProduct.id, sampleProduct.name, 100.0, null, null, null, null)
+            ),
+        )
+        fakeSavedMealRepository.saveMeal(meal)
+
+        viewModel.initialize(testDate, DefaultMealIds.BREAKFAST)
+        advanceUntilIdle()
+
+        val resolved = viewModel.uiState.value.savedMeals[0]
+        viewModel.onSelectSavedMealForLog(resolved)
+
+        var callbackCalled = false
+        var savedResultsCount = 0
+        viewModel.onConfirmLogSavedMeal(
+            onSuccess = { _, results ->
+                callbackCalled = true
+                savedResultsCount = results.size
+            }
+        )
+        advanceUntilIdle()
+
+        assertTrue(callbackCalled)
+        assertEquals(1, savedResultsCount)
+        assertEquals(1, fakeMealEntryRepository.entries.size)
+        assertEquals(100.0, fakeMealEntryRepository.entries[0].grams, 0.001)
+        assertEquals(1, fakeSavedMealRepository.savedMeals[0].useCount)
+        assertEquals(testClock.millis(), fakeSavedMealRepository.savedMeals[0].lastUsedAt)
     }
 }
 

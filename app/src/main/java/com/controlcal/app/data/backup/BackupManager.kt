@@ -12,11 +12,14 @@ import com.controlcal.app.data.db.dao.DailyLogDao
 import com.controlcal.app.data.db.dao.GoalProfileDao
 import com.controlcal.app.data.db.dao.MealEntryDao
 import com.controlcal.app.data.db.dao.ProductDao
+import com.controlcal.app.data.db.dao.SavedMealDao
 import com.controlcal.app.data.db.dao.WeightEntryDao
 import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
 import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
+import com.controlcal.app.data.db.entity.SavedMealEntity
+import com.controlcal.app.data.db.entity.SavedMealItemEntity
 import com.controlcal.app.data.db.entity.WeightEntryEntity
 import com.controlcal.core.backup.BackupCodec
 import com.controlcal.core.backup.BackupDailyLogDto
@@ -25,6 +28,8 @@ import com.controlcal.core.backup.BackupMealEntryDto
 import com.controlcal.core.backup.BackupPayload
 import com.controlcal.core.backup.BackupPreferencesDto
 import com.controlcal.core.backup.BackupProductDto
+import com.controlcal.core.backup.BackupSavedMealDto
+import com.controlcal.core.backup.BackupSavedMealItemDto
 import com.controlcal.core.backup.BackupSummary
 import com.controlcal.core.backup.BackupWeightEntryDto
 import com.controlcal.core.backup.NewerSchemaVersionException
@@ -47,6 +52,7 @@ class BackupManager @Inject constructor(
     private val mealEntryDao: MealEntryDao,
     private val weightEntryDao: WeightEntryDao,
     private val goalProfileDao: GoalProfileDao,
+    private val savedMealDao: SavedMealDao,
     private val dataStore: DataStore<Preferences>,
 ) {
 
@@ -109,9 +115,13 @@ class BackupManager @Inject constructor(
             val mealEntryEntities = payload.mealEntries.map { it.toEntity() }
             val weightEntryEntities = payload.weightEntries.map { it.toEntity() }
             val goalProfileEntities = payload.goalProfiles.map { it.toEntity() }
+            val savedMealEntities = payload.savedMeals.map { it.toEntity() }
+            val savedMealItemEntities = payload.savedMealItems.map { it.toEntity() }
 
             database.withTransaction {
-                // Delete dependent tables first
+                // Delete dependent tables first (reverse FK order)
+                savedMealDao.deleteAllItems()
+                savedMealDao.deleteAllMeals()
                 mealEntryDao.deleteAll()
                 dailyLogDao.deleteAll()
                 productDao.deleteAll()
@@ -134,6 +144,14 @@ class BackupManager @Inject constructor(
                 if (goalProfileEntities.isNotEmpty()) {
                     goalProfileDao.insertAll(goalProfileEntities)
                 }
+                if (savedMealEntities.isNotEmpty()) {
+                    for (meal in savedMealEntities) {
+                        savedMealDao.insertMeal(meal)
+                    }
+                }
+                if (savedMealItemEntities.isNotEmpty()) {
+                    savedMealDao.insertItems(savedMealItemEntities)
+                }
             }
 
             // Restore preferences only after Room transaction commits successfully
@@ -152,6 +170,10 @@ class BackupManager @Inject constructor(
         val mealEntries = mealEntryDao.getAll().map { it.toBackupDto() }
         val weightEntries = weightEntryDao.getAllAsc().map { it.toBackupDto() }
         val goalProfiles = goalProfileDao.getAll().map { it.toBackupDto() }
+
+        val savedMealsWithItems = savedMealDao.getAllWithItems()
+        val backupSavedMeals = savedMealsWithItems.map { it.meal.toBackupDto() }
+        val backupSavedMealItems = savedMealsWithItems.flatMap { it.items.map { item -> item.toBackupDto() } }
 
         val prefs = dataStore.data.first()
         val preferences = BackupPreferencesDto(
@@ -172,11 +194,13 @@ class BackupManager @Inject constructor(
             weightEntries = weightEntries,
             goalProfiles = goalProfiles,
             preferences = preferences,
+            savedMeals = backupSavedMeals,
+            savedMealItems = backupSavedMealItems,
         )
     }
 
     companion object {
-        const val CURRENT_ROOM_SCHEMA_VERSION = 3
+        const val CURRENT_ROOM_SCHEMA_VERSION = 4
 
         private fun ProductEntity.toBackupDto(): BackupProductDto = BackupProductDto(
             id = id,
@@ -304,6 +328,50 @@ class BackupManager @Inject constructor(
             fatG = fatG,
             validFrom = validFrom,
             origin = try { GoalOrigin.valueOf(origin) } catch (_: Exception) { GoalOrigin.MANUAL },
+        )
+
+        private fun SavedMealEntity.toBackupDto(): BackupSavedMealDto = BackupSavedMealDto(
+            id = id,
+            name = name,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            lastUsedAt = lastUsedAt,
+            useCount = useCount,
+        )
+
+        private fun BackupSavedMealDto.toEntity(): SavedMealEntity = SavedMealEntity(
+            id = id,
+            name = name,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            lastUsedAt = lastUsedAt,
+            useCount = useCount,
+        )
+
+        private fun SavedMealItemEntity.toBackupDto(): BackupSavedMealItemDto = BackupSavedMealItemDto(
+            id = id,
+            savedMealId = savedMealId,
+            position = position,
+            productId = productId,
+            productName = productName,
+            grams = grams,
+            kcal = kcal,
+            protein = protein,
+            carbs = carbs,
+            fat = fat,
+        )
+
+        private fun BackupSavedMealItemDto.toEntity(): SavedMealItemEntity = SavedMealItemEntity(
+            id = id,
+            savedMealId = savedMealId,
+            position = position,
+            productId = productId,
+            productName = productName,
+            grams = grams,
+            kcal = kcal,
+            protein = protein,
+            carbs = carbs,
+            fat = fat,
         )
     }
 }

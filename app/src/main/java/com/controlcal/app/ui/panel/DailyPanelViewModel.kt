@@ -802,6 +802,27 @@ class DailyPanelViewModel @Inject constructor(
         }
     }
 
+    fun notifySavedMealAdded(meal: com.controlcal.core.model.ResolvedSavedMeal, results: List<com.controlcal.core.nutrition.MealEntrySaveResult>) {
+        viewModelScope.launch {
+            loadDay(_uiState.value.selectedDate)
+            _feedbackEvents.send(
+                UiFeedbackEvent.Success(
+                    message = UiText.StringResource(
+                        R.string.saved_meals_log_success_feedback,
+                        meal.meal.name,
+                    ),
+                    actionLabel = UiText.StringResource(R.string.saved_meals_undo_action),
+                    onAction = {
+                        viewModelScope.launch {
+                            mealEntryRepository.revertSaveResults(results)
+                            loadDay(_uiState.value.selectedDate)
+                        }
+                    },
+                )
+            )
+        }
+    }
+
     fun onUndoMerge() {
         val previous = _uiState.value.recentlyMergedPreviousEntry ?: return
         viewModelScope.launch {

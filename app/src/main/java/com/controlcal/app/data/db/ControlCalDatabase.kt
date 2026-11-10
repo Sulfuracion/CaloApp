@@ -6,11 +6,14 @@ import com.controlcal.app.data.db.dao.DailyLogDao
 import com.controlcal.app.data.db.dao.GoalProfileDao
 import com.controlcal.app.data.db.dao.MealEntryDao
 import com.controlcal.app.data.db.dao.ProductDao
+import com.controlcal.app.data.db.dao.SavedMealDao
 import com.controlcal.app.data.db.dao.WeightEntryDao
 import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
 import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
+import com.controlcal.app.data.db.entity.SavedMealEntity
+import com.controlcal.app.data.db.entity.SavedMealItemEntity
 import com.controlcal.app.data.db.entity.WeightEntryEntity
 
 /**
@@ -26,8 +29,10 @@ import com.controlcal.app.data.db.entity.WeightEntryEntity
         MealEntryEntity::class,
         WeightEntryEntity::class,
         GoalProfileEntity::class,
+        SavedMealEntity::class,
+        SavedMealItemEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class ControlCalDatabase : RoomDatabase() {
@@ -41,6 +46,8 @@ abstract class ControlCalDatabase : RoomDatabase() {
     abstract fun weightEntryDao(): WeightEntryDao
 
     abstract fun goalProfileDao(): GoalProfileDao
+
+    abstract fun savedMealDao(): SavedMealDao
 
     companion object {
         const val NAME = "controlcal.db"

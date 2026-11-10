@@ -15,6 +15,8 @@ import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
 import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
+import com.controlcal.app.data.db.entity.SavedMealEntity
+import com.controlcal.app.data.db.entity.SavedMealItemEntity
 import com.controlcal.app.data.db.entity.WeightEntryEntity
 import com.controlcal.core.backup.BackupDailyLogDto
 import com.controlcal.core.backup.BackupGoalProfileDto
@@ -73,6 +75,7 @@ class BackupManagerRobolectricTest {
             mealEntryDao = db.mealEntryDao(),
             weightEntryDao = db.weightEntryDao(),
             goalProfileDao = db.goalProfileDao(),
+            savedMealDao = db.savedMealDao(),
             dataStore = dataStore,
         )
     }
@@ -198,6 +201,30 @@ class BackupManagerRobolectricTest {
             prefs[configuredMealsKey] = """[{"id":"BREAKFAST","name":"Desayuno","startTime":"08:00","isActive":true}]"""
         }
 
+        // Seed saved meals
+        val savedMealId = db.savedMealDao().insertMeal(
+            SavedMealEntity(
+                id = 50L,
+                name = "Bowl de avena",
+                createdAt = 1000L,
+                updatedAt = 1000L,
+                lastUsedAt = 2000L,
+                useCount = 3,
+            )
+        )
+        db.savedMealDao().insertItems(
+            listOf(
+                SavedMealItemEntity(
+                    id = 501L,
+                    savedMealId = savedMealId,
+                    position = 0,
+                    productId = 10L,
+                    productName = "Avena Copos",
+                    grams = 50.0,
+                )
+            )
+        )
+
         // 2. Export to byte stream
         val outStream = ByteArrayOutputStream()
         manager.exportBackup(password, outStream)
@@ -205,6 +232,8 @@ class BackupManagerRobolectricTest {
         assertTrue(backupBytes.isNotEmpty())
 
         // 3. Clear all database tables and DataStore
+        db.savedMealDao().deleteAllItems()
+        db.savedMealDao().deleteAllMeals()
         db.mealEntryDao().deleteAll()
         db.dailyLogDao().deleteAll()
         db.productDao().deleteAll()
@@ -212,6 +241,7 @@ class BackupManagerRobolectricTest {
         db.goalProfileDao().deleteAll()
         dataStore.edit { it.clear() }
 
+        assertEquals(0, db.savedMealDao().getAllWithItems().size)
         assertEquals(0, db.productDao().allIncludingArchived().size)
         assertEquals(0, db.dailyLogDao().getAll().size)
         assertEquals(0, db.mealEntryDao().getAll().size)
@@ -226,7 +256,9 @@ class BackupManagerRobolectricTest {
         assertEquals(1, summary.dayCount)
         assertEquals(3, summary.mealEntryCount)
         assertEquals(1, summary.weightEntryCount)
-        assertEquals(3, summary.schemaVersion)
+        assertEquals(4, summary.schemaVersion)
+        assertEquals(1, payload.savedMeals.size)
+        assertEquals(1, payload.savedMealItems.size)
 
         // 5. Restore backup
         manager.restoreBackup(payload)
@@ -274,6 +306,16 @@ class BackupManagerRobolectricTest {
         assertEquals(5L, restoredGoals.first().id)
         assertEquals(2600.0, restoredGoals.first().kcal, 0.001)
 
+        // Verify restored saved meals and items
+        val restoredMeals = db.savedMealDao().getAllWithItems()
+        assertEquals(1, restoredMeals.size)
+        assertEquals("Bowl de avena", restoredMeals.first().meal.name)
+        assertEquals(50L, restoredMeals.first().meal.id)
+        assertEquals(3, restoredMeals.first().meal.useCount)
+        assertEquals(1, restoredMeals.first().items.size)
+        assertEquals(501L, restoredMeals.first().items.first().id)
+        assertEquals(50.0, restoredMeals.first().items.first().grams, 0.001)
+
         // Verify DataStore preferences restored
         val prefs = dataStore.data.first()
         assertEquals("TRAINING,REST,TRAINING,REST,TRAINING,REST,REST", prefs[weeklyPatternKey])
@@ -310,21 +352,53 @@ class BackupManagerRobolectricTest {
     }
 
     @Test
-    fun restore_rejectsNewerSchemaVersion() = runTest {
-        val payloadV4 = BackupPayload(
+    fun restore_adaptsOlderSchemaVersion3_withoutSavedMeals() = runTest {
+        val payloadV3 = BackupPayload(
             backupFormatVersion = 1,
-            schemaVersion = 4, // Future schema version
+            schemaVersion = 3, // Schema version 3 had no saved_meals
+            createdAt = 1700000000L,
+            appVersion = "1.0",
+            products = listOf(
+                BackupProductDto(
+                    id = 1L,
+                    name = "Arroz",
+                    kcal100g = 350.0,
+                    protein100g = 7.0,
+                    carbs100g = 78.0,
+                    fat100g = 1.0,
+                    source = "MANUAL",
+                    createdAt = 1000L,
+                    updatedAt = 1000L,
+                )
+            ),
+        )
+
+        manager.restoreBackup(payloadV3)
+
+        val products = db.productDao().allIncludingArchived()
+        assertEquals(1, products.size)
+        assertEquals("Arroz", products.first().name)
+
+        val savedMeals = db.savedMealDao().getAllWithItems()
+        assertTrue(savedMeals.isEmpty())
+    }
+
+    @Test
+    fun restore_rejectsNewerSchemaVersion() = runTest {
+        val payloadV5 = BackupPayload(
+            backupFormatVersion = 1,
+            schemaVersion = 5, // Future schema version
             createdAt = 1800000000L,
             appVersion = "2.0",
         )
 
         try {
-            manager.restoreBackup(payloadV4)
+            manager.restoreBackup(payloadV5)
             fail("Expected NewerSchemaVersionException")
         } catch (e: NewerSchemaVersionException) {
             assertEquals("Actualiza la app para importar esta copia", e.message)
-            assertEquals(4, e.backupSchemaVersion)
-            assertEquals(3, e.currentSchemaVersion)
+            assertEquals(5, e.backupSchemaVersion)
+            assertEquals(4, e.currentSchemaVersion)
         }
     }
 

@@ -65,7 +65,9 @@ fun AddEntryRoute(
     onNavigateToOcrCapture: () -> Unit,
     onNavigateToManualEntry: () -> Unit,
     onNavigateToConfirmation: (OffProduct) -> Unit,
+    onNavigateToSavedMeals: () -> Unit = {},
     onEntryAdded: (com.controlcal.core.nutrition.MealEntrySaveResult?) -> Unit = {},
+    onSavedMealAdded: (com.controlcal.core.model.ResolvedSavedMeal, List<com.controlcal.core.nutrition.MealEntrySaveResult>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,6 +94,7 @@ fun AddEntryRoute(
         onNavigateToScanner = onNavigateToScanner,
         onNavigateToOcrCapture = onNavigateToOcrCapture,
         onNavigateToManualEntry = onNavigateToManualEntry,
+        onNavigateToSavedMeals = onNavigateToSavedMeals,
         onSearchQueryChanged = viewModel::onSearchQueryChanged,
         onSelectProduct = viewModel::onSelectProductForPortion,
         onQuickAddHabitual = { habitual ->
@@ -102,6 +105,13 @@ fun AddEntryRoute(
         onQuantityInputChanged = viewModel::onQuantityInputChanged,
         onConfirmAddProduct = {
             viewModel.onConfirmAddProduct()
+        },
+        onSelectSavedMeal = viewModel::onSelectSavedMealForLog,
+        onSavedMealMultiplierSelected = viewModel::onSavedMealMultiplierSelected,
+        onCustomSavedMealMultiplierChanged = viewModel::onCustomSavedMealMultiplierChanged,
+        onDismissSavedMealDialog = viewModel::onDismissSavedMealDialog,
+        onConfirmLogSavedMeal = {
+            viewModel.onConfirmLogSavedMeal(onSuccess = onSavedMealAdded)
         },
         onSearchInOff = viewModel::onSearchInOff,
         onSelectOffProduct = { item -> viewModel.onSelectOffProduct(item, onNavigateToConfirmation) },
@@ -119,6 +129,7 @@ fun AddEntryScreen(
     onNavigateToScanner: () -> Unit,
     onNavigateToOcrCapture: () -> Unit,
     onNavigateToManualEntry: () -> Unit,
+    onNavigateToSavedMeals: () -> Unit = {},
     onSearchQueryChanged: (String) -> Unit,
     onSelectProduct: (Product) -> Unit,
     onQuickAddHabitual: (HabitualFoodUiModel) -> Unit,
@@ -126,6 +137,11 @@ fun AddEntryScreen(
     onToggleMeasuringUnit: () -> Unit,
     onQuantityInputChanged: (String) -> Unit,
     onConfirmAddProduct: () -> Unit,
+    onSelectSavedMeal: (com.controlcal.core.model.ResolvedSavedMeal) -> Unit = {},
+    onSavedMealMultiplierSelected: (Double) -> Unit = {},
+    onCustomSavedMealMultiplierChanged: (String) -> Unit = {},
+    onDismissSavedMealDialog: () -> Unit = {},
+    onConfirmLogSavedMeal: () -> Unit = {},
     onSearchInOff: () -> Unit,
     onSelectOffProduct: (OffSearchItem) -> Unit,
     onSelectTargetMeal: (String) -> Unit = {},
@@ -222,6 +238,38 @@ fun AddEntryScreen(
                 )
             }
 
+            // Saved Meals section when query is empty (above habituals)
+            if (uiState.searchQuery.isEmpty() && uiState.savedMeals.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.saved_meals_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        TextButton(onClick = onNavigateToSavedMeals) {
+                            Text(text = stringResource(R.string.saved_meals_manage_action))
+                        }
+                    }
+                }
+
+                items(uiState.savedMeals, key = { "saved_meal_${it.meal.id}" }) { savedMeal ->
+                    SavedMealEntryRow(
+                        savedMeal = savedMeal,
+                        onClick = { onSelectSavedMeal(savedMeal) },
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                }
+            }
+
             // Quick Habituals section when query is empty
             if (uiState.searchQuery.isEmpty() && uiState.habitualFoods.isNotEmpty()) {
                 item {
@@ -237,6 +285,29 @@ fun AddEntryScreen(
                         habitual = habitual,
                         onRowClick = { onSelectProduct(habitual.product) },
                         onQuickAddClick = { onQuickAddHabitual(habitual) },
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                }
+            }
+
+            // Matching Saved Meals section when search query is not empty
+            if (uiState.searchQuery.isNotEmpty() && uiState.filteredSavedMeals.isNotEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.saved_meals_search_header) + " (${uiState.filteredSavedMeals.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+
+                items(uiState.filteredSavedMeals, key = { "filtered_saved_meal_${it.meal.id}" }) { savedMeal ->
+                    SavedMealEntryRow(
+                        savedMeal = savedMeal,
+                        onClick = { onSelectSavedMeal(savedMeal) },
                     )
                 }
 
@@ -445,6 +516,102 @@ fun AddEntryScreen(
             onConfirm = onConfirmAddProduct,
             onDismiss = onDismissPortionDialog,
         )
+    }
+
+    // Saved Meal Log Dialog
+    val selectedSavedMeal = uiState.selectedSavedMealForLog
+    if (selectedSavedMeal != null) {
+        SavedMealLogDialog(
+            resolvedMeal = selectedSavedMeal,
+            targetMealName = uiState.targetMealName,
+            multiplier = uiState.savedMealMultiplier,
+            customMultiplierText = uiState.customSavedMealMultiplierText,
+            isSaving = uiState.isSaving,
+            onMultiplierSelected = onSavedMealMultiplierSelected,
+            onCustomMultiplierChanged = onCustomSavedMealMultiplierChanged,
+            onConfirm = onConfirmLogSavedMeal,
+            onDismiss = onDismissSavedMealDialog,
+        )
+    }
+}
+
+@Composable
+fun SavedMealEntryRow(
+    savedMeal: com.controlcal.core.model.ResolvedSavedMeal,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = savedMeal.meal.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${NumberFormatHelper.formatDecimal(savedMeal.totalKcal)} kcal",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            val itemsSummary = savedMeal.resolvedItems.joinToString(", ") {
+                if (it.item.productId != null) {
+                    "${it.item.productName} (${NumberFormatHelper.formatDecimal(it.resolvedGrams)} g)"
+                } else {
+                    "${it.item.productName} (${NumberFormatHelper.formatDecimal(it.resolvedKcal)} kcal)"
+                }
+            }
+            Text(
+                text = itemsSummary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "P: ${NumberFormatHelper.formatDecimal(savedMeal.totalProtein)} g · C: ${NumberFormatHelper.formatDecimal(savedMeal.totalCarbs)} g · G: ${NumberFormatHelper.formatDecimal(savedMeal.totalFat)} g",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                if (savedMeal.hasArchivedProducts) {
+                    Text(
+                        text = stringResource(R.string.saved_meals_archived_product_warning),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
     }
 }
 

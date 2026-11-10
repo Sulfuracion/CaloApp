@@ -26,6 +26,8 @@ data class BackupPayload(
     val weightEntries: List<BackupWeightEntryDto> = emptyList(),
     val goalProfiles: List<BackupGoalProfileDto> = emptyList(),
     val preferences: BackupPreferencesDto = BackupPreferencesDto(),
+    val savedMeals: List<BackupSavedMealDto> = emptyList(),
+    val savedMealItems: List<BackupSavedMealItemDto> = emptyList(),
     // Extension points for future features:
     val customMeals: List<String> = emptyList(),
     val recipes: List<String> = emptyList(),
@@ -107,4 +109,28 @@ data class BackupPreferencesDto(
     val minKcalLimit: Double? = null,
     val lastTdeeProposalReviewedDate: String? = null,
     val configuredMealsJson: String? = null,
+)
+
+@Serializable
+data class BackupSavedMealDto(
+    val id: Long,
+    val name: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val lastUsedAt: Long? = null,
+    val useCount: Int = 0,
+)
+
+@Serializable
+data class BackupSavedMealItemDto(
+    val id: Long,
+    val savedMealId: Long,
+    val position: Int,
+    val productId: Long? = null,
+    val productName: String,
+    val grams: Double,
+    val kcal: Double? = null,
+    val protein: Double? = null,
+    val carbs: Double? = null,
+    val fat: Double? = null,
 )

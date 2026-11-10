@@ -94,6 +94,7 @@ fun DailyPanelRoute(
     onNavigateToScanner: () -> Unit,
     onNavigateToWeight: () -> Unit = {},
     onNavigateToPantry: () -> Unit = {},
+    onNavigateToSavedMeals: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToMacroTetris: () -> Unit = {},
     onNavigateToMealDetail: (mealId: String) -> Unit = {},
@@ -114,6 +115,7 @@ fun DailyPanelRoute(
         onNavigateToScanner = onNavigateToScanner,
         onNavigateToWeight = onNavigateToWeight,
         onNavigateToPantry = onNavigateToPantry,
+        onNavigateToSavedMeals = onNavigateToSavedMeals,
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToMacroTetris = onNavigateToMacroTetris,
         onNavigateToMealDetail = onNavigateToMealDetail,
@@ -150,6 +152,7 @@ fun DailyPanelScreen(
     onNavigateToScanner: () -> Unit,
     onNavigateToWeight: () -> Unit,
     onNavigateToPantry: () -> Unit,
+    onNavigateToSavedMeals: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
     onNavigateToMacroTetris: () -> Unit = {},
     onNavigateToMealDetail: (mealId: String) -> Unit = {},
@@ -232,6 +235,20 @@ fun DailyPanelScreen(
                                 onClick = {
                                     showOptionsMenu = false
                                     onNavigateToPantry()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.saved_meals_action)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_repeat),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    onNavigateToSavedMeals()
                                 },
                             )
                             DropdownMenuItem(

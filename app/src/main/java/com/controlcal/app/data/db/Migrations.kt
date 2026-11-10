@@ -84,3 +84,57 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         exec("ALTER TABLE `daily_logs` ADD COLUMN `steps` INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+/**
+ * Migration from version 3 to 4 (Task 3: Mis comidas):
+ * - Table `saved_meals`: stores saved meal headers with case-insensitive unique name.
+ * - Table `saved_meal_items`: stores individual meal items with CASCADE delete on saved_meal_id.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        migrateSql { sql -> db.execSQL(sql) }
+    }
+
+    override fun migrate(connection: SQLiteConnection) {
+        migrateSql { sql -> connection.execSQL(sql) }
+    }
+
+    private inline fun migrateSql(exec: (String) -> Unit) {
+        exec(
+            """
+            CREATE TABLE IF NOT EXISTS `saved_meals` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL COLLATE NOCASE,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                `last_used_at` INTEGER,
+                `use_count` INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+
+        exec("CREATE UNIQUE INDEX IF NOT EXISTS `index_saved_meals_name` ON `saved_meals` (`name`)")
+
+        exec(
+            """
+            CREATE TABLE IF NOT EXISTS `saved_meal_items` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `saved_meal_id` INTEGER NOT NULL,
+                `position` INTEGER NOT NULL,
+                `product_id` INTEGER,
+                `product_name` TEXT NOT NULL,
+                `grams` REAL NOT NULL,
+                `kcal` REAL,
+                `protein` REAL,
+                `carbs` REAL,
+                `fat` REAL,
+                FOREIGN KEY(`saved_meal_id`) REFERENCES `saved_meals`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(`product_id`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+            )
+            """.trimIndent()
+        )
+
+        exec("CREATE INDEX IF NOT EXISTS `index_saved_meal_items_saved_meal_id` ON `saved_meal_items` (`saved_meal_id`)")
+        exec("CREATE INDEX IF NOT EXISTS `index_saved_meal_items_product_id` ON `saved_meal_items` (`product_id`)")
+    }
+}

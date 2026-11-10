@@ -85,6 +85,24 @@ class MealEntryRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun revertSaveResults(results: List<MealEntrySaveResult>) {
+        if (results.isEmpty()) return
+        database.useWriterConnection { transactor ->
+            transactor.immediateTransaction {
+                for (result in results.asReversed()) {
+                    when (result) {
+                        is MealEntrySaveResult.Created -> {
+                            mealEntryDao.delete(result.entry.toEntity())
+                        }
+                        is MealEntrySaveResult.Merged -> {
+                            mealEntryDao.update(result.previousEntry.toEntity())
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun insert(entry: MealEntry): Long {
         return when (val res = save(entry)) {
             is MealEntrySaveResult.Created -> res.entry.id
