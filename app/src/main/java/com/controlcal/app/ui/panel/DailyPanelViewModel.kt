@@ -78,6 +78,21 @@ class DailyPanelViewModel @Inject constructor(
         override suspend fun readStepsForDate(date: LocalDate): Long? = null
         override suspend fun readYesterdaySteps(): Long? = null
     },
+    private val supplementRepository: com.controlcal.core.repo.SupplementRepository = object : com.controlcal.core.repo.SupplementRepository {
+        override suspend fun getAllSupplements(): List<com.controlcal.core.supplement.Supplement> = emptyList()
+        override suspend fun getActiveSupplements(): List<com.controlcal.core.supplement.Supplement> = emptyList()
+        override suspend fun getSupplementById(id: Long): com.controlcal.core.supplement.Supplement? = null
+        override suspend fun saveSupplement(supplement: com.controlcal.core.supplement.Supplement): Long = 0L
+        override suspend fun updateSupplement(supplement: com.controlcal.core.supplement.Supplement) {}
+        override suspend fun setSupplementActive(id: Long, active: Boolean) {}
+        override suspend fun deleteSupplement(id: Long) {}
+        override suspend fun getIntakesForDate(date: LocalDate): List<com.controlcal.core.supplement.SupplementIntake> = emptyList()
+        override suspend fun getIntakesBetween(startDate: LocalDate, endDate: LocalDate): List<com.controlcal.core.supplement.SupplementIntake> = emptyList()
+        override suspend fun recordIntake(supplementId: Long, scheduledDate: LocalDate, scheduledTime: LocalTime, status: com.controlcal.core.supplement.IntakeStatus): Boolean = true
+        override suspend fun deleteIntake(supplementId: Long, scheduledDate: LocalDate, scheduledTime: LocalTime) {}
+    },
+    private val supplementReminderScheduler: com.controlcal.app.reminder.SupplementReminderScheduler? = null,
+    private val supplementNotificationHelper: com.controlcal.app.reminder.SupplementNotificationHelper? = null,
 ) : ViewModel() {
 
     private val repeatMealUseCase = RepeatMealUseCase()
@@ -268,6 +283,14 @@ class DailyPanelViewModel @Inject constructor(
                 isNever = false
             }
 
+            val allSupplements = supplementRepository.getAllSupplements()
+            val dayIntakes = supplementRepository.getIntakesForDate(date)
+            val supplementDoses = com.controlcal.core.supplement.SupplementScheduleCalculator.getScheduledDosesForDate(
+                supplements = allSupplements,
+                date = date,
+                existingIntakes = dayIntakes,
+            )
+
             _uiState.update {
                 it.copy(
                     selectedDate = date,
@@ -289,9 +312,59 @@ class DailyPanelViewModel @Inject constructor(
                     tdeeCalculationResult = tdeeResult,
                     isBackupOverdue = isOverdue,
                     isBackupNeverDone = isNever,
+                    todayDoses = supplementDoses,
+                    hasConfiguredSupplements = allSupplements.isNotEmpty(),
                     isLoading = false,
                 )
             }
+        }
+    }
+
+    fun onMarkDoseTaken(dose: com.controlcal.core.supplement.ScheduledDose) {
+        viewModelScope.launch {
+            val updated = supplementRepository.recordIntake(
+                supplementId = dose.supplement.id,
+                scheduledDate = dose.scheduledDate,
+                scheduledTime = dose.scheduledTime,
+                status = com.controlcal.core.supplement.IntakeStatus.TAKEN,
+            )
+            if (updated) {
+                val notificationId = (dose.supplement.id * 1000 + dose.scheduledTime.hour * 60 + dose.scheduledTime.minute).toInt()
+                supplementNotificationHelper?.cancelNotification(notificationId)
+                supplementReminderScheduler?.cancelSecondWarning(dose.supplement.id)
+                sendFeedback(UiFeedbackEvent.Success(UiText.StringResource(R.string.supplement_intake_taken_feedback, dose.supplement.name)))
+                loadDay(_uiState.value.selectedDate)
+            }
+        }
+    }
+
+    fun onMarkDoseSkipped(dose: com.controlcal.core.supplement.ScheduledDose) {
+        viewModelScope.launch {
+            val updated = supplementRepository.recordIntake(
+                supplementId = dose.supplement.id,
+                scheduledDate = dose.scheduledDate,
+                scheduledTime = dose.scheduledTime,
+                status = com.controlcal.core.supplement.IntakeStatus.SKIPPED,
+            )
+            if (updated) {
+                val notificationId = (dose.supplement.id * 1000 + dose.scheduledTime.hour * 60 + dose.scheduledTime.minute).toInt()
+                supplementNotificationHelper?.cancelNotification(notificationId)
+                supplementReminderScheduler?.cancelSecondWarning(dose.supplement.id)
+                sendFeedback(UiFeedbackEvent.Success(UiText.StringResource(R.string.supplement_intake_skipped_feedback, dose.supplement.name)))
+                loadDay(_uiState.value.selectedDate)
+            }
+        }
+    }
+
+    fun onUndoDoseIntake(dose: com.controlcal.core.supplement.ScheduledDose) {
+        viewModelScope.launch {
+            supplementRepository.deleteIntake(
+                supplementId = dose.supplement.id,
+                scheduledDate = dose.scheduledDate,
+                scheduledTime = dose.scheduledTime,
+            )
+            sendFeedback(UiFeedbackEvent.Success(UiText.StringResource(R.string.supplement_intake_reverted_feedback)))
+            loadDay(_uiState.value.selectedDate)
         }
     }
 

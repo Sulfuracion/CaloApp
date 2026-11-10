@@ -13,6 +13,7 @@ import com.controlcal.app.data.db.dao.GoalProfileDao
 import com.controlcal.app.data.db.dao.MealEntryDao
 import com.controlcal.app.data.db.dao.ProductDao
 import com.controlcal.app.data.db.dao.SavedMealDao
+import com.controlcal.app.data.db.dao.SupplementDao
 import com.controlcal.app.data.db.dao.WeightEntryDao
 import com.controlcal.app.data.db.entity.DailyLogEntity
 import com.controlcal.app.data.db.entity.GoalProfileEntity
@@ -20,7 +21,10 @@ import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
 import com.controlcal.app.data.db.entity.SavedMealEntity
 import com.controlcal.app.data.db.entity.SavedMealItemEntity
+import com.controlcal.app.data.db.entity.SupplementEntity
+import com.controlcal.app.data.db.entity.SupplementIntakeEntity
 import com.controlcal.app.data.db.entity.WeightEntryEntity
+import com.controlcal.app.reminder.SupplementReminderScheduler
 import com.controlcal.core.backup.BackupCodec
 import com.controlcal.core.backup.BackupDailyLogDto
 import com.controlcal.core.backup.BackupGoalProfileDto
@@ -30,6 +34,8 @@ import com.controlcal.core.backup.BackupPreferencesDto
 import com.controlcal.core.backup.BackupProductDto
 import com.controlcal.core.backup.BackupSavedMealDto
 import com.controlcal.core.backup.BackupSavedMealItemDto
+import com.controlcal.core.backup.BackupSupplementDto
+import com.controlcal.core.backup.BackupSupplementIntakeDto
 import com.controlcal.core.backup.BackupSummary
 import com.controlcal.core.backup.BackupWeightEntryDto
 import com.controlcal.core.backup.NewerSchemaVersionException
@@ -53,6 +59,8 @@ class BackupManager @Inject constructor(
     private val weightEntryDao: WeightEntryDao,
     private val goalProfileDao: GoalProfileDao,
     private val savedMealDao: SavedMealDao,
+    private val supplementDao: SupplementDao,
+    private val reminderScheduler: SupplementReminderScheduler,
     private val dataStore: DataStore<Preferences>,
 ) {
 
@@ -117,9 +125,13 @@ class BackupManager @Inject constructor(
             val goalProfileEntities = payload.goalProfiles.map { it.toEntity() }
             val savedMealEntities = payload.savedMeals.map { it.toEntity() }
             val savedMealItemEntities = payload.savedMealItems.map { it.toEntity() }
+            val supplementEntities = payload.supplements.map { it.toEntity() }
+            val supplementIntakeEntities = payload.supplementIntakes.map { it.toEntity() }
 
             database.withTransaction {
                 // Delete dependent tables first (reverse FK order)
+                supplementDao.deleteAllIntakes()
+                supplementDao.deleteAll()
                 savedMealDao.deleteAllItems()
                 savedMealDao.deleteAllMeals()
                 mealEntryDao.deleteAll()
@@ -152,6 +164,12 @@ class BackupManager @Inject constructor(
                 if (savedMealItemEntities.isNotEmpty()) {
                     savedMealDao.insertItems(savedMealItemEntities)
                 }
+                if (supplementEntities.isNotEmpty()) {
+                    supplementDao.insertAll(supplementEntities)
+                }
+                if (supplementIntakeEntities.isNotEmpty()) {
+                    supplementDao.insertAllIntakes(supplementIntakeEntities)
+                }
             }
 
             // Restore preferences only after Room transaction commits successfully
@@ -161,6 +179,9 @@ class BackupManager @Inject constructor(
                 payload.preferences.lastTdeeProposalReviewedDate?.let { prefs[lastTdeeProposalReviewedDateKey] = it }
                 payload.preferences.configuredMealsJson?.let { prefs[configuredMealsKey] = it }
             }
+
+            // Reschedule all reminders after restoring backup
+            reminderScheduler.rescheduleAll()
         }
     }
 
@@ -174,6 +195,9 @@ class BackupManager @Inject constructor(
         val savedMealsWithItems = savedMealDao.getAllWithItems()
         val backupSavedMeals = savedMealsWithItems.map { it.meal.toBackupDto() }
         val backupSavedMealItems = savedMealsWithItems.flatMap { it.items.map { item -> item.toBackupDto() } }
+
+        val supplements = supplementDao.getAll().map { it.toBackupDto() }
+        val supplementIntakes = supplementDao.getAllIntakes().map { it.toBackupDto() }
 
         val prefs = dataStore.data.first()
         val preferences = BackupPreferencesDto(
@@ -196,11 +220,13 @@ class BackupManager @Inject constructor(
             preferences = preferences,
             savedMeals = backupSavedMeals,
             savedMealItems = backupSavedMealItems,
+            supplements = supplements,
+            supplementIntakes = supplementIntakes,
         )
     }
 
     companion object {
-        const val CURRENT_ROOM_SCHEMA_VERSION = 4
+        const val CURRENT_ROOM_SCHEMA_VERSION = 5
 
         private fun ProductEntity.toBackupDto(): BackupProductDto = BackupProductDto(
             id = id,
@@ -372,6 +398,58 @@ class BackupManager @Inject constructor(
             protein = protein,
             carbs = carbs,
             fat = fat,
+        )
+
+        private fun SupplementEntity.toBackupDto(): BackupSupplementDto = BackupSupplementDto(
+            id = id,
+            name = name,
+            doseAmount = doseAmount,
+            doseUnit = doseUnit,
+            scheduleType = scheduleType,
+            weekdays = weekdays,
+            intervalDays = intervalDays,
+            startDate = startDate,
+            times = times,
+            active = active,
+            remindersEnabled = remindersEnabled,
+            notes = notes,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+        )
+
+        private fun BackupSupplementDto.toEntity(): SupplementEntity = SupplementEntity(
+            id = id,
+            name = name,
+            doseAmount = doseAmount,
+            doseUnit = doseUnit,
+            scheduleType = scheduleType,
+            weekdays = weekdays,
+            intervalDays = intervalDays,
+            startDate = startDate,
+            times = times,
+            active = active,
+            remindersEnabled = remindersEnabled,
+            notes = notes,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+        )
+
+        private fun SupplementIntakeEntity.toBackupDto(): BackupSupplementIntakeDto = BackupSupplementIntakeDto(
+            id = id,
+            supplementId = supplementId,
+            scheduledDate = scheduledDate,
+            scheduledTime = scheduledTime,
+            status = status,
+            recordedAt = recordedAt,
+        )
+
+        private fun BackupSupplementIntakeDto.toEntity(): SupplementIntakeEntity = SupplementIntakeEntity(
+            id = id,
+            supplementId = supplementId,
+            scheduledDate = scheduledDate,
+            scheduledTime = scheduledTime,
+            status = status,
+            recordedAt = recordedAt,
         )
     }
 }

@@ -58,6 +58,8 @@ data class DailyPanelUiState(
     val tdeeCalculationResult: TdeeCalculationResult? = null,
     val isLoading: Boolean = false,
     val recentlyMergedPreviousEntry: MealEntry? = null,
+    val todayDoses: List<com.controlcal.core.supplement.ScheduledDose> = emptyList(),
+    val hasConfiguredSupplements: Boolean = false,
     val isSaving: Boolean = false,
     val message: String? = null,
     val isBackupOverdue: Boolean = false,

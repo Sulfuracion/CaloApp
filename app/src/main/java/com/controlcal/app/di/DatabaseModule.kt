@@ -97,4 +97,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSavedMealDao(db: ControlCalDatabase) = db.savedMealDao()
+
+    @Provides
+    fun provideSupplementDao(db: ControlCalDatabase) = db.supplementDao()
 }

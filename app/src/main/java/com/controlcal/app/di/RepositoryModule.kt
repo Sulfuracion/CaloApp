@@ -58,6 +58,10 @@ abstract class RepositoryBindingsModule {
     @Binds
     @Singleton
     abstract fun bindSavedMealRepository(impl: com.controlcal.app.data.repo.SavedMealRepositoryImpl): com.controlcal.core.repo.SavedMealRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSupplementRepository(impl: com.controlcal.app.data.repo.SupplementRepositoryImpl): com.controlcal.core.repo.SupplementRepository
 }
 
 @Module

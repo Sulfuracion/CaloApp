@@ -310,4 +310,115 @@ class ControlCalDatabaseMigrationTest {
         assertEquals(0, itemsAfterDeleteCursor.getInt(0))
         itemsAfterDeleteCursor.close()
     }
+
+    @Test
+    fun migrate4To5PreservesAllExistingTablesAndCreatesSupplementsAndIntakesTables() {
+        // Step 1: Create database in version 4
+        val dbV4 = helper.createDatabase(TEST_DB, 4)
+
+        // Seed v4 data
+        dbV4.execSQL(
+            """
+            INSERT INTO products (
+                id, name, kcal_100g, protein_100g, carbs_100g, fat_100g,
+                is_liquid, in_pantry, source, archived, created_at, updated_at
+            ) VALUES (1, 'Arroz', 350.0, 7.0, 78.0, 1.0, 0, 1, 'MANUAL', 0, 1000, 1000)
+            """.trimIndent()
+        )
+        dbV4.execSQL("INSERT INTO daily_logs (date, day_type, water_ml, steps) VALUES ('2026-11-10', 'TRAINING', 2000, 9500)")
+        dbV4.execSQL(
+            """
+            INSERT INTO meal_entries (
+                id, date, meal, product_id, product_name, grams, kcal, protein, carbs, fat, logged_at
+            ) VALUES (1, '2026-11-10', 'LUNCH', 1, 'Arroz', 100.0, 350.0, 7.0, 78.0, 1.0, 1000)
+            """.trimIndent()
+        )
+        dbV4.execSQL(
+            """
+            INSERT INTO saved_meals (id, name, created_at, updated_at, last_used_at, use_count)
+            VALUES (1, 'Almuerzo arroz', 1000, 1000, NULL, 0)
+            """.trimIndent()
+        )
+        dbV4.execSQL(
+            """
+            INSERT INTO saved_meal_items (id, saved_meal_id, position, product_id, product_name, grams, kcal, protein, carbs, fat)
+            VALUES (1, 1, 0, 1, 'Arroz', 100.0, NULL, NULL, NULL, NULL)
+            """.trimIndent()
+        )
+        dbV4.close()
+
+        // Step 2: Migrate to version 5
+        val migratedDb = helper.runMigrationsAndValidate(TEST_DB, 5, true, MIGRATION_4_5)
+
+        // Step 3: Verify existing data preserved intact
+        val productCursor = migratedDb.query("SELECT name FROM products WHERE id = 1")
+        assertTrue(productCursor.moveToFirst())
+        assertEquals("Arroz", productCursor.getString(0))
+        productCursor.close()
+
+        val dailyLogCursor = migratedDb.query("SELECT steps FROM daily_logs WHERE date = '2026-11-10'")
+        assertTrue(dailyLogCursor.moveToFirst())
+        assertEquals(9500, dailyLogCursor.getInt(0))
+        dailyLogCursor.close()
+
+        val mealEntriesCursor = migratedDb.query("SELECT COUNT(*) FROM meal_entries")
+        assertTrue(mealEntriesCursor.moveToFirst())
+        assertEquals(1, mealEntriesCursor.getInt(0))
+        mealEntriesCursor.close()
+
+        val savedMealsCursor = migratedDb.query("SELECT COUNT(*) FROM saved_meals")
+        assertTrue(savedMealsCursor.moveToFirst())
+        assertEquals(1, savedMealsCursor.getInt(0))
+        savedMealsCursor.close()
+
+        // Step 4: Insert into supplements and supplement_intakes
+        migratedDb.execSQL(
+            """
+            INSERT INTO supplements (
+                id, name, dose_amount, dose_unit, schedule_type, weekdays, interval_days,
+                start_date, times, active, reminders_enabled, notes, created_at, updated_at
+            ) VALUES (1, 'Creatina', 5.0, 'g', 'DAILY', NULL, NULL, '2026-11-01', '["09:00"]', 1, 1, 'Post entreno', 1000, 1000)
+            """.trimIndent()
+        )
+
+        migratedDb.execSQL(
+            """
+            INSERT INTO supplement_intakes (
+                id, supplement_id, scheduled_date, scheduled_time, status, recorded_at
+            ) VALUES (1, 1, '2026-11-10', '09:00', 'TAKEN', 1000)
+            """.trimIndent()
+        )
+
+        val suppCursor = migratedDb.query("SELECT name, dose_unit, times FROM supplements WHERE id = 1")
+        assertTrue(suppCursor.moveToFirst())
+        assertEquals("Creatina", suppCursor.getString(0))
+        assertEquals("g", suppCursor.getString(1))
+        assertEquals("[\"09:00\"]", suppCursor.getString(2))
+        suppCursor.close()
+
+        val intakeCursor = migratedDb.query("SELECT status FROM supplement_intakes WHERE id = 1")
+        assertTrue(intakeCursor.moveToFirst())
+        assertEquals("TAKEN", intakeCursor.getString(0))
+        intakeCursor.close()
+
+        // Step 5: Verify unique constraint on (supplement_id, scheduled_date, scheduled_time)
+        assertFailsWith<SQLiteConstraintException> {
+            migratedDb.execSQL(
+                """
+                INSERT INTO supplement_intakes (
+                    id, supplement_id, scheduled_date, scheduled_time, status, recorded_at
+                ) VALUES (2, 1, '2026-11-10', '09:00', 'SKIPPED', 2000)
+                """.trimIndent()
+            )
+        }
+
+        // Step 6: Verify ON DELETE CASCADE
+        migratedDb.execSQL("PRAGMA foreign_keys = ON")
+        migratedDb.execSQL("DELETE FROM supplements WHERE id = 1")
+
+        val intakesAfterDelete = migratedDb.query("SELECT COUNT(*) FROM supplement_intakes WHERE supplement_id = 1")
+        assertTrue(intakesAfterDelete.moveToFirst())
+        assertEquals(0, intakesAfterDelete.getInt(0))
+        intakesAfterDelete.close()
+    }
 }

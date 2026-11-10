@@ -95,6 +95,7 @@ fun DailyPanelRoute(
     onNavigateToWeight: () -> Unit = {},
     onNavigateToPantry: () -> Unit = {},
     onNavigateToSavedMeals: () -> Unit = {},
+    onNavigateToSupplements: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToMacroTetris: () -> Unit = {},
     onNavigateToMealDetail: (mealId: String) -> Unit = {},
@@ -116,10 +117,14 @@ fun DailyPanelRoute(
         onNavigateToWeight = onNavigateToWeight,
         onNavigateToPantry = onNavigateToPantry,
         onNavigateToSavedMeals = onNavigateToSavedMeals,
+        onNavigateToSupplements = onNavigateToSupplements,
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToMacroTetris = onNavigateToMacroTetris,
         onNavigateToMealDetail = onNavigateToMealDetail,
         onNavigateToAddFood = onNavigateToAddFood,
+        onMarkDoseTaken = viewModel::onMarkDoseTaken,
+        onMarkDoseSkipped = viewModel::onMarkDoseSkipped,
+        onUndoDoseIntake = viewModel::onUndoDoseIntake,
         onPreviousDay = viewModel::onPreviousDay,
         onNextDay = viewModel::onNextDay,
         onSelectToday = viewModel::onSelectToday,
@@ -153,10 +158,14 @@ fun DailyPanelScreen(
     onNavigateToWeight: () -> Unit,
     onNavigateToPantry: () -> Unit,
     onNavigateToSavedMeals: () -> Unit = {},
+    onNavigateToSupplements: () -> Unit = {},
     onNavigateToSettings: () -> Unit,
     onNavigateToMacroTetris: () -> Unit = {},
     onNavigateToMealDetail: (mealId: String) -> Unit = {},
     onNavigateToAddFood: (mealId: String) -> Unit = {},
+    onMarkDoseTaken: (com.controlcal.core.supplement.ScheduledDose) -> Unit = {},
+    onMarkDoseSkipped: (com.controlcal.core.supplement.ScheduledDose) -> Unit = {},
+    onUndoDoseIntake: (com.controlcal.core.supplement.ScheduledDose) -> Unit = {},
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
     onSelectToday: () -> Unit,
@@ -249,6 +258,20 @@ fun DailyPanelScreen(
                                 onClick = {
                                     showOptionsMenu = false
                                     onNavigateToSavedMeals()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.supplements_action)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_pill),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    onNavigateToSupplements()
                                 },
                             )
                             DropdownMenuItem(
@@ -373,6 +396,17 @@ fun DailyPanelScreen(
                     section = section,
                     onCardClick = { onNavigateToMealDetail(section.mealId) },
                     onAddFoodClick = { onNavigateToAddFood(section.mealId) },
+                )
+            }
+
+            item {
+                SupplementsTodayCard(
+                    doses = uiState.todayDoses,
+                    hasConfiguredSupplements = uiState.hasConfiguredSupplements,
+                    onMarkTaken = onMarkDoseTaken,
+                    onMarkSkipped = onMarkDoseSkipped,
+                    onUndo = onUndoDoseIntake,
+                    onManageSupplements = onNavigateToSupplements,
                 )
             }
 
@@ -1242,6 +1276,207 @@ private fun BackupNoticeCard(
                 modifier = Modifier.heightIn(min = 48.dp),
             ) {
                 Text(text = stringResource(R.string.backup_notice_action))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SupplementsTodayCard(
+    doses: List<com.controlcal.core.supplement.ScheduledDose>,
+    hasConfiguredSupplements: Boolean,
+    onMarkTaken: (com.controlcal.core.supplement.ScheduledDose) -> Unit,
+    onMarkSkipped: (com.controlcal.core.supplement.ScheduledDose) -> Unit,
+    onUndo: (com.controlcal.core.supplement.ScheduledDose) -> Unit,
+    onManageSupplements: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+        ),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button, onClick = onManageSupplements),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_pill),
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.supplements_today_card_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_right),
+                    contentDescription = stringResource(R.string.supplements_action),
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (!hasConfiguredSupplements) {
+                Text(
+                    text = stringResource(R.string.supplements_empty_title),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = onManageSupplements,
+                    modifier = Modifier.height(44.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_add),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = stringResource(R.string.supplements_add_action))
+                }
+            } else if (doses.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.supplement_today_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                val allTaken = doses.all { it.isTaken }
+                if (allTaken) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_check),
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.supplement_today_all_taken),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+
+                for (dose in doses) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = dose.scheduledTime.toString(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = dose.supplement.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                            Text(
+                                text = "${NumberFormatHelper.formatDecimal(dose.supplement.doseAmount)} ${dose.supplement.doseUnit}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        if (dose.isPending) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                OutlinedButton(
+                                    onClick = { onMarkSkipped(dose) },
+                                    modifier = Modifier.height(36.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.supplement_mark_skipped_action),
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                                Button(
+                                    onClick = { onMarkTaken(dose) },
+                                    modifier = Modifier.height(36.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_check),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.supplement_mark_taken_action),
+                                        style = MaterialTheme.typography.labelSmall,
+                                    )
+                                }
+                            }
+                        } else if (dose.isTaken) {
+                            FilterChip(
+                                selected = true,
+                                onClick = { onUndo(dose) },
+                                label = { Text(text = stringResource(R.string.supplement_status_taken)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_check),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                },
+                            )
+                        } else if (dose.isSkipped) {
+                            FilterChip(
+                                selected = false,
+                                onClick = { onUndo(dose) },
+                                label = { Text(text = stringResource(R.string.supplement_status_skipped)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_skip),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
     }

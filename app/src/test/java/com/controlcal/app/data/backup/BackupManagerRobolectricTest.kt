@@ -17,6 +17,8 @@ import com.controlcal.app.data.db.entity.MealEntryEntity
 import com.controlcal.app.data.db.entity.ProductEntity
 import com.controlcal.app.data.db.entity.SavedMealEntity
 import com.controlcal.app.data.db.entity.SavedMealItemEntity
+import com.controlcal.app.data.db.entity.SupplementEntity
+import com.controlcal.app.data.db.entity.SupplementIntakeEntity
 import com.controlcal.app.data.db.entity.WeightEntryEntity
 import com.controlcal.core.backup.BackupDailyLogDto
 import com.controlcal.core.backup.BackupGoalProfileDto
@@ -24,6 +26,8 @@ import com.controlcal.core.backup.BackupMealEntryDto
 import com.controlcal.core.backup.BackupPayload
 import com.controlcal.core.backup.BackupPreferencesDto
 import com.controlcal.core.backup.BackupProductDto
+import com.controlcal.core.backup.BackupSupplementDto
+import com.controlcal.core.backup.BackupSupplementIntakeDto
 import com.controlcal.core.backup.BackupWeightEntryDto
 import com.controlcal.core.backup.NewerSchemaVersionException
 import com.controlcal.core.model.DayType
@@ -76,6 +80,8 @@ class BackupManagerRobolectricTest {
             weightEntryDao = db.weightEntryDao(),
             goalProfileDao = db.goalProfileDao(),
             savedMealDao = db.savedMealDao(),
+            supplementDao = db.supplementDao(),
+            reminderScheduler = com.controlcal.app.reminder.SupplementReminderScheduler(context, db.supplementDao()),
             dataStore = dataStore,
         )
     }
@@ -225,6 +231,31 @@ class BackupManagerRobolectricTest {
             )
         )
 
+        val supplement = SupplementEntity(
+            id = 70L,
+            name = "Vitamina D3",
+            doseAmount = 2000.0,
+            doseUnit = "UI",
+            scheduleType = "DAILY",
+            startDate = "2026-11-01",
+            times = """["08:00"]""",
+            active = true,
+            remindersEnabled = true,
+            createdAt = 1000L,
+            updatedAt = 1000L,
+        )
+        db.supplementDao().insert(supplement)
+
+        val intake = SupplementIntakeEntity(
+            id = 701L,
+            supplementId = 70L,
+            scheduledDate = "2026-11-10",
+            scheduledTime = "08:00",
+            status = "TAKEN",
+            recordedAt = 1000L,
+        )
+        db.supplementDao().insertIntake(intake)
+
         // 2. Export to byte stream
         val outStream = ByteArrayOutputStream()
         manager.exportBackup(password, outStream)
@@ -232,6 +263,8 @@ class BackupManagerRobolectricTest {
         assertTrue(backupBytes.isNotEmpty())
 
         // 3. Clear all database tables and DataStore
+        db.supplementDao().deleteAllIntakes()
+        db.supplementDao().deleteAll()
         db.savedMealDao().deleteAllItems()
         db.savedMealDao().deleteAllMeals()
         db.mealEntryDao().deleteAll()
@@ -241,6 +274,8 @@ class BackupManagerRobolectricTest {
         db.goalProfileDao().deleteAll()
         dataStore.edit { it.clear() }
 
+        assertEquals(0, db.supplementDao().getAll().size)
+        assertEquals(0, db.supplementDao().getAllIntakes().size)
         assertEquals(0, db.savedMealDao().getAllWithItems().size)
         assertEquals(0, db.productDao().allIncludingArchived().size)
         assertEquals(0, db.dailyLogDao().getAll().size)
@@ -256,9 +291,12 @@ class BackupManagerRobolectricTest {
         assertEquals(1, summary.dayCount)
         assertEquals(3, summary.mealEntryCount)
         assertEquals(1, summary.weightEntryCount)
-        assertEquals(4, summary.schemaVersion)
+        assertEquals(5, summary.schemaVersion)
+        assertEquals(1, summary.supplementCount)
         assertEquals(1, payload.savedMeals.size)
         assertEquals(1, payload.savedMealItems.size)
+        assertEquals(1, payload.supplements.size)
+        assertEquals(1, payload.supplementIntakes.size)
 
         // 5. Restore backup
         manager.restoreBackup(payload)
@@ -315,6 +353,17 @@ class BackupManagerRobolectricTest {
         assertEquals(1, restoredMeals.first().items.size)
         assertEquals(501L, restoredMeals.first().items.first().id)
         assertEquals(50.0, restoredMeals.first().items.first().grams, 0.001)
+
+        // Verify restored supplements and intakes
+        val restoredSupplements = db.supplementDao().getAll()
+        assertEquals(1, restoredSupplements.size)
+        assertEquals("Vitamina D3", restoredSupplements.first().name)
+        assertEquals(70L, restoredSupplements.first().id)
+
+        val restoredIntakes = db.supplementDao().getAllIntakes()
+        assertEquals(1, restoredIntakes.size)
+        assertEquals("TAKEN", restoredIntakes.first().status)
+        assertEquals(701L, restoredIntakes.first().id)
 
         // Verify DataStore preferences restored
         val prefs = dataStore.data.first()
@@ -384,21 +433,51 @@ class BackupManagerRobolectricTest {
     }
 
     @Test
-    fun restore_rejectsNewerSchemaVersion() = runTest {
-        val payloadV5 = BackupPayload(
+    fun restore_adaptsOlderSchemaVersion4_withoutSupplements() = runTest {
+        val payloadV4 = BackupPayload(
             backupFormatVersion = 1,
-            schemaVersion = 5, // Future schema version
+            schemaVersion = 4, // Schema version 4 had no supplements
+            createdAt = 1700000000L,
+            appVersion = "1.0",
+            products = listOf(
+                BackupProductDto(
+                    id = 1L,
+                    name = "Arroz",
+                    kcal100g = 350.0,
+                    protein100g = 7.0,
+                    carbs100g = 78.0,
+                    fat100g = 1.0,
+                    source = "MANUAL",
+                    createdAt = 1000L,
+                    updatedAt = 1000L,
+                )
+            ),
+        )
+
+        manager.restoreBackup(payloadV4)
+
+        val supplements = db.supplementDao().getAll()
+        assertTrue(supplements.isEmpty())
+        val intakes = db.supplementDao().getAllIntakes()
+        assertTrue(intakes.isEmpty())
+    }
+
+    @Test
+    fun restore_rejectsNewerSchemaVersion() = runTest {
+        val payloadV6 = BackupPayload(
+            backupFormatVersion = 1,
+            schemaVersion = 6, // Future schema version
             createdAt = 1800000000L,
             appVersion = "2.0",
         )
 
         try {
-            manager.restoreBackup(payloadV5)
+            manager.restoreBackup(payloadV6)
             fail("Expected NewerSchemaVersionException")
         } catch (e: NewerSchemaVersionException) {
             assertEquals("Actualiza la app para importar esta copia", e.message)
-            assertEquals(5, e.backupSchemaVersion)
-            assertEquals(4, e.currentSchemaVersion)
+            assertEquals(6, e.backupSchemaVersion)
+            assertEquals(5, e.currentSchemaVersion)
         }
     }
 

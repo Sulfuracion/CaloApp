@@ -163,6 +163,7 @@ object BackupCodec {
             dayCount = payload.dailyLogs.size,
             mealEntryCount = payload.mealEntries.size,
             weightEntryCount = payload.weightEntries.size,
+            supplementCount = payload.supplements.size,
         )
     }
 

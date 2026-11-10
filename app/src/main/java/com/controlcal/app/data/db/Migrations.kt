@@ -138,3 +138,61 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         exec("CREATE INDEX IF NOT EXISTS `index_saved_meal_items_product_id` ON `saved_meal_items` (`product_id`)")
     }
 }
+
+/**
+ * Migration from version 4 to 5 (Task 6: Vitaminas y suplementos con recordatorios):
+ * - Table `supplements`: id, name, dose_amount, dose_unit, schedule_type, weekdays, interval_days,
+ *   start_date, times, active, reminders_enabled, notes, created_at, updated_at.
+ * - Table `supplement_intakes`: id, supplement_id (FK to supplements CASCADE), scheduled_date, scheduled_time, status, recorded_at.
+ * - Unique index on `supplement_intakes(supplement_id, scheduled_date, scheduled_time)`.
+ * - Index on `supplement_intakes(scheduled_date)`.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        migrateSql { sql -> db.execSQL(sql) }
+    }
+
+    override fun migrate(connection: SQLiteConnection) {
+        migrateSql { sql -> connection.execSQL(sql) }
+    }
+
+    private inline fun migrateSql(exec: (String) -> Unit) {
+        exec(
+            """
+            CREATE TABLE IF NOT EXISTS `supplements` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `name` TEXT NOT NULL,
+                `dose_amount` REAL NOT NULL,
+                `dose_unit` TEXT NOT NULL,
+                `schedule_type` TEXT NOT NULL,
+                `weekdays` INTEGER,
+                `interval_days` INTEGER,
+                `start_date` TEXT NOT NULL,
+                `times` TEXT NOT NULL,
+                `active` INTEGER NOT NULL DEFAULT 1,
+                `reminders_enabled` INTEGER NOT NULL DEFAULT 1,
+                `notes` TEXT,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+
+        exec(
+            """
+            CREATE TABLE IF NOT EXISTS `supplement_intakes` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `supplement_id` INTEGER NOT NULL,
+                `scheduled_date` TEXT NOT NULL,
+                `scheduled_time` TEXT NOT NULL,
+                `status` TEXT NOT NULL,
+                `recorded_at` INTEGER NOT NULL,
+                FOREIGN KEY(`supplement_id`) REFERENCES `supplements`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+
+        exec("CREATE UNIQUE INDEX IF NOT EXISTS `index_supplement_intakes_supplement_id_scheduled_date_scheduled_time` ON `supplement_intakes` (`supplement_id`, `scheduled_date`, `scheduled_time`)")
+        exec("CREATE INDEX IF NOT EXISTS `index_supplement_intakes_scheduled_date` ON `supplement_intakes` (`scheduled_date`)")
+    }
+}

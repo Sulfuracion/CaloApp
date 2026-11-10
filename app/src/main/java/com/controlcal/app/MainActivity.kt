@@ -55,6 +55,7 @@ enum class MainDestination {
     PANTRY,
     MACRO_TETRIS,
     SAVED_MEALS,
+    SUPPLEMENTS,
 }
 
 @AndroidEntryPoint
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private val pantryViewModel: PantryViewModel by viewModels()
     private val macroTetrisViewModel: MacroTetrisViewModel by viewModels()
     private val savedMealsViewModel: com.controlcal.app.ui.savedmeals.SavedMealsViewModel by viewModels()
+    private val supplementsViewModel: com.controlcal.app.ui.supplement.SupplementsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -156,6 +158,10 @@ class MainActivity : ComponentActivity() {
                             dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
                             currentDestination = MainDestination.DAILY_PANEL
                         }
+                        MainDestination.SUPPLEMENTS -> {
+                            dailyPanelViewModel.loadDay(dailyPanelViewModel.uiState.value.selectedDate)
+                            currentDestination = MainDestination.DAILY_PANEL
+                        }
                     }
                 }
 
@@ -183,6 +189,10 @@ class MainActivity : ComponentActivity() {
                             onNavigateToSavedMeals = {
                                 savedMealsViewModel.loadMeals()
                                 currentDestination = MainDestination.SAVED_MEALS
+                            },
+                            onNavigateToSupplements = {
+                                supplementsViewModel.loadSupplements()
+                                currentDestination = MainDestination.SUPPLEMENTS
                             },
                             onNavigateToSettings = {
                                 settingsViewModel.loadSettings()
@@ -541,6 +551,13 @@ class MainActivity : ComponentActivity() {
                     MainDestination.SAVED_MEALS -> {
                         com.controlcal.app.ui.savedmeals.SavedMealsRoute(
                             viewModel = savedMealsViewModel,
+                            onBack = navigateBack,
+                        )
+                    }
+
+                    MainDestination.SUPPLEMENTS -> {
+                        com.controlcal.app.ui.supplement.SupplementsRoute(
+                            viewModel = supplementsViewModel,
                             onBack = navigateBack,
                         )
                     }

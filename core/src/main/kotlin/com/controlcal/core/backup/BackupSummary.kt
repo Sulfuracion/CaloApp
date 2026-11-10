@@ -12,4 +12,5 @@ data class BackupSummary(
     val dayCount: Int,
     val mealEntryCount: Int,
     val weightEntryCount: Int,
+    val supplementCount: Int = 0,
 )

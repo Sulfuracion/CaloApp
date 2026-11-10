@@ -657,4 +657,70 @@
     <string name="saved_meals_remove_item_action">Eliminar de la comida</string>
     <string name="saved_meals_error_cannot_remove_last_item">Una comida guardada debe contener al menos un alimento</string>
     <string name="saved_meals_search_header">Mis comidas</string>
+
+    <!-- Suplementos y recordatorios (Tarea 6) -->
+    <string name="supplement_notification_channel_name">Suplementos</string>
+    <string name="supplement_notification_channel_desc">Recordatorios de tomas de suplementos y vitaminas</string>
+    <string name="supplement_notification_public_text">Tienes una toma pendiente</string>
+    <string name="supplement_notification_text">%1$s · Programada a las %2$s</string>
+    <string name="supplement_notification_second_warning_title">Recordatorio: %1$s</string>
+    <string name="supplement_action_taken">Tomado</string>
+    <string name="supplement_action_snooze_15">Posponer 15 min</string>
+
+    <string name="supplements_title">Suplementos</string>
+    <string name="supplements_action">Suplementos</string>
+    <string name="supplements_today_card_title">Suplementos de hoy</string>
+    <string name="supplements_add_action">Añadir suplemento</string>
+    <string name="supplements_edit_action">Editar suplemento</string>
+    <string name="supplements_empty_title">Sin suplementos registrados</string>
+    <string name="supplements_empty_desc">Registra tus vitaminas y suplementos con sus dosis, frecuencia y recordatorios.</string>
+    <string name="supplements_active_section">Activos</string>
+    <string name="supplements_inactive_section">Desactivados</string>
+    <string name="supplements_deactivate_action">Desactivar</string>
+    <string name="supplements_reactivate_action">Reactivar</string>
+    <string name="supplements_deactivated_badge">Desactivado</string>
+
+    <string name="supplement_field_name">Nombre</string>
+    <string name="supplement_field_name_placeholder">Ej. Vitamina D3, Creatina, Magnesio</string>
+    <string name="supplement_field_dose_amount">Dosis</string>
+    <string name="supplement_field_dose_unit">Unidad</string>
+    <string name="supplement_field_schedule_type">Frecuencia</string>
+    <string name="supplement_schedule_daily">Todos los días</string>
+    <string name="supplement_schedule_weekdays">Días de la semana</string>
+    <string name="supplement_schedule_every_n_days">Cada N días</string>
+    <string name="supplement_field_interval_days">Intervalo (días)</string>
+    <string name="supplement_field_start_date">Fecha de inicio</string>
+    <string name="supplement_field_times">Horas de toma</string>
+    <string name="supplement_add_time_action">Añadir hora</string>
+    <string name="supplement_field_reminders">Recordatorios</string>
+    <string name="supplement_field_notes">Notas (opcional)</string>
+    <string name="supplement_permission_rationale_title">Permiso de notificaciones</string>
+    <string name="supplement_permission_rationale_desc">ControlCal necesita permiso para avisarte a la hora de tus tomas. Si lo deniegas, podrás seguir registrando tus suplementos manualmente sin avisos.</string>
+    <string name="supplement_permission_grant">Permitir</string>
+    <string name="supplement_permission_cancel">Ahora no</string>
+
+    <string name="supplements_adherence_title">Adherencia (últimos 30 días)</string>
+    <string name="supplements_adherence_overall">%1$s %% de cumplimiento</string>
+    <string name="supplements_adherence_doses_summary">%1$d de %2$d tomas realizadas</string>
+
+    <string name="supplement_status_taken">Tomado</string>
+    <string name="supplement_status_skipped">Saltado</string>
+    <string name="supplement_status_pending">Pendiente</string>
+    <string name="supplement_mark_taken_action">Tomado</string>
+    <string name="supplement_mark_skipped_action">Saltar</string>
+    <string name="supplement_undo_intake_action">Desmarcar</string>
+    <string name="supplement_today_all_taken">¡Todas las tomas de hoy completadas!</string>
+    <string name="supplement_today_empty">No hay tomas programadas para este día.</string>
+    <string name="supplement_saved_feedback">Suplemento guardado: %1$s</string>
+    <string name="supplement_updated_feedback">Suplemento actualizado: %1$s</string>
+    <string name="supplement_deactivated_feedback">Suplemento desactivado</string>
+    <string name="supplement_reactivated_feedback">Suplemento reactivado</string>
+    <string name="supplement_intake_taken_feedback">Toma registrada: %1$s</string>
+    <string name="supplement_intake_skipped_feedback">Toma saltada: %1$s</string>
+    <string name="supplement_intake_reverted_feedback">Toma pendiente de nuevo</string>
+    <string name="supplement_error_name_empty">Introduce el nombre del suplemento</string>
+    <string name="supplement_error_dose_invalid">Introduce una dosis mayor que 0</string>
+    <string name="supplement_error_times_empty">Añade al menos una hora de toma</string>
+    <string name="supplement_error_weekdays_empty">Selecciona al menos un día de la semana</string>
+    <string name="supplement_error_interval_invalid">Introduce un intervalo de días válido (mínimo 1)</string>
 </resources>
