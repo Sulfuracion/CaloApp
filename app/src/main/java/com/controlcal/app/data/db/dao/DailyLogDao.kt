@@ -18,6 +18,9 @@ interface DailyLogDao {
     @Query("SELECT * FROM daily_logs WHERE date = :date")
     suspend fun getByDate(date: String): DailyLogEntity?
 
+    @Query("SELECT * FROM daily_logs WHERE date BETWEEN :startDate AND :endDate ORDER BY date ASC")
+    suspend fun getBetween(startDate: String, endDate: String): List<DailyLogEntity>
+
     @Query("SELECT * FROM daily_logs ORDER BY date ASC")
     suspend fun getAll(): List<DailyLogEntity>
 

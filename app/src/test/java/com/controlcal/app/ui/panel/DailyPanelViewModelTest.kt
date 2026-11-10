@@ -914,6 +914,110 @@ class DailyPanelViewModelTest {
         assertTrue(viewModel.uiState.value.isBackupOverdue)
         assertFalse(viewModel.uiState.value.isBackupNeverDone)
     }
+
+    @Test
+    fun energyExpenditure_withIncompleteProfile_marksProfileIncomplete() = runTest {
+        fakeUserSettingsRepository.userProfile = com.controlcal.core.profile.UserProfile()
+        viewModel.onDateSelected(LocalDate.now())
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isProfileIncomplete)
+        assertFalse(state.isWeightMissingForExpenditure)
+        assertNull(state.energyExpenditureBreakdown)
+    }
+
+    @Test
+    fun energyExpenditure_withCompleteProfile_butNoWeight_marksWeightMissing() = runTest {
+        fakeUserSettingsRepository.userProfile = com.controlcal.core.profile.UserProfile(
+            sex = com.controlcal.core.profile.UserSex.MALE,
+            birthDate = LocalDate.now().minusYears(30),
+            heightCm = 180.0,
+            workoutKcalPerSession = 300.0,
+        )
+        fakeWeightEntryRepository.entries.clear()
+        viewModel.onDateSelected(LocalDate.now())
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isProfileIncomplete)
+        assertTrue(state.isWeightMissingForExpenditure)
+        assertNull(state.energyExpenditureBreakdown)
+    }
+
+    @Test
+    fun energyExpenditure_withCompleteProfileAndWeight_calculatesBreakdown() = runTest {
+        val today = LocalDate.now()
+        fakeUserSettingsRepository.userProfile = com.controlcal.core.profile.UserProfile(
+            sex = com.controlcal.core.profile.UserSex.MALE,
+            birthDate = today.minusYears(30),
+            heightCm = 180.0,
+            workoutKcalPerSession = 300.0,
+        )
+        fakeWeightEntryRepository.upsert(
+            com.controlcal.core.model.WeightEntry(
+                date = today.minusDays(1).toString(),
+                weightKg = 80.0,
+            )
+        )
+        for (i in 1..7) {
+            fakeDailyLogRepository.setSteps(today.minusDays(i.toLong()).toString(), 8000)
+        }
+
+        viewModel.onDateSelected(today)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isProfileIncomplete)
+        assertFalse(state.isWeightMissingForExpenditure)
+        val breakdown = state.energyExpenditureBreakdown
+        assertNotNull(breakdown)
+        assertEquals(80.0, breakdown!!.weightTrendKg, 0.1)
+        assertEquals(180.0, breakdown.heightCm, 0.1)
+        assertEquals(30, breakdown.ageYears)
+        assertEquals(8000, breakdown.averageSteps)
+        assertEquals(7, breakdown.validStepsDaysCount)
+        assertTrue(breakdown.trainingDay.totalKcal > breakdown.restDay.totalKcal)
+    }
+
+    @Test
+    fun onUseFormulaAsGoalProposal_showsProposal_andAcceptingAppliesGoals() = runTest {
+        val today = LocalDate.now()
+        fakeUserSettingsRepository.userProfile = com.controlcal.core.profile.UserProfile(
+            sex = com.controlcal.core.profile.UserSex.FEMALE,
+            birthDate = today.minusYears(25),
+            heightCm = 165.0,
+            workoutKcalPerSession = 250.0,
+        )
+        fakeWeightEntryRepository.upsert(
+            com.controlcal.core.model.WeightEntry(
+                date = today.toString(),
+                weightKg = 60.0,
+            )
+        )
+        viewModel.onDateSelected(today)
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.energyExpenditureBreakdown)
+        assertFalse(viewModel.uiState.value.isWeeklyProposalVisible)
+
+        // Trigger proposal from formula
+        viewModel.onUseFormulaAsGoalProposal()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.isWeeklyProposalVisible)
+        val proposal = viewModel.uiState.value.tdeeProposal
+        assertNotNull(proposal)
+        assertTrue(proposal!!.proposedKcal >= 1200.0)
+
+        // Accept proposal
+        viewModel.onAcceptTdeeProposal()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isWeeklyProposalVisible)
+        assertEquals(today.toString(), fakeUserSettingsRepository.lastReviewedDate)
+        assertTrue(fakeGoalProfileRepository.profiles.any { it.origin == GoalOrigin.TDEE })
+    }
 }
 
 private class FakeDailyLogRepository : DailyLogRepository {
@@ -952,6 +1056,9 @@ private class FakeDailyLogRepository : DailyLogRepository {
             logs[date] = DailyLog(date = date, dayType = DayType.REST, notes = notes)
         }
     }
+    override suspend fun getBetween(startDate: String, endDate: String): List<DailyLog> {
+        return logs.values.filter { it.date in startDate..endDate }
+    }
 }
 
 private class FakeUserSettingsRepository : UserSettingsRepository {
@@ -981,6 +1088,12 @@ private class FakeUserSettingsRepository : UserSettingsRepository {
     override suspend fun getLastBackupTimestamp(): Long? = lastBackup
     override suspend fun setLastBackupTimestamp(timestamp: Long) {
         lastBackup = timestamp
+    }
+
+    var userProfile = com.controlcal.core.profile.UserProfile()
+    override suspend fun getUserProfile(): com.controlcal.core.profile.UserProfile = userProfile
+    override suspend fun setUserProfile(profile: com.controlcal.core.profile.UserProfile) {
+        userProfile = profile
     }
 }
 

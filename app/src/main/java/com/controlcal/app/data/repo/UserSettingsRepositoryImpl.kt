@@ -9,8 +9,11 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.controlcal.core.model.DayType
 import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.profile.UserProfile
+import com.controlcal.core.profile.UserSex
 import com.controlcal.core.repo.UserSettingsRepository
 import com.controlcal.core.weight.WeightRange
+import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,6 +29,10 @@ class UserSettingsRepositoryImpl @Inject constructor(
     private val healthConnectStepsSyncKey = booleanPreferencesKey("health_connect_steps_sync_enabled")
     private val lastBackupTimestampKey = longPreferencesKey("last_backup_timestamp")
     private val weightChartRangeKey = stringPreferencesKey("weight_chart_range")
+    private val userSexKey = stringPreferencesKey("user_sex")
+    private val userBirthDateKey = stringPreferencesKey("user_birth_date")
+    private val userHeightCmKey = doublePreferencesKey("user_height_cm")
+    private val userWorkoutKcalKey = doublePreferencesKey("user_workout_kcal_per_session")
 
     override suspend fun getLastBackupTimestamp(): Long? {
         val prefs = dataStore.data.first()
@@ -96,6 +103,63 @@ class UserSettingsRepositoryImpl @Inject constructor(
     override suspend fun setWeightChartRange(range: WeightRange) {
         dataStore.edit { prefs ->
             prefs[weightChartRangeKey] = range.name
+        }
+    }
+
+    override suspend fun getUserProfile(): UserProfile {
+        val prefs = dataStore.data.first()
+        val rawSex = prefs[userSexKey]
+        val sex = rawSex?.let {
+            try {
+                UserSex.valueOf(it)
+            } catch (_: Exception) {
+                null
+            }
+        }
+        val rawBirthDate = prefs[userBirthDateKey]
+        val birthDate = rawBirthDate?.let {
+            try {
+                LocalDate.parse(it)
+            } catch (_: Exception) {
+                null
+            }
+        }
+        val heightCm = prefs[userHeightCmKey]
+        val workoutKcal = prefs[userWorkoutKcalKey] ?: UserProfile.DEFAULT_WORKOUT_KCAL_PER_SESSION
+
+        return UserProfile(
+            sex = sex,
+            birthDate = birthDate,
+            heightCm = heightCm,
+            workoutKcalPerSession = workoutKcal,
+        )
+    }
+
+    override suspend fun setUserProfile(profile: UserProfile) {
+        val sex = profile.sex
+        val birthDate = profile.birthDate
+        val heightCm = profile.heightCm
+
+        dataStore.edit { prefs ->
+            if (sex != null) {
+                prefs[userSexKey] = sex.name
+            } else {
+                prefs.remove(userSexKey)
+            }
+
+            if (birthDate != null) {
+                prefs[userBirthDateKey] = birthDate.toString()
+            } else {
+                prefs.remove(userBirthDateKey)
+            }
+
+            if (heightCm != null) {
+                prefs[userHeightCmKey] = heightCm
+            } else {
+                prefs.remove(userHeightCmKey)
+            }
+
+            prefs[userWorkoutKcalKey] = profile.workoutKcalPerSession
         }
     }
 

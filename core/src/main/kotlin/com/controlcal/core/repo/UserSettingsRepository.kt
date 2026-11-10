@@ -1,6 +1,7 @@
 package com.controlcal.core.repo
 
 import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.profile.UserProfile
 import com.controlcal.core.weight.WeightRange
 
 /**
@@ -20,4 +21,6 @@ interface UserSettingsRepository {
     suspend fun setLastBackupTimestamp(timestamp: Long) {}
     suspend fun getWeightChartRange(): WeightRange = WeightRange.LAST_1_MONTH
     suspend fun setWeightChartRange(range: WeightRange) {}
+    suspend fun getUserProfile(): UserProfile = UserProfile()
+    suspend fun setUserProfile(profile: UserProfile) {}
 }

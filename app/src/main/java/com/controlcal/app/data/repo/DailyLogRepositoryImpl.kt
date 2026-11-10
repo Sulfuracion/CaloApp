@@ -36,6 +36,9 @@ class DailyLogRepositoryImpl @Inject constructor(
     override suspend fun getByDate(date: String): DailyLog? =
         dailyLogDao.getByDate(date)?.toDomain()
 
+    override suspend fun getBetween(startDate: String, endDate: String): List<DailyLog> =
+        dailyLogDao.getBetween(startDate, endDate).map { it.toDomain() }
+
     override suspend fun getAll(): List<DailyLog> =
         dailyLogDao.getAll().map { it.toDomain() }
 

@@ -12,6 +12,7 @@ import com.controlcal.core.suggest.QuickLogSuggestion
 import com.controlcal.core.tdee.TdeeCalculationResult
 import com.controlcal.core.tdee.TdeeGoalProposal
 import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.profile.EnergyExpenditureBreakdown
 import java.time.LocalDate
 import java.time.LocalTime
 import com.controlcal.app.ui.feedback.UiText
@@ -64,6 +65,10 @@ data class DailyPanelUiState(
     val message: String? = null,
     val isBackupOverdue: Boolean = false,
     val isBackupNeverDone: Boolean = false,
+    // Task 5: Energy Expenditure
+    val energyExpenditureBreakdown: EnergyExpenditureBreakdown? = null,
+    val isProfileIncomplete: Boolean = false,
+    val isWeightMissingForExpenditure: Boolean = false,
 ) {
     val isToday: Boolean
         get() = selectedDate == today

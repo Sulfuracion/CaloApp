@@ -84,6 +84,7 @@ import com.controlcal.core.model.DefaultMealIds
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.suggest.QuickLogSuggestion
+import com.controlcal.core.tdee.TdeeCalculationResult
 import com.controlcal.core.tdee.TdeeGoalProposal
 import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import java.time.LocalDate
@@ -147,6 +148,7 @@ fun DailyPanelRoute(
         onManualStepsTextChanged = viewModel::onManualStepsTextChanged,
         onDismissManualStepsDialog = viewModel::onDismissManualStepsDialog,
         onSaveManualSteps = viewModel::onSaveManualSteps,
+        onUseFormulaAsGoalProposal = viewModel::onUseFormulaAsGoalProposal,
         modifier = modifier,
     )
 }
@@ -189,6 +191,7 @@ fun DailyPanelScreen(
     onManualStepsTextChanged: (String) -> Unit = {},
     onDismissManualStepsDialog: () -> Unit = {},
     onSaveManualSteps: () -> Unit = {},
+    onUseFormulaAsGoalProposal: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -442,6 +445,15 @@ fun DailyPanelScreen(
                     isSyncEnabled = uiState.isStepsSyncEnabled,
                     onRefresh = onRefreshSteps,
                     onEdit = onOpenManualStepsDialog,
+                )
+            }
+
+            item {
+                EnergyExpenditureCard(
+                    uiState = uiState,
+                    onNavigateToSettings = onNavigateToSettings,
+                    onNavigateToWeight = onNavigateToWeight,
+                    onUseFormulaAsGoalProposal = onUseFormulaAsGoalProposal,
                 )
             }
 
@@ -1496,5 +1508,373 @@ private fun SupplementsTodayCard(
                 }
             }
         }
+    }
+}
+
+private enum class ExpenditureDayView {
+    TRAINING,
+    REST,
+    AVERAGE,
+}
+
+@Composable
+private fun EnergyExpenditureCard(
+    uiState: DailyPanelUiState,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToWeight: () -> Unit,
+    onUseFormulaAsGoalProposal: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (uiState.isProfileIncomplete) {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_person),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.expenditure_card_incomplete_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.expenditure_card_incomplete_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Button(
+                    onClick = onNavigateToSettings,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(R.string.expenditure_card_complete_action))
+                }
+            }
+        }
+    } else if (uiState.isWeightMissingForExpenditure) {
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_scale),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.expenditure_card_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.expenditure_card_missing_weight_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Button(
+                    onClick = onNavigateToWeight,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(R.string.expenditure_card_log_weight_action))
+                }
+            }
+        }
+    } else if (uiState.energyExpenditureBreakdown != null) {
+        val breakdown = uiState.energyExpenditureBreakdown
+        var selectedDayView by remember(uiState.dayType) {
+            mutableStateOf(
+                if (uiState.dayType == DayType.TRAINING) ExpenditureDayView.TRAINING else ExpenditureDayView.REST
+            )
+        }
+        val currentDay = when (selectedDayView) {
+            ExpenditureDayView.TRAINING -> breakdown.trainingDay
+            ExpenditureDayView.REST -> breakdown.restDay
+            ExpenditureDayView.AVERAGE -> breakdown.averageDay
+        }
+
+        Card(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                // Header with title and badge
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_person),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Column {
+                            Text(
+                                text = stringResource(R.string.expenditure_card_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = stringResource(R.string.expenditure_card_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = RoundedCornerShape(8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.expenditure_card_theoretical_badge),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+
+                // TDEE comparison banner
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.expenditure_comparison_title),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        val tdeeResult = uiState.tdeeCalculationResult
+                        if (tdeeResult is TdeeCalculationResult.Success) {
+                            Text(
+                                text = stringResource(
+                                    R.string.expenditure_comparison_both,
+                                    NumberFormatHelper.formatDecimal(breakdown.averageDay.totalKcal),
+                                    NumberFormatHelper.formatDecimal(tdeeResult.tdeeKcal),
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(
+                                    R.string.expenditure_comparison_formula_only,
+                                    NumberFormatHelper.formatDecimal(breakdown.averageDay.totalKcal),
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = stringResource(R.string.expenditure_comparison_insufficient_data),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            OutlinedButton(
+                                onClick = onUseFormulaAsGoalProposal,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp),
+                            ) {
+                                Text(text = stringResource(R.string.expenditure_use_as_initial_target_action))
+                            }
+                        }
+                    }
+                }
+
+                // Tabs for Training / Rest / Average
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = selectedDayView == ExpenditureDayView.TRAINING,
+                        onClick = { selectedDayView = ExpenditureDayView.TRAINING },
+                        label = { Text(text = stringResource(R.string.expenditure_tab_training)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    FilterChip(
+                        selected = selectedDayView == ExpenditureDayView.REST,
+                        onClick = { selectedDayView = ExpenditureDayView.REST },
+                        label = { Text(text = stringResource(R.string.expenditure_tab_rest)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    FilterChip(
+                        selected = selectedDayView == ExpenditureDayView.AVERAGE,
+                        onClick = { selectedDayView = ExpenditureDayView.AVERAGE },
+                        label = { Text(text = stringResource(R.string.expenditure_tab_average)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                // Breakdown items
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ExpenditureItemRow(
+                        title = stringResource(R.string.expenditure_concept_bmr),
+                        subtitle = stringResource(
+                            R.string.expenditure_concept_bmr_detail,
+                            NumberFormatHelper.formatDecimal(breakdown.weightTrendKg),
+                            NumberFormatHelper.formatDecimal(breakdown.heightCm),
+                            breakdown.ageYears,
+                        ),
+                        kcalValue = currentDay.basalKcal,
+                    )
+                    ExpenditureItemRow(
+                        title = stringResource(R.string.expenditure_concept_steps),
+                        subtitle = if (breakdown.validStepsDaysCount > 0) {
+                            stringResource(
+                                R.string.expenditure_concept_steps_detail,
+                                NumberFormatHelper.formatDecimal(breakdown.averageSteps.toDouble()),
+                                breakdown.validStepsDaysCount,
+                            )
+                        } else {
+                            stringResource(R.string.expenditure_concept_steps_no_data)
+                        },
+                        kcalValue = currentDay.stepsKcal,
+                    )
+                    ExpenditureItemRow(
+                        title = stringResource(R.string.expenditure_concept_workout),
+                        subtitle = when (selectedDayView) {
+                            ExpenditureDayView.TRAINING -> stringResource(
+                                R.string.expenditure_concept_workout_training,
+                                NumberFormatHelper.formatDecimal(currentDay.workoutKcal),
+                            )
+                            ExpenditureDayView.REST -> stringResource(R.string.expenditure_concept_workout_rest)
+                            ExpenditureDayView.AVERAGE -> stringResource(
+                                R.string.expenditure_concept_workout_avg,
+                                breakdown.weeklyTrainingDays,
+                                NumberFormatHelper.formatDecimal(currentDay.workoutKcal),
+                            )
+                        },
+                        kcalValue = currentDay.workoutKcal,
+                    )
+                    ExpenditureItemRow(
+                        title = stringResource(R.string.expenditure_concept_tef),
+                        subtitle = stringResource(R.string.expenditure_concept_tef_detail),
+                        kcalValue = currentDay.digestionKcal,
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                // Total expenditure
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.expenditure_total_label),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "${NumberFormatHelper.formatDecimal(currentDay.totalKcal)} kcal",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                // Disclaimer
+                Text(
+                    text = stringResource(R.string.expenditure_disclaimer),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpenditureItemRow(
+    title: String,
+    subtitle: String,
+    kcalValue: Double,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = "${NumberFormatHelper.formatDecimal(kcalValue)} kcal",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }

@@ -82,6 +82,47 @@ object TdeeProposalCalculator {
         )
     }
 
+    /**
+     * Calculates an initial calorie proposal using formula-estimated energy expenditure
+     * as a starting baseline when 21-day measured data is not yet available.
+     * Sets the baseline directly to the estimated expenditure (not clamped by the +/- 150 kcal weekly cap),
+     * while strictly respecting the minimum safety floor [minKcalLimit].
+     */
+    fun calculateFormulaInitialProposal(
+        currentKcal: Double,
+        estimatedExpenditureKcal: Double,
+        minKcalLimit: Double = DEFAULT_MIN_KCAL_LIMIT,
+    ): TdeeGoalProposal {
+        val rawDeltaKcal = estimatedExpenditureKcal - currentKcal
+        val proposedKcal = maxOf(minKcalLimit, estimatedExpenditureKcal)
+        val isClampedByMinLimit = estimatedExpenditureKcal < minKcalLimit
+
+        val currentRound = currentKcal.roundToInt()
+        val estimatedRound = estimatedExpenditureKcal.roundToInt()
+        val proposedRound = proposedKcal.roundToInt()
+        val diffRound = (proposedKcal - currentKcal).roundToInt()
+        val sign = if (diffRound >= 0) "+" else ""
+
+        val sb = StringBuilder()
+        sb.append("Gasto diario estimado por fórmula: $estimatedRound kcal/día. ")
+        sb.append("Objetivo actual: $currentRound kcal/día (diferencia de $sign$diffRound kcal). ")
+        if (isClampedByMinLimit) {
+            sb.append("Ajustado al mínimo de seguridad fijado en ajustes (${minKcalLimit.roundToInt()} kcal). ")
+        }
+        sb.append("Punto de partida propuesto: $proposedRound kcal/día.")
+
+        return TdeeGoalProposal(
+            currentKcal = currentKcal,
+            proposedKcal = proposedKcal,
+            deltaKcal = proposedKcal - currentKcal,
+            rawDeltaKcal = rawDeltaKcal,
+            isClampedByWeeklyLimit = false,
+            isClampedByMinLimit = isClampedByMinLimit,
+            minKcalLimit = minKcalLimit,
+            explanation = sb.toString(),
+        )
+    }
+
     private fun buildExplanation(
         currentKcal: Double,
         estimatedTdee: Double,

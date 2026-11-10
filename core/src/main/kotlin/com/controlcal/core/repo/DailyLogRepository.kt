@@ -5,6 +5,7 @@ import com.controlcal.core.model.DayType
 
 interface DailyLogRepository {
     suspend fun getByDate(date: String): DailyLog?
+    suspend fun getBetween(startDate: String, endDate: String): List<DailyLog> = emptyList()
     suspend fun getAll(): List<DailyLog> = emptyList()
     suspend fun insert(log: DailyLog)
     suspend fun setDayType(date: String, dayType: DayType)

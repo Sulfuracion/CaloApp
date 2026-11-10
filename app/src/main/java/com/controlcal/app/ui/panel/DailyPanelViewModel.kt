@@ -38,6 +38,9 @@ import com.controlcal.core.tdee.TdeeCalculationResult
 import com.controlcal.core.tdee.TdeeEstimator
 import com.controlcal.core.tdee.TdeeGoalProposal
 import com.controlcal.core.tdee.TdeeProposalCalculator
+import com.controlcal.core.profile.EnergyExpenditureCalculator
+import com.controlcal.core.profile.EnergyExpenditureResult
+import com.controlcal.core.tdee.WeightTrend
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -228,8 +231,18 @@ class DailyPanelViewModel @Inject constructor(
             val currentSlotMeal = suggested?.id ?: activeConfigs.firstOrNull()?.id ?: DefaultMealIds.BREAKFAST
             val currentSlotMealName = suggested?.name ?: activeConfigs.firstOrNull()?.name ?: ""
 
-            // Weekly TDEE Proposal check (section 5.5 of docs/PLAN.md)
+            // Weekly TDEE Estimation and Proposal check (section 5.5 of docs/PLAN.md)
             val todayStr = today.toString()
+            val startDate = today.minusDays((TdeeEstimator.WINDOW_DAYS - 1).toLong())
+            val dailyIntakes = (0 until TdeeEstimator.WINDOW_DAYS).map { offset ->
+                val d = startDate.plusDays(offset.toLong()).toString()
+                val dayEntries = mealEntryRepository.getByDate(d)
+                val dayTotals = getDayTotalsUseCase(d, dayEntries)
+                DailyIntake(date = d, kcal = dayTotals.totals.kcal, isComplete = dayEntries.isNotEmpty())
+            }
+            val weights = weightEntryRepository.getAll()
+            val tdeeResult = TdeeEstimator.estimate(todayStr, dailyIntakes, weights)
+
             val lastReviewedStr = userSettingsRepository.getLastTdeeProposalReviewedDate()
             val shouldCheckProposal = if (lastReviewedStr == null) {
                 true
@@ -244,31 +257,40 @@ class DailyPanelViewModel @Inject constructor(
 
             var tdeeProposal: TdeeGoalProposal? = null
             var isWeeklyProposalVisible = false
-            var tdeeResult: TdeeCalculationResult? = null
 
-            if (shouldCheckProposal) {
-                val startDate = today.minusDays((TdeeEstimator.WINDOW_DAYS - 1).toLong())
-                val dailyIntakes = (0 until TdeeEstimator.WINDOW_DAYS).map { offset ->
-                    val d = startDate.plusDays(offset.toLong()).toString()
-                    val dayEntries = mealEntryRepository.getByDate(d)
-                    val dayTotals = getDayTotalsUseCase(d, dayEntries)
-                    DailyIntake(date = d, kcal = dayTotals.totals.kcal, isComplete = dayEntries.isNotEmpty())
-                }
-                val weights = weightEntryRepository.getAll()
-
-                val result = TdeeEstimator.estimate(todayStr, dailyIntakes, weights)
-                tdeeResult = result
-                if (result is TdeeCalculationResult.Success) {
-                    val minKcalLimit = userSettingsRepository.getMinKcalLimit()
-                    val proposal = TdeeProposalCalculator.calculateProposal(
-                        currentKcal = activeProfile.kcal,
-                        estimatedTdee = result.tdeeKcal,
-                        minKcalLimit = minKcalLimit,
-                    )
-                    tdeeProposal = proposal
-                    isWeeklyProposalVisible = true
-                }
+            if (shouldCheckProposal && tdeeResult is TdeeCalculationResult.Success) {
+                val minKcalLimit = userSettingsRepository.getMinKcalLimit()
+                val proposal = TdeeProposalCalculator.calculateProposal(
+                    currentKcal = activeProfile.kcal,
+                    estimatedTdee = tdeeResult.tdeeKcal,
+                    minKcalLimit = minKcalLimit,
+                )
+                tdeeProposal = proposal
+                isWeeklyProposalVisible = true
             }
+
+            // Energy expenditure by formula (Task 5)
+            val userProfile = userSettingsRepository.getUserProfile()
+            val weeklyPattern = userSettingsRepository.getWeeklyPattern()
+            val weeklyTrainingDays = java.time.DayOfWeek.entries.count { weeklyPattern.dayTypeFor(it) == DayType.TRAINING }
+
+            val steps7Days = (1..7).map { offset ->
+                val d = today.minusDays(offset.toLong()).toString()
+                dailyLogRepository.getByDate(d)?.steps ?: 0
+            }
+            val latestWeightTrend = WeightTrend.calculateTrend(weights).lastOrNull()?.trendKg
+
+            val expenditureResult = EnergyExpenditureCalculator.calculate(
+                profile = userProfile,
+                weightTrendKg = latestWeightTrend,
+                stepsInWindow = steps7Days,
+                weeklyTrainingDays = weeklyTrainingDays,
+                referenceDate = today,
+            )
+
+            val expenditureBreakdown = (expenditureResult as? EnergyExpenditureResult.Success)?.breakdown
+            val isProfileIncomplete = !userProfile.isComplete
+            val isWeightMissing = userProfile.isComplete && (latestWeightTrend == null || latestWeightTrend <= 0.0)
 
             val lastBackup = userSettingsRepository.getLastBackupTimestamp()
             val isOverdue: Boolean
@@ -314,7 +336,29 @@ class DailyPanelViewModel @Inject constructor(
                     isBackupNeverDone = isNever,
                     todayDoses = supplementDoses,
                     hasConfiguredSupplements = allSupplements.isNotEmpty(),
+                    energyExpenditureBreakdown = expenditureBreakdown,
+                    isProfileIncomplete = isProfileIncomplete,
+                    isWeightMissingForExpenditure = isWeightMissing,
                     isLoading = false,
+                )
+            }
+        }
+    }
+
+    fun onUseFormulaAsGoalProposal() {
+        val breakdown = _uiState.value.energyExpenditureBreakdown ?: return
+        viewModelScope.launch {
+            val minKcalLimit = userSettingsRepository.getMinKcalLimit()
+            val currentKcal = _uiState.value.activeGoalProfile?.kcal ?: 2000.0
+            val proposal = TdeeProposalCalculator.calculateFormulaInitialProposal(
+                currentKcal = currentKcal,
+                estimatedExpenditureKcal = breakdown.averageDay.totalKcal,
+                minKcalLimit = minKcalLimit,
+            )
+            _uiState.update {
+                it.copy(
+                    tdeeProposal = proposal,
+                    isWeeklyProposalVisible = true,
                 )
             }
         }

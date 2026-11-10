@@ -61,6 +61,10 @@ class BackupManagerRobolectricTest {
     private val minKcalLimitKey = doublePreferencesKey("min_kcal_limit")
     private val lastTdeeProposalReviewedDateKey = stringPreferencesKey("last_tdee_proposal_reviewed_date")
     private val configuredMealsKey = stringPreferencesKey("configured_meals_json")
+    private val userSexKey = stringPreferencesKey("user_sex")
+    private val userBirthDateKey = stringPreferencesKey("user_birth_date")
+    private val userHeightCmKey = doublePreferencesKey("user_height_cm")
+    private val userWorkoutKcalKey = doublePreferencesKey("user_workout_kcal_per_session")
 
     @Before
     fun setUp() {
@@ -206,6 +210,10 @@ class BackupManagerRobolectricTest {
             prefs[minKcalLimitKey] = 1350.0
             prefs[lastTdeeProposalReviewedDateKey] = "2026-11-03"
             prefs[configuredMealsKey] = """[{"id":"BREAKFAST","name":"Desayuno","startTime":"08:00","isActive":true}]"""
+            prefs[userSexKey] = "MALE"
+            prefs[userBirthDateKey] = "1990-05-15"
+            prefs[userHeightCmKey] = 180.0
+            prefs[userWorkoutKcalKey] = 350.0
         }
 
         // Seed saved meals
@@ -397,6 +405,10 @@ class BackupManagerRobolectricTest {
         assertEquals(1350.0, prefs[minKcalLimitKey] ?: 0.0, 0.001)
         assertEquals("2026-11-03", prefs[lastTdeeProposalReviewedDateKey])
         assertNotNull(prefs[configuredMealsKey])
+        assertEquals("MALE", prefs[userSexKey])
+        assertEquals("1990-05-15", prefs[userBirthDateKey])
+        assertEquals(180.0, prefs[userHeightCmKey] ?: 0.0, 0.001)
+        assertEquals(350.0, prefs[userWorkoutKcalKey] ?: 0.0, 0.001)
     }
 
     @Test

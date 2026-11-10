@@ -64,7 +64,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.controlcal.app.ui.feedback.HandleFeedbackEvents
 import com.controlcal.core.backup.BackupSummary
+import com.controlcal.core.date.DateHelper
 import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.nutrition.NumberFormatHelper
+import com.controlcal.core.profile.UserSex
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.text.input.ImeAction
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -148,6 +157,13 @@ fun SettingsRoute(
             }
         },
         onDismissBackupDialogs = viewModel::onDismissBackupDialogs,
+        onUserSexChanged = viewModel::onUserSexChanged,
+        onOpenBirthDatePicker = viewModel::onOpenBirthDatePicker,
+        onCloseBirthDatePicker = viewModel::onCloseBirthDatePicker,
+        onBirthDateSelected = viewModel::onBirthDateSelected,
+        onHeightChanged = viewModel::onHeightChanged,
+        onWorkoutKcalChanged = viewModel::onWorkoutKcalChanged,
+        onSaveProfile = viewModel::onSaveProfile,
         modifier = modifier,
     )
 }
@@ -192,6 +208,13 @@ fun SettingsScreen(
     onConfirmImportPassword: () -> Unit = {},
     onConfirmRestore: () -> Unit = {},
     onDismissBackupDialogs: () -> Unit = {},
+    onUserSexChanged: (UserSex) -> Unit = {},
+    onOpenBirthDatePicker: () -> Unit = {},
+    onCloseBirthDatePicker: () -> Unit = {},
+    onBirthDateSelected: (LocalDate) -> Unit = {},
+    onHeightChanged: (String) -> Unit = {},
+    onWorkoutKcalChanged: (String) -> Unit = {},
+    onSaveProfile: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -223,6 +246,17 @@ fun SettingsScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(4.dp))
+                UserProfileCard(
+                    uiState = uiState,
+                    onUserSexChanged = onUserSexChanged,
+                    onOpenBirthDatePicker = onOpenBirthDatePicker,
+                    onHeightChanged = onHeightChanged,
+                    onWorkoutKcalChanged = onWorkoutKcalChanged,
+                    onSaveProfile = onSaveProfile,
+                )
+            }
+
+            item {
                 WeeklyPatternCard(
                     uiState = uiState,
                     onDayPatternToggled = onDayPatternToggled,
@@ -401,6 +435,237 @@ fun SettingsScreen(
             onConfirm = onConfirmRestore,
             onDismiss = onDismissBackupDialogs,
         )
+    }
+    if (uiState.showBirthDatePickerDialog) {
+        val initialMillis = uiState.birthDate?.let { DateHelper.localDateToUtcMillis(it) }
+            ?: DateHelper.localDateToUtcMillis(LocalDate.now().minusYears(25))
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return DateHelper.isNotFuture(utcTimeMillis)
+                }
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = onCloseBirthDatePicker,
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            onBirthDateSelected(DateHelper.utcMillisToLocalDate(millis))
+                        }
+                    }
+                ) {
+                    Text(text = stringResource(R.string.date_picker_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCloseBirthDatePicker) {
+                    Text(text = stringResource(R.string.meal_dialog_cancel_action))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+@Composable
+private fun UserProfileCard(
+    uiState: SettingsUiState,
+    onUserSexChanged: (UserSex) -> Unit,
+    onOpenBirthDatePicker: () -> Unit,
+    onHeightChanged: (String) -> Unit,
+    onWorkoutKcalChanged: (String) -> Unit,
+    onSaveProfile: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_person),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.settings_profile_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_profile_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    )
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // Sex selection
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(R.string.profile_sex_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = uiState.userSex == UserSex.MALE,
+                        onClick = { onUserSexChanged(UserSex.MALE) },
+                        label = { Text(stringResource(R.string.profile_sex_male)) },
+                        modifier = Modifier.height(48.dp),
+                    )
+                    FilterChip(
+                        selected = uiState.userSex == UserSex.FEMALE,
+                        onClick = { onUserSexChanged(UserSex.FEMALE) },
+                        label = { Text(stringResource(R.string.profile_sex_female)) },
+                        modifier = Modifier.height(48.dp),
+                    )
+                }
+                uiState.userSexError?.let { err ->
+                    Text(
+                        text = err.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+
+            // Birth Date
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(R.string.profile_birth_date_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                OutlinedCard(
+                    onClick = onOpenBirthDatePicker,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        val text = if (uiState.birthDate != null) {
+                            val ageStr = uiState.calculatedAge?.let { " (${stringResource(R.string.profile_age_format, it)})" } ?: ""
+                            "${uiState.birthDate.dayOfMonth.toString().padStart(2, '0')}/${uiState.birthDate.monthValue.toString().padStart(2, '0')}/${uiState.birthDate.year}$ageStr"
+                        } else {
+                            stringResource(R.string.profile_birth_date_placeholder)
+                        }
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (uiState.birthDate != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        )
+                        Icon(
+                            painter = painterResource(R.drawable.ic_calendar),
+                            contentDescription = stringResource(R.string.profile_birth_date_label),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                uiState.birthDateError?.let { err ->
+                    Text(
+                        text = err.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+
+            // Height
+            OutlinedTextField(
+                value = uiState.heightCmText,
+                onValueChange = onHeightChanged,
+                label = { Text(stringResource(R.string.profile_height_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Next,
+                ),
+                isError = uiState.heightError != null,
+                supportingText = uiState.heightError?.let { err -> { Text(err.asString()) } },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // Workout kcal per session
+            OutlinedTextField(
+                value = uiState.workoutKcalText,
+                onValueChange = onWorkoutKcalChanged,
+                label = { Text(stringResource(R.string.profile_workout_kcal_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done,
+                ),
+                isError = uiState.workoutKcalError != null,
+                supportingText = uiState.workoutKcalError?.let { err -> { Text(err.asString()) } },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // Live estimated BMR preview if available
+            val bmr = uiState.estimatedBmrKcal
+            if (bmr != null) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    val bmrFormatted = NumberFormatHelper.formatDecimal(bmr)
+                    val weightFormatted = uiState.latestWeightTrendKg?.let { NumberFormatHelper.formatDecimal(it) }
+                    val message = if (weightFormatted != null) {
+                        stringResource(R.string.profile_bmr_preview_with_weight, bmrFormatted, weightFormatted)
+                    } else {
+                        stringResource(R.string.profile_bmr_preview, bmrFormatted)
+                    }
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+            } else if (uiState.userSex != null && uiState.birthDate != null && uiState.heightCmText.isNotBlank() && uiState.latestWeightTrendKg == null) {
+                Text(
+                    text = stringResource(R.string.profile_bmr_preview_missing_weight),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                )
+            }
+
+            // Save button
+            Button(
+                onClick = onSaveProfile,
+                enabled = !uiState.isSavingProfile,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+            ) {
+                Text(stringResource(R.string.profile_save_action))
+            }
+        }
     }
 }
 

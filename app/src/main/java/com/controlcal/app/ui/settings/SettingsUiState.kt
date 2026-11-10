@@ -6,6 +6,11 @@ import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.backup.BackupSummary
 import com.controlcal.core.model.ConfiguredMeal
 import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.nutrition.NumberFormatHelper
+import com.controlcal.core.profile.EnergyExpenditureCalculator
+import com.controlcal.core.profile.UserProfile
+import com.controlcal.core.profile.UserProfileValidator
+import com.controlcal.core.profile.UserSex
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -58,7 +63,36 @@ data class SettingsUiState(
     val restoreSummary: BackupSummary? = null,
     val isRestoreConfirmDialogOpen: Boolean = false,
     val isBackupLoading: Boolean = false,
+    // User Profile (Task 5)
+    val userSex: UserSex? = null,
+    val birthDate: LocalDate? = null,
+    val heightCmText: String = "",
+    val workoutKcalText: String = "300",
+    val userSexError: UiText? = null,
+    val birthDateError: UiText? = null,
+    val heightError: UiText? = null,
+    val workoutKcalError: UiText? = null,
+    val showBirthDatePickerDialog: Boolean = false,
+    val isSavingProfile: Boolean = false,
+    val latestWeightTrendKg: Double? = null,
 ) {
+    val calculatedAge: Int?
+        get() {
+            val bDate = birthDate ?: return null
+            val today = LocalDate.now()
+            if (bDate.isAfter(today)) return null
+            return UserProfileValidator.calculateAge(bDate, today)
+        }
+
+    val estimatedBmrKcal: Double?
+        get() {
+            val sex = userSex ?: return null
+            val age = calculatedAge ?: return null
+            val height = NumberFormatHelper.parseDecimal(heightCmText) ?: return null
+            val weight = latestWeightTrendKg ?: return null
+            if (height <= 0.0 || weight <= 0.0) return null
+            return EnergyExpenditureCalculator.calculateBmr(sex, weight, height, age)
+        }
     fun formatLastBackup(): UiText {
         val timestamp = lastBackupTimestamp ?: return UiText.StringResource(
             R.string.backup_last_copy_prefix,

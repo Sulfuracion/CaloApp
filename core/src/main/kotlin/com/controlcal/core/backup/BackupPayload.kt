@@ -111,6 +111,10 @@ data class BackupPreferencesDto(
     val minKcalLimit: Double? = null,
     val lastTdeeProposalReviewedDate: String? = null,
     val configuredMealsJson: String? = null,
+    val userSex: String? = null,
+    val birthDate: String? = null,
+    val heightCm: Double? = null,
+    val workoutKcalPerSession: Double? = null,
 )
 
 @Serializable

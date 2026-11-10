@@ -9,15 +9,21 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.controlcal.core.model.DayType
 import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.profile.UserProfile
+import com.controlcal.core.profile.UserSex
 import com.controlcal.core.weight.WeightRange
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.time.DayOfWeek
+import java.time.LocalDate
 
 @RunWith(AndroidJUnit4::class)
 class UserSettingsRepositoryImplTest {
@@ -107,6 +113,60 @@ class UserSettingsRepositoryImplTest {
 
         repo.setWeightChartRange(WeightRange.ALL)
         assertEquals(WeightRange.ALL, repo.getWeightChartRange())
+    }
+
+    @Test
+    fun returnsEmptyProfileByDefault() = runTest {
+        val repo = UserSettingsRepositoryImpl(dataStore)
+        val profile = repo.getUserProfile()
+
+        assertNull(profile.sex)
+        assertNull(profile.birthDate)
+        assertNull(profile.heightCm)
+        assertEquals(UserProfile.DEFAULT_WORKOUT_KCAL_PER_SESSION, profile.workoutKcalPerSession, 0.001)
+        assertFalse(profile.isComplete)
+    }
+
+    @Test
+    fun savesAndRetrievesCompleteProfile() = runTest {
+        val repo = UserSettingsRepositoryImpl(dataStore)
+        val profile = UserProfile(
+            sex = UserSex.MALE,
+            birthDate = LocalDate.parse("1992-06-20"),
+            heightCm = 182.5,
+            workoutKcalPerSession = 400.0,
+        )
+
+        repo.setUserProfile(profile)
+        val retrieved = repo.getUserProfile()
+
+        assertEquals(UserSex.MALE, retrieved.sex)
+        assertEquals(LocalDate.parse("1992-06-20"), retrieved.birthDate)
+        assertEquals(182.5, retrieved.heightCm!!, 0.001)
+        assertEquals(400.0, retrieved.workoutKcalPerSession, 0.001)
+        assertTrue(retrieved.isComplete)
+    }
+
+    @Test
+    fun clearingProfileFieldsRemovesThem() = runTest {
+        val repo = UserSettingsRepositoryImpl(dataStore)
+        repo.setUserProfile(
+            UserProfile(
+                sex = UserSex.FEMALE,
+                birthDate = LocalDate.parse("1995-04-10"),
+                heightCm = 168.0,
+                workoutKcalPerSession = 320.0,
+            )
+        )
+
+        repo.setUserProfile(UserProfile(workoutKcalPerSession = 300.0))
+        val cleared = repo.getUserProfile()
+
+        assertNull(cleared.sex)
+        assertNull(cleared.birthDate)
+        assertNull(cleared.heightCm)
+        assertEquals(300.0, cleared.workoutKcalPerSession, 0.001)
+        assertFalse(cleared.isComplete)
     }
 
     companion object {

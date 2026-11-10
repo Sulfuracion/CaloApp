@@ -8,6 +8,8 @@ import com.controlcal.core.model.GoalOrigin
 import com.controlcal.core.model.GoalProfile
 import com.controlcal.core.model.MealEntry
 import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.profile.UserProfile
+import com.controlcal.core.profile.UserSex
 import com.controlcal.core.nutrition.GetActiveGoalProfileUseCase
 import com.controlcal.core.repo.GoalProfileRepository
 import com.controlcal.core.repo.MealConfigRepository
@@ -407,6 +409,83 @@ class SettingsViewModelTest {
         assertFalse(viewModel.uiState.value.isRestoreConfirmDialogOpen)
     }
 
+    @Test
+    fun loadsExistingProfileOnStartup() = runTest {
+        val birthDate = LocalDate.parse("1994-03-25")
+        fakeUserSettingsRepository.userProfile = UserProfile(
+            sex = UserSex.FEMALE,
+            birthDate = birthDate,
+            heightCm = 167.5,
+            workoutKcalPerSession = 350.0,
+        )
+
+        val vm = SettingsViewModel(
+            userSettingsRepository = fakeUserSettingsRepository,
+            goalProfileRepository = fakeGoalProfileRepository,
+            getActiveGoalProfileUseCase = GetActiveGoalProfileUseCase(fakeGoalProfileRepository),
+            mealConfigRepository = fakeMealConfigRepository,
+            mealEntryRepository = fakeMealEntryRepository,
+        )
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(UserSex.FEMALE, state.userSex)
+        assertEquals(birthDate, state.birthDate)
+        assertEquals("167,5", state.heightCmText)
+        assertEquals("350", state.workoutKcalText)
+        assertNotNull(state.calculatedAge)
+    }
+
+    @Test
+    fun profileFieldsUpdateUiStateAndClearErrors() = runTest {
+        viewModel.onUserSexChanged(UserSex.MALE)
+        assertEquals(UserSex.MALE, viewModel.uiState.value.userSex)
+
+        val birthDate = LocalDate.parse("1990-05-15")
+        viewModel.onBirthDateSelected(birthDate)
+        assertEquals(birthDate, viewModel.uiState.value.birthDate)
+        assertNull(viewModel.uiState.value.birthDateError)
+
+        viewModel.onHeightChanged("180")
+        assertEquals("180", viewModel.uiState.value.heightCmText)
+        assertNull(viewModel.uiState.value.heightError)
+
+        viewModel.onWorkoutKcalChanged("450")
+        assertEquals("450", viewModel.uiState.value.workoutKcalText)
+        assertNull(viewModel.uiState.value.workoutKcalError)
+    }
+
+    @Test
+    fun savingValidProfilePersistsAndEmitsSuccess() = runTest {
+        viewModel.onUserSexChanged(UserSex.MALE)
+        viewModel.onBirthDateSelected(LocalDate.parse("1990-05-15"))
+        viewModel.onHeightChanged("182")
+        viewModel.onWorkoutKcalChanged("320")
+
+        viewModel.onSaveProfile()
+        advanceUntilIdle()
+
+        val saved = fakeUserSettingsRepository.userProfile
+        assertEquals(UserSex.MALE, saved.sex)
+        assertEquals(LocalDate.parse("1990-05-15"), saved.birthDate)
+        assertEquals(182.0, saved.heightCm!!, 0.001)
+        assertEquals(320.0, saved.workoutKcalPerSession, 0.001)
+        assertTrue(saved.isComplete)
+    }
+
+    @Test
+    fun savingInvalidProfileSetsFieldErrorsAndDoesNotPersist() = runTest {
+        // Empty profile initially
+        viewModel.onSaveProfile()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNotNull(state.userSexError)
+        assertNotNull(state.birthDateError)
+        assertNotNull(state.heightError)
+        assertFalse(fakeUserSettingsRepository.userProfile.isComplete)
+    }
+
     private class FakeMealConfigRepository(
         initialConfigs: List<ConfiguredMeal> = DefaultMeals.defaults()
     ) : MealConfigRepository {
@@ -470,6 +549,12 @@ class SettingsViewModelTest {
         override suspend fun getLastBackupTimestamp(): Long? = lastBackup
         override suspend fun setLastBackupTimestamp(timestamp: Long) {
             this.lastBackup = timestamp
+        }
+
+        var userProfile = UserProfile()
+        override suspend fun getUserProfile(): UserProfile = userProfile
+        override suspend fun setUserProfile(profile: UserProfile) {
+            this.userProfile = profile
         }
     }
 

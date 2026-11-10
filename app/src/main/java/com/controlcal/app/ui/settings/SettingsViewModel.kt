@@ -25,14 +25,22 @@ import com.controlcal.core.model.DailyLog
 import com.controlcal.core.model.DayType
 import com.controlcal.core.model.GoalOrigin
 import com.controlcal.core.model.GoalProfile
+import com.controlcal.core.model.WeightEntry
 import com.controlcal.core.nutrition.GetActiveGoalProfileUseCase
 import com.controlcal.core.nutrition.GoalProfileValidator
 import com.controlcal.core.nutrition.NumberFormatHelper
+import com.controlcal.core.profile.UserProfile
+import com.controlcal.core.profile.UserProfileIssue
+import com.controlcal.core.profile.UserProfileValidationResult
+import com.controlcal.core.profile.UserProfileValidator
+import com.controlcal.core.profile.UserSex
 import com.controlcal.core.repo.DailyLogRepository
 import com.controlcal.core.repo.GoalProfileRepository
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.UserSettingsRepository
+import com.controlcal.core.repo.WeightEntryRepository
+import com.controlcal.core.tdee.WeightTrend
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -70,6 +78,14 @@ class SettingsViewModel @Inject constructor(
         override suspend fun setSteps(date: String, steps: Int) {}
         override suspend fun setNotes(date: String, notes: String?) {}
     },
+    private val weightEntryRepository: WeightEntryRepository = object : WeightEntryRepository {
+        override suspend fun upsert(entry: WeightEntry) {}
+        override suspend fun getByDate(date: String): WeightEntry? = null
+        override suspend fun getBetween(from: String, to: String): List<WeightEntry> = emptyList()
+        override suspend fun getAll(): List<WeightEntry> = emptyList()
+        override suspend fun deleteByDate(date: String) {}
+        override suspend fun moveEntry(oldDate: String, newEntry: WeightEntry) {}
+    },
 ) : ViewModel() {
 
     private val addMealConfigUseCase = AddMealConfigUseCase()
@@ -101,6 +117,9 @@ class SettingsViewModel @Inject constructor(
             val isHcSupported = healthConnectManager.isSupported()
             val isStepsEnabled = userSettingsRepository.isHealthConnectStepsSyncEnabled() && healthConnectManager.hasStepsPermission()
             val lastBackup = userSettingsRepository.getLastBackupTimestamp()
+            val userProfile = userSettingsRepository.getUserProfile()
+            val weights = weightEntryRepository.getAll()
+            val latestTrend = WeightTrend.calculateTrend(weights).lastOrNull()?.trendKg
 
             _uiState.update {
                 it.copy(
@@ -118,6 +137,11 @@ class SettingsViewModel @Inject constructor(
                     isHealthConnectAvailable = isHcSupported,
                     isHealthConnectStepsSyncEnabled = isStepsEnabled,
                     lastBackupTimestamp = lastBackup,
+                    userSex = userProfile.sex,
+                    birthDate = userProfile.birthDate,
+                    heightCmText = userProfile.heightCm?.let { h -> NumberFormatHelper.formatDecimal(h) } ?: "",
+                    workoutKcalText = NumberFormatHelper.formatDecimal(userProfile.workoutKcalPerSession),
+                    latestWeightTrendKg = latestTrend,
                     isLoading = false,
                 )
             }
@@ -307,6 +331,121 @@ class SettingsViewModel @Inject constructor(
                 _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.feedback_goals_saved)))
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSavingGoals = false) }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.feedback_save_error)))
+            }
+        }
+    }
+
+    fun onUserSexChanged(sex: UserSex) {
+        _uiState.update { it.copy(userSex = sex, userSexError = null) }
+    }
+
+    fun onOpenBirthDatePicker() {
+        _uiState.update { it.copy(showBirthDatePickerDialog = true) }
+    }
+
+    fun onCloseBirthDatePicker() {
+        _uiState.update { it.copy(showBirthDatePickerDialog = false) }
+    }
+
+    fun onBirthDateSelected(date: LocalDate) {
+        val today = LocalDate.now()
+        val error = if (date.isAfter(today)) {
+            UiText.StringResource(R.string.profile_error_future_birth_date)
+        } else {
+            val age = UserProfileValidator.calculateAge(date, today)
+            when {
+                age < UserProfileValidator.MIN_AGE_YEARS -> UiText.StringResource(R.string.profile_error_age_too_young)
+                age > UserProfileValidator.MAX_AGE_YEARS -> UiText.StringResource(R.string.profile_error_age_too_old)
+                else -> null
+            }
+        }
+        _uiState.update {
+            it.copy(
+                birthDate = date,
+                birthDateError = error,
+                showBirthDatePickerDialog = false,
+            )
+        }
+    }
+
+    fun onHeightChanged(value: String) {
+        val height = NumberFormatHelper.parseDecimal(value)
+        val error = when {
+            value.isBlank() -> UiText.StringResource(R.string.profile_error_missing_height)
+            height == null || height < UserProfileValidator.MIN_HEIGHT_CM || height > UserProfileValidator.MAX_HEIGHT_CM ->
+                UiText.StringResource(R.string.profile_error_height_out_of_range)
+            else -> null
+        }
+        _uiState.update { it.copy(heightCmText = value, heightError = error) }
+    }
+
+    fun onWorkoutKcalChanged(value: String) {
+        val kcal = NumberFormatHelper.parseDecimal(value)
+        val error = when {
+            value.isBlank() -> null // Defaults to 300
+            kcal == null || kcal < UserProfileValidator.MIN_WORKOUT_KCAL || kcal > UserProfileValidator.MAX_WORKOUT_KCAL ->
+                UiText.StringResource(R.string.profile_error_workout_kcal_out_of_range)
+            else -> null
+        }
+        _uiState.update { it.copy(workoutKcalText = value, workoutKcalError = error) }
+    }
+
+    fun onSaveProfile() {
+        val state = _uiState.value
+        val sex = state.userSex
+        val birthDate = state.birthDate
+        val height = NumberFormatHelper.parseDecimal(state.heightCmText)
+        val workoutKcal = NumberFormatHelper.parseDecimal(state.workoutKcalText) ?: UserProfile.DEFAULT_WORKOUT_KCAL_PER_SESSION
+        val today = LocalDate.now()
+
+        val profile = UserProfile(
+            sex = sex,
+            birthDate = birthDate,
+            heightCm = height,
+            workoutKcalPerSession = workoutKcal,
+        )
+
+        val validation = UserProfileValidator.validate(profile, today)
+        if (validation is UserProfileValidationResult.Invalid) {
+            val issues = validation.issues
+            _uiState.update {
+                it.copy(
+                    userSexError = if (issues.contains(UserProfileIssue.MISSING_SEX)) UiText.StringResource(R.string.profile_error_missing_sex) else null,
+                    birthDateError = when {
+                        issues.contains(UserProfileIssue.MISSING_BIRTH_DATE) -> UiText.StringResource(R.string.profile_error_missing_birth_date)
+                        issues.contains(UserProfileIssue.FUTURE_BIRTH_DATE) -> UiText.StringResource(R.string.profile_error_future_birth_date)
+                        issues.contains(UserProfileIssue.AGE_TOO_YOUNG) -> UiText.StringResource(R.string.profile_error_age_too_young)
+                        issues.contains(UserProfileIssue.AGE_TOO_OLD) -> UiText.StringResource(R.string.profile_error_age_too_old)
+                        else -> null
+                    },
+                    heightError = when {
+                        issues.contains(UserProfileIssue.MISSING_HEIGHT) -> UiText.StringResource(R.string.profile_error_missing_height)
+                        issues.contains(UserProfileIssue.HEIGHT_OUT_OF_RANGE) -> UiText.StringResource(R.string.profile_error_height_out_of_range)
+                        else -> null
+                    },
+                    workoutKcalError = if (issues.contains(UserProfileIssue.WORKOUT_KCAL_OUT_OF_RANGE)) UiText.StringResource(R.string.profile_error_workout_kcal_out_of_range) else null,
+                )
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSavingProfile = true) }
+            try {
+                userSettingsRepository.setUserProfile(profile)
+                _uiState.update {
+                    it.copy(
+                        isSavingProfile = false,
+                        userSexError = null,
+                        birthDateError = null,
+                        heightError = null,
+                        workoutKcalError = null,
+                    )
+                }
+                _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.settings_profile_saved)))
+            } catch (_: Exception) {
+                _uiState.update { it.copy(isSavingProfile = false) }
                 _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.feedback_save_error)))
             }
         }

@@ -75,6 +75,10 @@ class BackupManager @Inject constructor(
     private val lastTdeeProposalReviewedDateKey = stringPreferencesKey("last_tdee_proposal_reviewed_date")
     private val configuredMealsKey = stringPreferencesKey("configured_meals_json")
     private val lastBackupTimestampKey = longPreferencesKey("last_backup_timestamp")
+    private val userSexKey = stringPreferencesKey("user_sex")
+    private val userBirthDateKey = stringPreferencesKey("user_birth_date")
+    private val userHeightCmKey = doublePreferencesKey("user_height_cm")
+    private val userWorkoutKcalKey = doublePreferencesKey("user_workout_kcal_per_session")
 
     /**
      * Reads all tables and user preferences and exports them encrypted into [outputStream].
@@ -196,6 +200,10 @@ class BackupManager @Inject constructor(
                 payload.preferences.minKcalLimit?.let { prefs[minKcalLimitKey] = it }
                 payload.preferences.lastTdeeProposalReviewedDate?.let { prefs[lastTdeeProposalReviewedDateKey] = it }
                 payload.preferences.configuredMealsJson?.let { prefs[configuredMealsKey] = it }
+                payload.preferences.userSex?.let { prefs[userSexKey] = it }
+                payload.preferences.birthDate?.let { prefs[userBirthDateKey] = it }
+                payload.preferences.heightCm?.let { prefs[userHeightCmKey] = it }
+                payload.preferences.workoutKcalPerSession?.let { prefs[userWorkoutKcalKey] = it }
             }
 
             // Reschedule all reminders after restoring backup
@@ -227,6 +235,10 @@ class BackupManager @Inject constructor(
             minKcalLimit = prefs[minKcalLimitKey],
             lastTdeeProposalReviewedDate = prefs[lastTdeeProposalReviewedDateKey],
             configuredMealsJson = prefs[configuredMealsKey],
+            userSex = prefs[userSexKey],
+            birthDate = prefs[userBirthDateKey],
+            heightCm = prefs[userHeightCmKey],
+            workoutKcalPerSession = prefs[userWorkoutKcalKey],
         )
 
         return BackupPayload(
