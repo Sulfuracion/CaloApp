@@ -30,12 +30,14 @@ class DailyLogDaoTest : DaoTestBase() {
 
         dao.setDayType(TestData.DATE_A, DayType.TRAINING)
         dao.setWaterMl(TestData.DATE_A, 2000)
+        dao.setSteps(TestData.DATE_A, 8432)
         dao.setNotes(TestData.DATE_A, "Hoy toca pierna")
 
         val log = dao.getByDate(TestData.DATE_A)
         assertNotNull(log)
         assertEquals(DayType.TRAINING, log!!.dayType)
         assertEquals(2000, log.waterMl)
+        assertEquals(8432, log.steps)
         assertEquals("Hoy toca pierna", log.notes)
     }
 

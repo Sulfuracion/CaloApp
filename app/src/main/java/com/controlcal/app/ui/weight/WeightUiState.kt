@@ -2,12 +2,9 @@ package com.controlcal.app.ui.weight
 
 import com.controlcal.core.model.WeightEntry
 import com.controlcal.core.tdee.WeightTrendPoint
-
-enum class WeightChartFilter {
-    DAYS_30,
-    DAYS_90,
-    ALL
-}
+import com.controlcal.core.weight.WeightPeriodSummary
+import com.controlcal.core.weight.WeightPlotPoint
+import com.controlcal.core.weight.WeightRange
 
 data class WeightConflict(
     val isFromEdit: Boolean,
@@ -25,8 +22,11 @@ data class WeightUiState(
     val todayInputError: String? = null,
     val entries: List<WeightEntry> = emptyList(),
     val trendPoints: List<WeightTrendPoint> = emptyList(),
-    val selectedFilter: WeightChartFilter = WeightChartFilter.DAYS_30,
+    val selectedRange: WeightRange = WeightRange.LAST_1_MONTH,
     val chartPoints: List<WeightTrendPoint> = emptyList(),
+    val plotPoints: List<WeightPlotPoint> = emptyList(),
+    val periodSummary: WeightPeriodSummary? = null,
+    val isWeeklyAggregated: Boolean = false,
     val editingEntry: WeightEntry? = null,
     val editingWeightText: String = "",
     val editingDateText: String = "",

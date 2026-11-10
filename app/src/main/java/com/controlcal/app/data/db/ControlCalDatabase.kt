@@ -27,7 +27,7 @@ import com.controlcal.app.data.db.entity.WeightEntryEntity
         WeightEntryEntity::class,
         GoalProfileEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class ControlCalDatabase : RoomDatabase() {

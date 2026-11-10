@@ -48,7 +48,7 @@ class ControlCalDatabaseProvider @Inject constructor(
 
         return Room.databaseBuilder(context, ControlCalDatabase::class.java, ControlCalDatabase.NAME)
             .setDriver(SQLCipherDriver(driverKey, CipherMemorySecurityHook, null))
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     }
 }

@@ -2,6 +2,7 @@ package com.controlcal.app.data.db.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.controlcal.app.data.db.entity.ProductEntity
@@ -11,6 +12,9 @@ interface ProductDao {
 
     @Insert
     suspend fun insert(product: ProductEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(products: List<ProductEntity>): List<Long>
 
     @Update
     suspend fun update(product: ProductEntity)

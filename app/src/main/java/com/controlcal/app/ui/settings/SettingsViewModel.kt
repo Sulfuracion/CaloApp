@@ -1,7 +1,18 @@
 package com.controlcal.app.ui.settings
 
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.controlcal.app.R
+import com.controlcal.app.data.backup.BackupManager
+import com.controlcal.app.data.health.HealthConnectManager
+import com.controlcal.app.ui.feedback.UiFeedbackEvent
+import com.controlcal.app.ui.feedback.UiText
+import com.controlcal.core.backup.BackupCodec
+import com.controlcal.core.backup.BackupPayload
+import com.controlcal.core.backup.InvalidPasswordOrCorruptException
+import com.controlcal.core.backup.NewerSchemaVersionException
 import com.controlcal.core.meal.AddMealConfigUseCase
 import com.controlcal.core.meal.ChangeMealStartTimeUseCase
 import com.controlcal.core.meal.DeactivateMealUseCase
@@ -10,19 +21,18 @@ import com.controlcal.core.meal.MealConfigResult
 import com.controlcal.core.meal.ReactivateMealUseCase
 import com.controlcal.core.meal.RenameMealConfigUseCase
 import com.controlcal.core.model.ConfiguredMeal
+import com.controlcal.core.model.DailyLog
 import com.controlcal.core.model.DayType
 import com.controlcal.core.model.GoalOrigin
 import com.controlcal.core.model.GoalProfile
 import com.controlcal.core.nutrition.GetActiveGoalProfileUseCase
+import com.controlcal.core.nutrition.GoalProfileValidator
 import com.controlcal.core.nutrition.NumberFormatHelper
+import com.controlcal.core.repo.DailyLogRepository
 import com.controlcal.core.repo.GoalProfileRepository
 import com.controlcal.core.repo.MealConfigRepository
 import com.controlcal.core.repo.MealEntryRepository
 import com.controlcal.core.repo.UserSettingsRepository
-import com.controlcal.app.R
-import com.controlcal.app.ui.feedback.UiFeedbackEvent
-import com.controlcal.app.ui.feedback.UiText
-import com.controlcal.core.nutrition.GoalProfileValidator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +54,22 @@ class SettingsViewModel @Inject constructor(
     private val getActiveGoalProfileUseCase: GetActiveGoalProfileUseCase,
     private val mealConfigRepository: MealConfigRepository,
     private val mealEntryRepository: MealEntryRepository,
+    private val backupManager: BackupManager? = null,
+    private val healthConnectManager: HealthConnectManager = object : HealthConnectManager {
+        override fun isSupported(): Boolean = false
+        override suspend fun hasStepsPermission(): Boolean = false
+        override fun getPermissions(): Set<String> = emptySet()
+        override suspend fun readStepsForDate(date: LocalDate): Long? = null
+        override suspend fun readYesterdaySteps(): Long? = null
+    },
+    private val dailyLogRepository: DailyLogRepository = object : DailyLogRepository {
+        override suspend fun getByDate(date: String): DailyLog? = null
+        override suspend fun insert(log: DailyLog) {}
+        override suspend fun setDayType(date: String, dayType: DayType) {}
+        override suspend fun setWaterMl(date: String, waterMl: Int) {}
+        override suspend fun setSteps(date: String, steps: Int) {}
+        override suspend fun setNotes(date: String, notes: String?) {}
+    },
 ) : ViewModel() {
 
     private val addMealConfigUseCase = AddMealConfigUseCase()
@@ -72,6 +98,9 @@ class SettingsViewModel @Inject constructor(
             val trainingProfile = getActiveGoalProfileUseCase(DayType.TRAINING, todayStr)
             val restProfile = getActiveGoalProfileUseCase(DayType.REST, todayStr)
             val meals = mealConfigRepository.getMealConfigs().sortedBy { it.startTime }
+            val isHcSupported = healthConnectManager.isSupported()
+            val isStepsEnabled = userSettingsRepository.isHealthConnectStepsSyncEnabled() && healthConnectManager.hasStepsPermission()
+            val lastBackup = userSettingsRepository.getLastBackupTimestamp()
 
             _uiState.update {
                 it.copy(
@@ -86,6 +115,9 @@ class SettingsViewModel @Inject constructor(
                     restCarbsText = NumberFormatHelper.formatDecimal(restProfile.carbsG),
                     restFatText = NumberFormatHelper.formatDecimal(restProfile.fatG),
                     configuredMeals = meals,
+                    isHealthConnectAvailable = isHcSupported,
+                    isHealthConnectStepsSyncEnabled = isStepsEnabled,
+                    lastBackupTimestamp = lastBackup,
                     isLoading = false,
                 )
             }
@@ -489,7 +521,233 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(deactivateOfferMeal = null, deleteConfirmMeal = null) }
     }
 
+    fun getHealthConnectPermissions(): Set<String> = healthConnectManager.getPermissions()
+
+    fun onToggleHealthConnectSteps(enabled: Boolean) {
+        if (enabled) {
+            if (!healthConnectManager.isSupported()) {
+                viewModelScope.launch {
+                    _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.settings_health_connect_not_supported)))
+                }
+                return
+            }
+            _uiState.update { it.copy(showHealthConnectRationaleDialog = true) }
+        } else {
+            viewModelScope.launch {
+                userSettingsRepository.setHealthConnectStepsSyncEnabled(false)
+                _uiState.update { it.copy(isHealthConnectStepsSyncEnabled = false) }
+                _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.health_connect_sync_disabled_feedback)))
+            }
+        }
+    }
+
+    fun onDismissHealthConnectRationale() {
+        _uiState.update { it.copy(showHealthConnectRationaleDialog = false) }
+    }
+
+    fun onConfirmHealthConnectRationale() {
+        _uiState.update { it.copy(showHealthConnectRationaleDialog = false) }
+    }
+
+    fun onHealthConnectPermissionsResult(granted: Boolean) {
+        viewModelScope.launch {
+            if (granted) {
+                userSettingsRepository.setHealthConnectStepsSyncEnabled(true)
+                _uiState.update { it.copy(isHealthConnectStepsSyncEnabled = true) }
+                _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.health_connect_sync_enabled_feedback)))
+                val steps = healthConnectManager.readYesterdaySteps()
+                if (steps != null && steps > 0) {
+                    val yesterday = LocalDate.now().minusDays(1)
+                    dailyLogRepository.setSteps(yesterday.toString(), steps.toInt())
+                }
+            } else {
+                userSettingsRepository.setHealthConnectStepsSyncEnabled(false)
+                _uiState.update { it.copy(isHealthConnectStepsSyncEnabled = false) }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.health_connect_permission_denied_feedback)))
+            }
+        }
+    }
+
     fun onMessageConsumed() {
         _uiState.update { it.copy(infoMessage = null, errorMessage = null) }
+    }
+
+    // -------------------------------------------------------------------------
+    // Backup & Restore (Phase 7.2)
+    // -------------------------------------------------------------------------
+
+    private var pendingExportPasswordChars: CharArray? = null
+    private var pendingImportPayload: BackupPayload? = null
+
+    fun onExportClicked() {
+        _uiState.update {
+            it.copy(
+                isExportPasswordDialogOpen = true,
+                exportPasswordText = "",
+                exportConfirmPasswordText = "",
+                exportPasswordError = null,
+            )
+        }
+    }
+
+    fun onExportPasswordChanged(password: String) {
+        _uiState.update { it.copy(exportPasswordText = password, exportPasswordError = null) }
+    }
+
+    fun onExportConfirmPasswordChanged(password: String) {
+        _uiState.update { it.copy(exportConfirmPasswordText = password, exportPasswordError = null) }
+    }
+
+    fun onConfirmExportPassword(onValidPassword: () -> Unit) {
+        val pass = _uiState.value.exportPasswordText
+        val confirm = _uiState.value.exportConfirmPasswordText
+        if (!BackupCodec.isPasswordValid(pass)) {
+            _uiState.update { it.copy(exportPasswordError = UiText.StringResource(R.string.backup_password_too_short)) }
+            return
+        }
+        if (pass != confirm) {
+            _uiState.update { it.copy(exportPasswordError = UiText.StringResource(R.string.backup_password_mismatch)) }
+            return
+        }
+        pendingExportPasswordChars = pass.toCharArray()
+        _uiState.update { it.copy(isExportPasswordDialogOpen = false) }
+        onValidPassword()
+    }
+
+    fun onExportUriSelected(uri: Uri?, contentResolver: ContentResolver) {
+        val password = pendingExportPasswordChars
+        if (uri == null || password == null) {
+            pendingExportPasswordChars?.fill('\u0000')
+            pendingExportPasswordChars = null
+            return
+        }
+        val manager = backupManager ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBackupLoading = true) }
+            try {
+                val outputStream = contentResolver.openOutputStream(uri)
+                    ?: throw IllegalStateException("No se pudo abrir el archivo de destino")
+                manager.exportBackup(password, outputStream)
+                val now = System.currentTimeMillis()
+                userSettingsRepository.setLastBackupTimestamp(now)
+                _uiState.update { it.copy(isBackupLoading = false, lastBackupTimestamp = now) }
+                _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.backup_export_success)))
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isBackupLoading = false) }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(e.message ?: "Error al exportar")))
+            } finally {
+                pendingExportPasswordChars?.fill('\u0000')
+                pendingExportPasswordChars = null
+            }
+        }
+    }
+
+    fun onImportUriSelected(uri: Uri?) {
+        if (uri == null) return
+        _uiState.update {
+            it.copy(
+                pendingImportUri = uri,
+                isImportPasswordDialogOpen = true,
+                importPasswordText = "",
+                importPasswordError = null,
+            )
+        }
+    }
+
+    fun onImportPasswordChanged(password: String) {
+        _uiState.update { it.copy(importPasswordText = password, importPasswordError = null) }
+    }
+
+    fun onConfirmImportPassword(contentResolver: ContentResolver) {
+        val uri = _uiState.value.pendingImportUri ?: return
+        val password = _uiState.value.importPasswordText
+        if (!BackupCodec.isPasswordValid(password)) {
+            _uiState.update { it.copy(importPasswordError = UiText.StringResource(R.string.backup_password_too_short)) }
+            return
+        }
+        val manager = backupManager ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBackupLoading = true, importPasswordError = null) }
+            try {
+                val inputStream = contentResolver.openInputStream(uri)
+                    ?: throw IllegalStateException("No se pudo abrir el archivo seleccionado")
+                val (summary, payload) = manager.inspectBackup(password.toCharArray(), inputStream)
+                pendingImportPayload = payload
+                _uiState.update {
+                    it.copy(
+                        isBackupLoading = false,
+                        isImportPasswordDialogOpen = false,
+                        restoreSummary = summary,
+                        isRestoreConfirmDialogOpen = true,
+                    )
+                }
+            } catch (e: InvalidPasswordOrCorruptException) {
+                _uiState.update {
+                    it.copy(
+                        isBackupLoading = false,
+                        importPasswordError = UiText.StringResource(R.string.backup_error_bad_password_or_corrupt),
+                    )
+                }
+            } catch (e: NewerSchemaVersionException) {
+                _uiState.update {
+                    it.copy(
+                        isBackupLoading = false,
+                        isImportPasswordDialogOpen = false,
+                        pendingImportUri = null,
+                    )
+                }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.StringResource(R.string.backup_error_newer_schema)))
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isBackupLoading = false,
+                        importPasswordError = UiText.DynamicString(e.message ?: "Error al descifrar"),
+                    )
+                }
+            }
+        }
+    }
+
+    fun onConfirmRestore(onRestoredSuccess: () -> Unit) {
+        val payload = pendingImportPayload ?: return
+        val manager = backupManager ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isBackupLoading = true, isRestoreConfirmDialogOpen = false) }
+            try {
+                manager.restoreBackup(payload)
+                loadSettings()
+                _uiState.update {
+                    it.copy(
+                        isBackupLoading = false,
+                        restoreSummary = null,
+                        pendingImportUri = null,
+                    )
+                }
+                _feedbackEvents.send(UiFeedbackEvent.Success(UiText.StringResource(R.string.backup_restore_success)))
+                onRestoredSuccess()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isBackupLoading = false) }
+                _feedbackEvents.send(UiFeedbackEvent.Error(UiText.DynamicString(e.message ?: "Error al restaurar")))
+            } finally {
+                pendingImportPayload = null
+            }
+        }
+    }
+
+    fun onDismissBackupDialogs() {
+        pendingExportPasswordChars?.fill('\u0000')
+        pendingExportPasswordChars = null
+        pendingImportPayload = null
+        _uiState.update {
+            it.copy(
+                isExportPasswordDialogOpen = false,
+                isImportPasswordDialogOpen = false,
+                isRestoreConfirmDialogOpen = false,
+                exportPasswordError = null,
+                importPasswordError = null,
+                pendingImportUri = null,
+                restoreSummary = null,
+            )
+        }
     }
 }

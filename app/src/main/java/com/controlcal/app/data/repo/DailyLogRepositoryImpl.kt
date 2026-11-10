@@ -62,6 +62,17 @@ class DailyLogRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun setSteps(date: String, steps: Int) {
+        val coercedSteps = steps.coerceAtLeast(0)
+        val existing = dailyLogDao.getByDate(date)
+        if (existing != null) {
+            dailyLogDao.setSteps(date, coercedSteps)
+        } else {
+            val dayType = resolveDefaultDayType(date)
+            dailyLogDao.insert(DailyLogEntity(date = date, dayType = dayType, steps = coercedSteps))
+        }
+    }
+
     override suspend fun setNotes(date: String, notes: String?) {
         val existing = dailyLogDao.getByDate(date)
         if (existing != null) {

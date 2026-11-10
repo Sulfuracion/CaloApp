@@ -15,6 +15,9 @@ interface WeightEntryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entry: WeightEntryEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entries: List<WeightEntryEntity>)
+
     @Query("SELECT * FROM weight_entries WHERE date = :date")
     suspend fun getByDate(date: String): WeightEntryEntity?
 

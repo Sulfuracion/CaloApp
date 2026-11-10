@@ -66,3 +66,21 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         exec("CREATE INDEX IF NOT EXISTS `index_meal_entries_product_id_logged_at` ON `meal_entries` (`product_id`, `logged_at`)")
     }
 }
+
+/**
+ * Migration from version 2 to 3 (Task 7.1):
+ * - Table `daily_logs`: add column `steps` INTEGER NOT NULL DEFAULT 0.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        migrateSql { sql -> db.execSQL(sql) }
+    }
+
+    override fun migrate(connection: SQLiteConnection) {
+        migrateSql { sql -> connection.execSQL(sql) }
+    }
+
+    private inline fun migrateSql(exec: (String) -> Unit) {
+        exec("ALTER TABLE `daily_logs` ADD COLUMN `steps` INTEGER NOT NULL DEFAULT 0")
+    }
+}

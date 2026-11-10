@@ -210,6 +210,28 @@ class RepositoryMappingTest : DaoTestBase() {
     }
 
     @Test
+    fun dailyLogRepositorySetStepsUpdatesAndReads() = runBlocking {
+        val log = DailyLog(date = "2026-10-06", dayType = DayType.REST, waterMl = 500, steps = 1000)
+        dailyLogRepo.insert(log)
+
+        var loaded = dailyLogRepo.getByDate("2026-10-06")
+        assertNotNull(loaded)
+        assertEquals(1000, loaded!!.steps)
+
+        dailyLogRepo.setSteps("2026-10-06", 8432)
+        loaded = dailyLogRepo.getByDate("2026-10-06")
+        assertEquals(8432, loaded!!.steps)
+    }
+
+    @Test
+    fun dailyLogRepositorySetStepsCreatesRowIfNotExists() = runBlocking {
+        dailyLogRepo.setSteps("2026-10-21", 6200)
+        val loaded = dailyLogRepo.getByDate("2026-10-21")
+        assertNotNull(loaded)
+        assertEquals(6200, loaded!!.steps)
+    }
+
+    @Test
     fun goalProfileRepositoryRetrievesActiveProfile() = runBlocking {
         val olderProfile = GoalProfile(
             dayType = DayType.TRAINING,

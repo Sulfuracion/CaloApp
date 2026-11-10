@@ -151,4 +151,42 @@ class ControlCalDatabaseMigrationTest {
             )
         }
     }
+
+    @Test
+    fun migrate2To3PreservesAllRowsAndAddsStepsDefaultZero() {
+        // Step 1: Create database in version 2
+        val dbV2 = helper.createDatabase(TEST_DB, 2)
+
+        // Insert products and daily_logs in v2
+        dbV2.execSQL("INSERT INTO daily_logs (date, day_type, water_ml, notes) VALUES ('2026-10-14', 'REST', 1500, 'Nota 1')")
+        dbV2.execSQL("INSERT INTO daily_logs (date, day_type, water_ml, notes) VALUES ('2026-10-15', 'TRAINING', 2000, NULL)")
+        dbV2.close()
+
+        // Step 2: Run migration to v3 and validate schema against 3.json
+        val migratedDb = helper.runMigrationsAndValidate(TEST_DB, 3, true, MIGRATION_2_3)
+
+        // Step 3: Verify existing rows have steps default to 0 and all other columns preserved
+        val cursor = migratedDb.query("SELECT date, day_type, water_ml, notes, steps FROM daily_logs ORDER BY date ASC")
+        assertTrue(cursor.moveToNext())
+        assertEquals("2026-10-14", cursor.getString(0))
+        assertEquals("REST", cursor.getString(1))
+        assertEquals(1500, cursor.getInt(2))
+        assertEquals("Nota 1", cursor.getString(3))
+        assertEquals(0, cursor.getInt(4))
+
+        assertTrue(cursor.moveToNext())
+        assertEquals("2026-10-15", cursor.getString(0))
+        assertEquals("TRAINING", cursor.getString(1))
+        assertEquals(2000, cursor.getInt(2))
+        assertNull(cursor.getString(3))
+        assertEquals(0, cursor.getInt(4))
+        cursor.close()
+
+        // Step 4: Verify updating and inserting steps works
+        migratedDb.execSQL("UPDATE daily_logs SET steps = 8432 WHERE date = '2026-10-14'")
+        val updatedCursor = migratedDb.query("SELECT steps FROM daily_logs WHERE date = '2026-10-14'")
+        assertTrue(updatedCursor.moveToFirst())
+        assertEquals(8432, updatedCursor.getInt(0))
+        updatedCursor.close()
+    }
 }

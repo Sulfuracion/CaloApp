@@ -48,4 +48,16 @@ class NumberFormatHelperTest {
         assertNull(NumberFormatHelper.parseDecimal("12.3.4"))
         assertNull(NumberFormatHelper.parseDecimal("NaN"))
     }
+
+    @Test
+    fun formatInteger_formatsThousandsWithDots() {
+        assertEquals("0", NumberFormatHelper.formatInteger(0))
+        assertEquals("8", NumberFormatHelper.formatInteger(8))
+        assertEquals("999", NumberFormatHelper.formatInteger(999))
+        assertEquals("1.000", NumberFormatHelper.formatInteger(1000))
+        assertEquals("8.432", NumberFormatHelper.formatInteger(8432))
+        assertEquals("10.500", NumberFormatHelper.formatInteger(10500))
+        assertEquals("1.234.567", NumberFormatHelper.formatInteger(1234567L))
+        assertEquals("-8.432", NumberFormatHelper.formatInteger(-8432))
+    }
 }

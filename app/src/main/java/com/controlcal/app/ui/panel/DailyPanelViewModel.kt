@@ -29,6 +29,9 @@ import com.controlcal.core.suggest.QuickLogRanker
 import com.controlcal.core.suggest.QuickLogSuggestion
 import com.controlcal.core.tdee.DailyIntake
 import com.controlcal.app.R
+import com.controlcal.core.health.StepsValidationResult
+import com.controlcal.core.health.StepsValidator
+import com.controlcal.app.data.health.HealthConnectManager
 import com.controlcal.app.ui.feedback.UiFeedbackEvent
 import com.controlcal.app.ui.feedback.UiText
 import com.controlcal.core.tdee.TdeeCalculationResult
@@ -47,8 +50,10 @@ import kotlinx.coroutines.launch
 import com.controlcal.core.date.DateHelper
 import com.controlcal.core.repo.MealConfigRepository
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -66,6 +71,13 @@ class DailyPanelViewModel @Inject constructor(
     private val goalProfileRepository: GoalProfileRepository,
     private val mealConfigRepository: MealConfigRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
+    private val healthConnectManager: HealthConnectManager = object : HealthConnectManager {
+        override fun isSupported(): Boolean = false
+        override suspend fun hasStepsPermission(): Boolean = false
+        override fun getPermissions(): Set<String> = emptySet()
+        override suspend fun readStepsForDate(date: LocalDate): Long? = null
+        override suspend fun readYesterdaySteps(): Long? = null
+    },
 ) : ViewModel() {
 
     private val repeatMealUseCase = RepeatMealUseCase()
@@ -98,6 +110,32 @@ class DailyPanelViewModel @Inject constructor(
             val totals = getDayTotalsUseCase(dateStr, entries)
             val dailyLog = dailyLogRepository.getByDate(dateStr)
             val waterMl = dailyLog?.waterMl ?: 0
+            var steps = dailyLog?.steps ?: 0
+            val isStepsSync = userSettingsRepository.isHealthConnectStepsSyncEnabled() && healthConnectManager.hasStepsPermission()
+            var yesterdaySteps: Int? = null
+
+            if (isStepsSync) {
+                val yesterday = today.minusDays(1)
+                val yesterdayLog = dailyLogRepository.getByDate(yesterday.toString())
+                yesterdaySteps = yesterdayLog?.steps ?: 0
+                if (yesterdaySteps == 0) {
+                    val fetchedYesterday = healthConnectManager.readStepsForDate(yesterday)
+                    if (fetchedYesterday != null && fetchedYesterday > 0) {
+                        dailyLogRepository.setSteps(yesterday.toString(), fetchedYesterday.toInt())
+                        yesterdaySteps = fetchedYesterday.toInt()
+                        if (date == yesterday) {
+                            steps = fetchedYesterday.toInt()
+                        }
+                    }
+                }
+                if (steps == 0) {
+                    val fetchedCurrent = healthConnectManager.readStepsForDate(date)
+                    if (fetchedCurrent != null && fetchedCurrent > 0) {
+                        dailyLogRepository.setSteps(dateStr, fetchedCurrent.toInt())
+                        steps = fetchedCurrent.toInt()
+                    }
+                }
+            }
 
             val configuredMeals = mealConfigRepository.getMealConfigs()
             val activeConfigs = configuredMeals.filter { it.isActive }.sortedBy { it.startTime }
@@ -217,6 +255,19 @@ class DailyPanelViewModel @Inject constructor(
                 }
             }
 
+            val lastBackup = userSettingsRepository.getLastBackupTimestamp()
+            val isOverdue: Boolean
+            val isNever: Boolean
+            if (lastBackup == null) {
+                isOverdue = true
+                isNever = true
+            } else {
+                val backupDate = Instant.ofEpochMilli(lastBackup).atZone(ZoneId.systemDefault()).toLocalDate()
+                val daysBetween = ChronoUnit.DAYS.between(backupDate, today)
+                isOverdue = daysBetween > 14
+                isNever = false
+            }
+
             _uiState.update {
                 it.copy(
                     selectedDate = date,
@@ -228,11 +279,16 @@ class DailyPanelViewModel @Inject constructor(
                     currentSlotMealName = currentSlotMealName,
                     dayType = dayType,
                     waterMl = waterMl,
+                    steps = steps,
+                    yesterdaySteps = yesterdaySteps,
+                    isStepsSyncEnabled = isStepsSync,
                     activeGoalProfile = activeProfile,
                     dayRemaining = remaining,
                     tdeeProposal = tdeeProposal,
                     isWeeklyProposalVisible = isWeeklyProposalVisible,
                     tdeeCalculationResult = tdeeResult,
+                    isBackupOverdue = isOverdue,
+                    isBackupNeverDone = isNever,
                     isLoading = false,
                 )
             }
@@ -291,6 +347,133 @@ class DailyPanelViewModel @Inject constructor(
                     UiText.StringResource(R.string.daily_panel_water_updated, sanitized)
                 )
             )
+        }
+    }
+
+
+    fun onOpenManualStepsDialog() {
+        val currentSteps = if (_uiState.value.isToday) {
+            _uiState.value.yesterdaySteps ?: 0
+        } else {
+            _uiState.value.steps
+        }
+        _uiState.update {
+            it.copy(
+                isEditingManualSteps = true,
+                editingManualStepsText = if (currentSteps > 0) currentSteps.toString() else "",
+                editingManualStepsError = null,
+            )
+        }
+    }
+
+    fun onManualStepsTextChanged(text: String) {
+        val error = if (text.isBlank()) {
+            null
+        } else {
+            when (StepsValidator.validate(text)) {
+                is StepsValidationResult.Valid -> null
+                is StepsValidationResult.Invalid.Blank -> null
+                is StepsValidationResult.Invalid.InvalidFormat,
+                is StepsValidationResult.Invalid.Negative -> UiText.StringResource(R.string.panel_steps_error_invalid_number)
+                is StepsValidationResult.Invalid.OutOfRange -> UiText.StringResource(R.string.panel_steps_error_out_of_range)
+            }
+        }
+        _uiState.update {
+            it.copy(
+                editingManualStepsText = text,
+                editingManualStepsError = error,
+            )
+        }
+    }
+
+    fun onDismissManualStepsDialog() {
+        _uiState.update {
+            it.copy(
+                isEditingManualSteps = false,
+                editingManualStepsError = null,
+            )
+        }
+    }
+
+    fun onSaveManualSteps() {
+        val text = _uiState.value.editingManualStepsText
+        when (val validation = StepsValidator.validate(text)) {
+            is StepsValidationResult.Invalid.Blank -> {
+                _uiState.update {
+                    it.copy(editingManualStepsError = UiText.StringResource(R.string.panel_steps_error_blank))
+                }
+            }
+            is StepsValidationResult.Invalid.InvalidFormat,
+            is StepsValidationResult.Invalid.Negative -> {
+                _uiState.update {
+                    it.copy(editingManualStepsError = UiText.StringResource(R.string.panel_steps_error_invalid_number))
+                }
+            }
+            is StepsValidationResult.Invalid.OutOfRange -> {
+                _uiState.update {
+                    it.copy(editingManualStepsError = UiText.StringResource(R.string.panel_steps_error_out_of_range))
+                }
+            }
+            is StepsValidationResult.Valid -> {
+                viewModelScope.launch {
+                    val today = DateHelper.getToday(clock)
+                    val isToday = _uiState.value.isToday
+                    val targetDate = if (isToday) today.minusDays(1) else _uiState.value.selectedDate
+                    val stepsValue = validation.steps
+
+                    dailyLogRepository.setSteps(targetDate.toString(), stepsValue)
+                    if (isToday) {
+                        _uiState.update {
+                            it.copy(
+                                yesterdaySteps = stepsValue,
+                                isEditingManualSteps = false,
+                                editingManualStepsError = null,
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                steps = stepsValue,
+                                isEditingManualSteps = false,
+                                editingManualStepsError = null,
+                            )
+                        }
+                    }
+                    _feedbackEvents.send(
+                        UiFeedbackEvent.Success(
+                            UiText.StringResource(
+                                R.string.panel_steps_manual_saved_feedback,
+                                NumberFormatHelper.formatInteger(stepsValue)
+                            )
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun refreshSteps() {
+        viewModelScope.launch {
+            val today = DateHelper.getToday(clock)
+            val isStepsSync = userSettingsRepository.isHealthConnectStepsSyncEnabled() && healthConnectManager.hasStepsPermission()
+            if (!isStepsSync) return@launch
+
+            val isToday = _uiState.value.isToday
+            val targetDate = if (isToday) today.minusDays(1) else _uiState.value.selectedDate
+            val fetched = healthConnectManager.readStepsForDate(targetDate)
+            if (fetched != null) {
+                dailyLogRepository.setSteps(targetDate.toString(), fetched.toInt())
+                if (isToday) {
+                    _uiState.update { it.copy(yesterdaySteps = fetched.toInt()) }
+                } else {
+                    _uiState.update { it.copy(steps = fetched.toInt()) }
+                }
+                _feedbackEvents.send(
+                    UiFeedbackEvent.Success(
+                        UiText.StringResource(R.string.panel_steps_synced_feedback, NumberFormatHelper.formatInteger(fetched))
+                    )
+                )
+            }
         }
     }
 

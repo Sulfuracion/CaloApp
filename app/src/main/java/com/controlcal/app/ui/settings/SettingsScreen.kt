@@ -47,18 +47,30 @@ import java.time.DayOfWeek
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.controlcal.app.ui.feedback.HandleFeedbackEvents
+import com.controlcal.core.backup.BackupSummary
 import com.controlcal.core.model.ConfiguredMeal
+import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @Composable
 fun SettingsRoute(
@@ -66,7 +78,18 @@ fun SettingsRoute(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        viewModel.onExportUriSelected(uri, context.contentResolver)
+    }
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        viewModel.onImportUriSelected(uri)
+    }
     val snackbarHostState = remember { SnackbarHostState() }
 
     HandleFeedbackEvents(
@@ -103,6 +126,28 @@ fun SettingsRoute(
         onDeleteMealRequested = viewModel::onDeleteMealRequested,
         onConfirmDeleteMeal = viewModel::onConfirmDeleteMeal,
         onDismissDeleteDialogs = viewModel::onDismissDeleteDialogs,
+        onExportClicked = viewModel::onExportClicked,
+        onExportPasswordChanged = viewModel::onExportPasswordChanged,
+        onExportConfirmPasswordChanged = viewModel::onExportConfirmPasswordChanged,
+        onConfirmExportPassword = {
+            viewModel.onConfirmExportPassword {
+                val filename = "controlcal-${LocalDate.now()}.ccbackup"
+                createDocumentLauncher.launch(filename)
+            }
+        },
+        onImportClicked = {
+            openDocumentLauncher.launch(arrayOf("*/*"))
+        },
+        onImportPasswordChanged = viewModel::onImportPasswordChanged,
+        onConfirmImportPassword = {
+            viewModel.onConfirmImportPassword(context.contentResolver)
+        },
+        onConfirmRestore = {
+            viewModel.onConfirmRestore {
+                (context as? Activity)?.recreate()
+            }
+        },
+        onDismissBackupDialogs = viewModel::onDismissBackupDialogs,
         modifier = modifier,
     )
 }
@@ -138,6 +183,15 @@ fun SettingsScreen(
     onDeleteMealRequested: (ConfiguredMeal) -> Unit,
     onConfirmDeleteMeal: (String) -> Unit,
     onDismissDeleteDialogs: () -> Unit,
+    onExportClicked: () -> Unit = {},
+    onExportPasswordChanged: (String) -> Unit = {},
+    onExportConfirmPasswordChanged: (String) -> Unit = {},
+    onConfirmExportPassword: () -> Unit = {},
+    onImportClicked: () -> Unit = {},
+    onImportPasswordChanged: (String) -> Unit = {},
+    onConfirmImportPassword: () -> Unit = {},
+    onConfirmRestore: () -> Unit = {},
+    onDismissBackupDialogs: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -234,6 +288,15 @@ fun SettingsScreen(
             }
 
             item {
+                BackupCard(
+                    lastBackupText = uiState.formatLastBackup().asString(),
+                    isBackupLoading = uiState.isBackupLoading,
+                    onExport = onExportClicked,
+                    onImport = onImportClicked,
+                )
+            }
+
+            item {
                 val isGoalsValid = uiState.minKcalError == null &&
                     uiState.trainingKcalError == null && uiState.trainingProteinError == null &&
                     uiState.trainingCarbsError == null && uiState.trainingFatError == null &&
@@ -304,6 +367,39 @@ fun SettingsScreen(
             isSaving = uiState.isSavingMeal,
             onDismiss = onDismissDeleteDialogs,
             onConfirmDelete = { onConfirmDeleteMeal(deleteConfirm.id) },
+        )
+    }
+
+    if (uiState.isExportPasswordDialogOpen) {
+        ExportPasswordDialog(
+            passwordText = uiState.exportPasswordText,
+            confirmPasswordText = uiState.exportConfirmPasswordText,
+            error = uiState.exportPasswordError,
+            onPasswordChanged = onExportPasswordChanged,
+            onConfirmPasswordChanged = onExportConfirmPasswordChanged,
+            onConfirm = onConfirmExportPassword,
+            onDismiss = onDismissBackupDialogs,
+        )
+    }
+
+    if (uiState.isImportPasswordDialogOpen) {
+        ImportPasswordDialog(
+            passwordText = uiState.importPasswordText,
+            error = uiState.importPasswordError,
+            isLoading = uiState.isBackupLoading,
+            onPasswordChanged = onImportPasswordChanged,
+            onConfirm = onConfirmImportPassword,
+            onDismiss = onDismissBackupDialogs,
+        )
+    }
+
+    val restoreSummary = uiState.restoreSummary
+    if (uiState.isRestoreConfirmDialogOpen && restoreSummary != null) {
+        RestoreConfirmDialog(
+            summary = restoreSummary,
+            isLoading = uiState.isBackupLoading,
+            onConfirm = onConfirmRestore,
+            onDismiss = onDismissBackupDialogs,
         )
     }
 }
@@ -974,5 +1070,267 @@ private fun DeleteMealConfirmDialog(
                 Text(text = stringResource(R.string.meal_dialog_cancel_action))
             }
         }
+    )
+}
+
+@Composable
+private fun BackupCard(
+    lastBackupText: String,
+    isBackupLoading: Boolean,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.backup_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.backup_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = lastBackupText,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Button(
+                    onClick = onExport,
+                    enabled = !isBackupLoading,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(R.string.backup_export_action))
+                }
+                OutlinedButton(
+                    onClick = onImport,
+                    enabled = !isBackupLoading,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text(text = stringResource(R.string.backup_import_action))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportPasswordDialog(
+    passwordText: String,
+    confirmPasswordText: String,
+    error: com.controlcal.app.ui.feedback.UiText?,
+    onPasswordChanged: (String) -> Unit,
+    onConfirmPasswordChanged: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.backup_export_dialog_title)) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.backup_export_dialog_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = passwordText,
+                    onValueChange = onPasswordChanged,
+                    label = { Text(stringResource(R.string.backup_password_label)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = error != null,
+                )
+                OutlinedTextField(
+                    value = confirmPasswordText,
+                    onValueChange = onConfirmPasswordChanged,
+                    label = { Text(stringResource(R.string.backup_confirm_password_label)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = error != null,
+                )
+                if (error != null) {
+                    Text(
+                        text = error.asString(context),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.backup_export_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.meal_dialog_cancel_action))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ImportPasswordDialog(
+    passwordText: String,
+    error: com.controlcal.app.ui.feedback.UiText?,
+    isLoading: Boolean,
+    onPasswordChanged: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = { Text(text = stringResource(R.string.backup_import_password_dialog_title)) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.backup_import_password_dialog_message),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = passwordText,
+                    onValueChange = onPasswordChanged,
+                    label = { Text(stringResource(R.string.backup_password_label)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = error != null,
+                )
+                if (error != null) {
+                    Text(
+                        text = error.asString(context),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isLoading && passwordText.isNotBlank(),
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.backup_import_password_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.meal_dialog_cancel_action))
+            }
+        },
+    )
+}
+
+@Composable
+private fun RestoreConfirmDialog(
+    summary: BackupSummary,
+    isLoading: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val backupDate = Instant.ofEpochMilli(summary.createdAt).atZone(ZoneId.systemDefault()).toLocalDate()
+    val formattedDate = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).format(backupDate)
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = { Text(text = stringResource(R.string.backup_restore_dialog_title)) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.backup_restore_date, formattedDate),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(
+                        R.string.backup_restore_summary,
+                        summary.productCount,
+                        summary.dayCount,
+                        summary.mealEntryCount,
+                        summary.weightEntryCount,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = stringResource(R.string.backup_restore_warning),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                ),
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.backup_restore_confirm_action))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.meal_dialog_cancel_action))
+            }
+        },
     )
 }

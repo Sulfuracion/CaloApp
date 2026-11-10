@@ -40,4 +40,25 @@ object NumberFormatHelper {
         val normalized = text.trim().replace(',', '.')
         return normalized.toDoubleOrNull()?.takeIf { it.isFinite() }
     }
+
+    /**
+     * Formats an integer or long value using Spanish dot separator for thousands (e.g. 8432 -> "8.432").
+     */
+    fun formatInteger(value: Long): String {
+        val isNegative = value < 0
+        val s = kotlin.math.abs(value).toString()
+        val result = StringBuilder()
+        var count = 0
+        for (i in s.length - 1 downTo 0) {
+            result.append(s[i])
+            count++
+            if (count % 3 == 0 && i > 0) {
+                result.append('.')
+            }
+        }
+        if (isNegative) result.append('-')
+        return result.reverse().toString()
+    }
+
+    fun formatInteger(value: Int): String = formatInteger(value.toLong())
 }

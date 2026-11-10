@@ -2,6 +2,8 @@ package com.controlcal.app.ui.weight
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,9 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import com.controlcal.core.weight.WeightPeriodSummary
+import com.controlcal.core.weight.WeightRange
+import kotlin.math.abs
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -87,7 +92,7 @@ fun WeightRoute(
         onTodayInputChanged = viewModel::onTodayInputChanged,
         onQuickAddDelta = viewModel::onQuickAddDelta,
         onSaveTodayWeight = viewModel::onSaveTodayWeight,
-        onFilterSelected = viewModel::onFilterSelected,
+        onRangeSelected = viewModel::onRangeSelected,
         onStartEditEntry = viewModel::onStartEditEntry,
         onEditingWeightChanged = viewModel::onEditingWeightChanged,
         onEditingDateChanged = viewModel::onEditingDateChanged,
@@ -116,7 +121,7 @@ fun WeightScreen(
     onTodayInputChanged: (String) -> Unit,
     onQuickAddDelta: (Double) -> Unit,
     onSaveTodayWeight: () -> Unit,
-    onFilterSelected: (WeightChartFilter) -> Unit,
+    onRangeSelected: (WeightRange) -> Unit,
     onStartEditEntry: (WeightEntry) -> Unit,
     onEditingWeightChanged: (String) -> Unit,
     onEditingDateChanged: (String) -> Unit,
@@ -181,29 +186,42 @@ fun WeightScreen(
 
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    FilterChip(
-                        selected = uiState.selectedFilter == WeightChartFilter.DAYS_30,
-                        onClick = { onFilterSelected(WeightChartFilter.DAYS_30) },
-                        label = { Text(text = stringResource(R.string.weight_chart_filter_30)) },
-                    )
-                    FilterChip(
-                        selected = uiState.selectedFilter == WeightChartFilter.DAYS_90,
-                        onClick = { onFilterSelected(WeightChartFilter.DAYS_90) },
-                        label = { Text(text = stringResource(R.string.weight_chart_filter_90)) },
-                    )
-                    FilterChip(
-                        selected = uiState.selectedFilter == WeightChartFilter.ALL,
-                        onClick = { onFilterSelected(WeightChartFilter.ALL) },
-                        label = { Text(text = stringResource(R.string.weight_chart_filter_all)) },
-                    )
+                    WeightRange.entries.forEach { range ->
+                        val labelRes = when (range) {
+                            WeightRange.LAST_7_DAYS -> R.string.weight_range_chip_7d
+                            WeightRange.LAST_15_DAYS -> R.string.weight_range_chip_15d
+                            WeightRange.LAST_1_MONTH -> R.string.weight_range_chip_1m
+                            WeightRange.LAST_6_MONTHS -> R.string.weight_range_chip_6m
+                            WeightRange.LAST_1_YEAR -> R.string.weight_range_chip_1a
+                            WeightRange.ALL -> R.string.weight_range_chip_all
+                        }
+                        FilterChip(
+                            selected = uiState.selectedRange == range,
+                            onClick = { onRangeSelected(range) },
+                            label = { Text(text = stringResource(labelRes)) },
+                        )
+                    }
                 }
             }
 
             item {
-                WeightTrendChart(points = uiState.chartPoints)
+                WeightTrendChart(
+                    trendPoints = uiState.chartPoints,
+                    plotPoints = uiState.plotPoints,
+                    selectedRange = uiState.selectedRange,
+                    isWeeklyAggregated = uiState.isWeeklyAggregated,
+                )
+            }
+
+            if (uiState.periodSummary != null && uiState.periodSummary.hasSufficientData) {
+                item {
+                    WeightPeriodSummaryCard(summary = uiState.periodSummary)
+                }
             }
 
             item {
@@ -833,4 +851,96 @@ private fun WeightConflictDialog(
             }
         },
     )
+}
+
+@Composable
+private fun WeightPeriodSummaryCard(
+    summary: WeightPeriodSummary,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.weight_summary_card_title),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                // 1. Cambio de tendencia
+                Column(modifier = Modifier.weight(1.1f)) {
+                    Text(
+                        text = stringResource(R.string.weight_summary_trend_change_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val rangeName = stringResource(summary.range.toNameStringRes())
+                    val changeFormatted = NumberFormatHelper.formatDecimal(abs(summary.trendChangeKg))
+                    val changeText = when {
+                        summary.trendChangeKg < -0.05 -> stringResource(R.string.weight_summary_change_negative, changeFormatted, rangeName)
+                        summary.trendChangeKg > 0.05 -> stringResource(R.string.weight_summary_change_positive, changeFormatted, rangeName)
+                        else -> stringResource(R.string.weight_summary_change_neutral, rangeName)
+                    }
+                    Text(
+                        text = changeText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                // 2. Peso de tendencia actual
+                Column(modifier = Modifier.weight(0.9f)) {
+                    Text(
+                        text = stringResource(R.string.weight_summary_current_trend_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val currentFormatted = NumberFormatHelper.formatDecimal(summary.currentTrendKg)
+                    Text(
+                        text = stringResource(R.string.weight_summary_current_trend_value, currentFormatted),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                // 3. Ritmo medio semanal
+                Column(modifier = Modifier.weight(0.8f)) {
+                    Text(
+                        text = stringResource(R.string.weight_summary_weekly_rate_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val rateFormatted = NumberFormatHelper.formatDecimal(abs(summary.weeklyRateKg))
+                    val rateText = when {
+                        summary.weeklyRateKg < -0.05 -> stringResource(R.string.weight_summary_rate_negative, rateFormatted)
+                        summary.weeklyRateKg > 0.05 -> stringResource(R.string.weight_summary_rate_positive, rateFormatted)
+                        else -> stringResource(R.string.weight_summary_rate_neutral)
+                    }
+                    Text(
+                        text = rateText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
+            }
+        }
+    }
 }

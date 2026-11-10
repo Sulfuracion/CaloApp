@@ -71,7 +71,8 @@ object TestData {
         dayType: DayType = DayType.REST,
         waterMl: Int = 0,
         notes: String? = null,
-    ) = DailyLogEntity(date = date, dayType = dayType, waterMl = waterMl, notes = notes)
+        steps: Int = 0,
+    ) = DailyLogEntity(date = date, dayType = dayType, waterMl = waterMl, notes = notes, steps = steps)
 
     fun mealEntry(
         id: Long = 0,

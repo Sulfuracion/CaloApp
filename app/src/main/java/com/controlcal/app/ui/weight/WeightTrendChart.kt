@@ -32,7 +32,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -40,8 +39,8 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.drawText
@@ -51,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import com.controlcal.app.R
 import com.controlcal.core.nutrition.NumberFormatHelper
 import com.controlcal.core.tdee.WeightTrendPoint
+import com.controlcal.core.weight.WeightPlotPoint
+import com.controlcal.core.weight.WeightRange
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -58,9 +59,23 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
+fun WeightRange.toNameStringRes(): Int {
+    return when (this) {
+        WeightRange.LAST_7_DAYS -> R.string.weight_range_name_7d
+        WeightRange.LAST_15_DAYS -> R.string.weight_range_name_15d
+        WeightRange.LAST_1_MONTH -> R.string.weight_range_name_1m
+        WeightRange.LAST_6_MONTHS -> R.string.weight_range_name_6m
+        WeightRange.LAST_1_YEAR -> R.string.weight_range_name_1a
+        WeightRange.ALL -> R.string.weight_range_name_all
+    }
+}
+
 @Composable
 fun WeightTrendChart(
-    points: List<WeightTrendPoint>,
+    trendPoints: List<WeightTrendPoint>,
+    plotPoints: List<WeightPlotPoint>,
+    selectedRange: WeightRange = WeightRange.LAST_1_MONTH,
+    isWeeklyAggregated: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -83,7 +98,7 @@ fun WeightTrendChart(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (points.isEmpty()) {
+            if (plotPoints.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -96,7 +111,7 @@ fun WeightTrendChart(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else if (points.size == 1) {
+            } else if (plotPoints.size < 2 && trendPoints.size < 2) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -111,7 +126,10 @@ fun WeightTrendChart(
                 }
             } else {
                 ChartCanvasWithScrubber(
-                    points = points,
+                    trendPoints = trendPoints,
+                    plotPoints = plotPoints,
+                    selectedRange = selectedRange,
+                    isWeeklyAggregated = isWeeklyAggregated,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(220.dp),
@@ -119,20 +137,45 @@ fun WeightTrendChart(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                ChartLegend()
+                ChartLegend(isWeeklyAggregated = isWeeklyAggregated)
             }
         }
     }
 }
 
 @Composable
-private fun ChartLegend() {
+fun WeightTrendChart(
+    points: List<WeightTrendPoint>,
+    modifier: Modifier = Modifier,
+) {
+    val plotPoints = remember(points) {
+        points.map {
+            WeightPlotPoint(
+                date = it.date,
+                weightKg = it.weightKg,
+                trendKg = it.trendKg,
+                isWeeklyAverage = false,
+                sampleCount = 1,
+            )
+        }
+    }
+    WeightTrendChart(
+        trendPoints = points,
+        plotPoints = plotPoints,
+        selectedRange = WeightRange.LAST_1_MONTH,
+        isWeeklyAggregated = false,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ChartLegend(isWeeklyAggregated: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Raw weigh-in marker
+        // Raw weigh-in or weekly average marker
         Box(
             modifier = Modifier
                 .size(10.dp)
@@ -140,7 +183,11 @@ private fun ChartLegend() {
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
-            text = stringResource(R.string.weight_chart_legend_weigh_in),
+            text = if (isWeeklyAggregated) {
+                stringResource(R.string.weight_chart_legend_weekly_average)
+            } else {
+                stringResource(R.string.weight_chart_legend_weigh_in)
+            },
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -168,7 +215,10 @@ private fun ChartLegend() {
 
 @Composable
 private fun ChartCanvasWithScrubber(
-    points: List<WeightTrendPoint>,
+    trendPoints: List<WeightTrendPoint>,
+    plotPoints: List<WeightPlotPoint>,
+    selectedRange: WeightRange,
+    isWeeklyAggregated: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -189,17 +239,22 @@ private fun ChartCanvasWithScrubber(
         color = onPrimaryContainerColor,
     )
 
-    val dateFormatter = remember {
-        DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("es-ES"))
+    val esLocale = remember { Locale.forLanguageTag("es-ES") }
+    val dayMonthFormatter = remember { DateTimeFormatter.ofPattern("d MMM", esLocale) }
+    val monthYearFormatter = remember { DateTimeFormatter.ofPattern("MMM yy", esLocale) }
+    val monthOnlyFormatter = remember { DateTimeFormatter.ofPattern("MMM", esLocale) }
+
+    val parsedPlotDates = remember(plotPoints) {
+        plotPoints.map { LocalDate.parse(it.date) }
     }
-    val parsedDates = remember(points) {
-        points.map { LocalDate.parse(it.date) }
+    val parsedTrendDates = remember(trendPoints) {
+        trendPoints.map { LocalDate.parse(it.date) }
     }
 
-    val latestPoint = points.lastOrNull()
-    val earliestPoint = points.firstOrNull()
-    val changeDirection = if (latestPoint != null && earliestPoint != null) {
-        val netChange = latestPoint.trendKg - earliestPoint.trendKg
+    val latestTrend = trendPoints.lastOrNull()
+    val earliestTrend = trendPoints.firstOrNull()
+    val changeDirection = if (latestTrend != null && earliestTrend != null) {
+        val netChange = latestTrend.trendKg - earliestTrend.trendKg
         val changeFormatted = NumberFormatHelper.formatDecimal(abs(netChange))
         when {
             netChange > 0.05 -> stringResource(R.string.weight_chart_change_increase, changeFormatted)
@@ -209,38 +264,50 @@ private fun ChartCanvasWithScrubber(
     } else {
         stringResource(R.string.weight_chart_change_stable)
     }
-    val chartDescription = if (latestPoint != null && earliestPoint != null) {
+
+    val rangeName = stringResource(selectedRange.toNameStringRes())
+    val totalCount = plotPoints.sumOf { it.sampleCount }
+
+    val chartDescription = if (latestTrend != null) {
+        val latestWeight = plotPoints.lastOrNull()?.weightKg ?: latestTrend.weightKg
         stringResource(
             R.string.weight_chart_accessibility_summary,
-            points.size,
-            NumberFormatHelper.formatDecimal(latestPoint.weightKg),
-            NumberFormatHelper.formatDecimal(latestPoint.trendKg),
+            rangeName,
+            totalCount,
+            NumberFormatHelper.formatDecimal(latestWeight),
+            NumberFormatHelper.formatDecimal(latestTrend.trendKg),
             changeDirection,
         )
     } else {
         stringResource(R.string.weight_chart_accessibility_empty)
     }
-    val pointActions = points.mapIndexed { index, _ ->
+
+    val pointActions = plotPoints.mapIndexed { index, point ->
+        val dateLabel = parsedPlotDates[index].format(dayMonthFormatter)
+        val actionLabel = if (point.isWeeklyAverage) {
+            stringResource(R.string.weight_chart_select_point_weekly, index + 1, dateLabel)
+        } else {
+            stringResource(R.string.weight_chart_select_point, index + 1, dateLabel)
+        }
         CustomAccessibilityAction(
-            label = stringResource(
-                R.string.weight_chart_select_point,
-                index + 1,
-                parsedDates[index].format(dateFormatter),
-            ),
+            label = actionLabel,
             action = {
                 selectedPointIndex = index
                 true
             },
         )
     }
+
     val selectedTooltipText = selectedPointIndex?.let { index ->
-        points.getOrNull(index)?.let { point ->
-            stringResource(
-                R.string.weight_chart_tooltip,
-                parsedDates[index].format(dateFormatter),
-                NumberFormatHelper.formatDecimal(point.weightKg),
-                NumberFormatHelper.formatDecimal(point.trendKg),
-            )
+        plotPoints.getOrNull(index)?.let { point ->
+            val dateLabel = parsedPlotDates[index].format(dayMonthFormatter)
+            val weightStr = NumberFormatHelper.formatDecimal(point.weightKg)
+            val trendStr = NumberFormatHelper.formatDecimal(point.trendKg)
+            if (point.isWeeklyAverage) {
+                stringResource(R.string.weight_chart_tooltip_weekly, dateLabel, weightStr, trendStr)
+            } else {
+                stringResource(R.string.weight_chart_tooltip, dateLabel, weightStr, trendStr)
+            }
         }
     }
 
@@ -252,27 +319,27 @@ private fun ChartCanvasWithScrubber(
                     contentDescription = chartDescription
                     customActions = pointActions
                 }
-                .pointerInput(points) {
+                .pointerInput(plotPoints) {
                     val padLeft = 44.dp.toPx()
                     val padRight = 16.dp.toPx()
                     detectTapGestures(
                         onPress = { offset ->
-                            val index = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points, parsedDates)
+                            val index = findClosestPlotPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, plotPoints, parsedPlotDates)
                             selectedPointIndex = index
                             tryAwaitRelease()
                             selectedPointIndex = null
                         }
                     )
                 }
-                .pointerInput(points) {
+                .pointerInput(plotPoints) {
                     val padLeft = 44.dp.toPx()
                     val padRight = 16.dp.toPx()
                     detectDragGestures(
                         onDragStart = { offset ->
-                            selectedPointIndex = findClosestPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, points, parsedDates)
+                            selectedPointIndex = findClosestPlotPointIndex(offset.x, size.width.toFloat(), padLeft, padRight, plotPoints, parsedPlotDates)
                         },
                         onDrag = { change, _ ->
-                            selectedPointIndex = findClosestPointIndex(change.position.x, size.width.toFloat(), padLeft, padRight, points, parsedDates)
+                            selectedPointIndex = findClosestPlotPointIndex(change.position.x, size.width.toFloat(), padLeft, padRight, plotPoints, parsedPlotDates)
                         },
                         onDragEnd = { selectedPointIndex = null },
                         onDragCancel = { selectedPointIndex = null },
@@ -290,15 +357,19 @@ private fun ChartCanvasWithScrubber(
             val chartWidth = canvasWidth - paddingLeft - paddingRight
             val chartHeight = canvasHeight - paddingTop - paddingBottom
 
-            val minVal = points.minOf { min(it.weightKg, it.trendKg) }
-            val maxVal = points.maxOf { max(it.weightKg, it.trendKg) }
+            val allWeights = plotPoints.map { it.weightKg } + trendPoints.map { it.trendKg }
+            val minVal = allWeights.minOrNull() ?: 70.0
+            val maxVal = allWeights.maxOrNull() ?: 80.0
             val span = (maxVal - minVal).coerceAtLeast(1.0)
             val minY = minVal - (span * 0.15)
             val maxY = maxVal + (span * 0.15)
             val yRange = (maxY - minY).coerceAtLeast(0.1)
 
-            val startEpochDay = parsedDates.first().toEpochDay()
-            val endEpochDay = parsedDates.last().toEpochDay()
+            val allDates = (parsedPlotDates + parsedTrendDates).sorted()
+            if (allDates.isEmpty()) return@Canvas
+
+            val startEpochDay = allDates.first().toEpochDay()
+            val endEpochDay = allDates.last().toEpochDay()
             val totalDays = (endEpochDay - startEpochDay).coerceAtLeast(1)
 
             fun xForEpochDay(epochDay: Long): Float {
@@ -337,75 +408,79 @@ private fun ChartCanvasWithScrubber(
                 )
             }
 
-            // 2. Draw trend gradient fill & line (EMA)
-            val trendPath = Path()
-            val trendFillPath = Path()
+            // 2. Draw trend gradient fill & line (EMA) using trendPoints
+            if (trendPoints.isNotEmpty()) {
+                val trendPath = Path()
+                val trendFillPath = Path()
 
-            val firstX = xForEpochDay(startEpochDay)
-            val firstTrendY = yForWeight(points.first().trendKg)
-            trendPath.moveTo(firstX, firstTrendY)
-            trendFillPath.moveTo(firstX, paddingTop + chartHeight)
-            trendFillPath.lineTo(firstX, firstTrendY)
+                val firstEpochDay = parsedTrendDates.first().toEpochDay()
+                val firstX = xForEpochDay(firstEpochDay)
+                val firstTrendY = yForWeight(trendPoints.first().trendKg)
+                trendPath.moveTo(firstX, firstTrendY)
+                trendFillPath.moveTo(firstX, paddingTop + chartHeight)
+                trendFillPath.lineTo(firstX, firstTrendY)
 
-            for (i in 1 until points.size) {
-                val pt = points[i]
-                val epochDay = parsedDates[i].toEpochDay()
-                val x = xForEpochDay(epochDay)
-                val y = yForWeight(pt.trendKg)
-                trendPath.lineTo(x, y)
-                trendFillPath.lineTo(x, y)
-            }
+                for (i in 1 until trendPoints.size) {
+                    val pt = trendPoints[i]
+                    val epochDay = parsedTrendDates[i].toEpochDay()
+                    val x = xForEpochDay(epochDay)
+                    val y = yForWeight(pt.trendKg)
+                    trendPath.lineTo(x, y)
+                    trendFillPath.lineTo(x, y)
+                }
 
-            val lastPt = points.last()
-            val lastEpochDay = parsedDates.last().toEpochDay()
-            val lastX = xForEpochDay(lastEpochDay)
-            trendFillPath.lineTo(lastX, paddingTop + chartHeight)
-            trendFillPath.close()
+                val lastEpochDay = parsedTrendDates.last().toEpochDay()
+                val lastX = xForEpochDay(lastEpochDay)
+                trendFillPath.lineTo(lastX, paddingTop + chartHeight)
+                trendFillPath.close()
 
-            // Draw area under trend
-            drawPath(
-                path = trendFillPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        primaryColor.copy(alpha = 0.22f),
-                        primaryColor.copy(alpha = 0.02f),
-                    ),
-                    startY = paddingTop,
-                    endY = paddingTop + chartHeight,
+                // Draw area under trend
+                drawPath(
+                    path = trendFillPath,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            primaryColor.copy(alpha = 0.22f),
+                            primaryColor.copy(alpha = 0.02f),
+                        ),
+                        startY = paddingTop,
+                        endY = paddingTop + chartHeight,
+                    )
                 )
-            )
 
-            // Draw trend line
-            drawPath(
-                path = trendPath,
-                color = primaryColor,
-                style = Stroke(
-                    width = 3.dp.toPx(),
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round,
-                )
-            )
-
-            // 3. Draw weigh-in connecting lines & points
-            for (i in 0 until points.size - 1) {
-                val current = points[i]
-                val next = points[i + 1]
-                val x1 = xForEpochDay(parsedDates[i].toEpochDay())
-                val y1 = yForWeight(current.weightKg)
-                val x2 = xForEpochDay(parsedDates[i + 1].toEpochDay())
-                val y2 = yForWeight(next.weightKg)
-
-                drawLine(
-                    color = tertiaryColor.copy(alpha = 0.35f),
-                    start = Offset(x1, y1),
-                    end = Offset(x2, y2),
-                    strokeWidth = 1.dp.toPx(),
+                // Draw trend line
+                drawPath(
+                    path = trendPath,
+                    color = primaryColor,
+                    style = Stroke(
+                        width = 3.dp.toPx(),
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round,
+                    )
                 )
             }
 
-            for (i in points.indices) {
-                val pt = points[i]
-                val x = xForEpochDay(parsedDates[i].toEpochDay())
+            // 3. Draw weigh-in connecting lines & points using plotPoints
+            if (plotPoints.size > 1) {
+                for (i in 0 until plotPoints.size - 1) {
+                    val current = plotPoints[i]
+                    val next = plotPoints[i + 1]
+                    val x1 = xForEpochDay(parsedPlotDates[i].toEpochDay())
+                    val y1 = yForWeight(current.weightKg)
+                    val x2 = xForEpochDay(parsedPlotDates[i + 1].toEpochDay())
+                    val y2 = yForWeight(next.weightKg)
+
+                    drawLine(
+                        color = tertiaryColor.copy(alpha = 0.35f),
+                        start = Offset(x1, y1),
+                        end = Offset(x2, y2),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                }
+            }
+
+            for (i in plotPoints.indices) {
+                val pt = plotPoints[i]
+                val x = xForEpochDay(parsedPlotDates[i].toEpochDay())
                 val y = yForWeight(pt.weightKg)
 
                 // Outer border circle
@@ -422,31 +497,50 @@ private fun ChartCanvasWithScrubber(
                 )
             }
 
-            // 4. Draw X-axis date labels (first, middle, last)
-            val dateIndices = if (points.size <= 2) {
-                listOf(0, points.size - 1)
-            } else {
-                listOf(0, points.size / 2, points.size - 1)
+            // 4. Draw X-axis date labels adapted to the selected range without overlapping
+            val isMultiYear = allDates.first().year != allDates.last().year
+            val labelFormatter = when (selectedRange) {
+                WeightRange.LAST_7_DAYS, WeightRange.LAST_15_DAYS -> dayMonthFormatter
+                WeightRange.LAST_1_MONTH -> dayMonthFormatter
+                WeightRange.LAST_6_MONTHS, WeightRange.LAST_1_YEAR, WeightRange.ALL -> {
+                    if (isMultiYear) monthYearFormatter else monthOnlyFormatter
+                }
             }
 
-            for (idx in dateIndices) {
-                val pt = points[idx]
-                val parsed = parsedDates[idx]
-                val text = parsed.format(dateFormatter)
+            // Select candidate dates to label
+            val candidateEpochDays = computeCandidateEpochDays(startEpochDay, endEpochDay, selectedRange)
+            var lastDrawnEndX = -Float.MAX_VALUE
+            val minLabelSpacingPx = 8.dp.toPx()
+
+            for (epochDay in candidateEpochDays) {
+                val date = LocalDate.ofEpochDay(epochDay)
+                val text = date.format(labelFormatter)
                 val measured = textMeasurer.measure(text, style = axisLabelStyle)
-                val x = xForEpochDay(parsed.toEpochDay()) - (measured.size.width / 2)
-                drawText(
-                    textMeasurer = textMeasurer,
-                    text = text,
-                    topLeft = Offset(x.coerceIn(paddingLeft, canvasWidth - paddingRight - measured.size.width), canvasHeight - paddingBottom + 6.dp.toPx()),
-                    style = axisLabelStyle,
-                )
+                val labelWidth = measured.size.width.toFloat()
+                var x = xForEpochDay(epochDay) - (labelWidth / 2f)
+
+                // Clamp to canvas horizontal bounds
+                if (x < paddingLeft) x = paddingLeft
+                if (x + labelWidth > canvasWidth - paddingRight) {
+                    x = canvasWidth - paddingRight - labelWidth
+                }
+
+                // Check collision with previously drawn label to guarantee no text overlap
+                if (x >= lastDrawnEndX + minLabelSpacingPx) {
+                    drawText(
+                        textMeasurer = textMeasurer,
+                        text = text,
+                        topLeft = Offset(x, canvasHeight - paddingBottom + 6.dp.toPx()),
+                        style = axisLabelStyle,
+                    )
+                    lastDrawnEndX = x + labelWidth
+                }
             }
 
             // 5. Draw scrubber highlight and tooltip if active
             selectedPointIndex?.let { idx ->
-                val selectedPoint = points.getOrNull(idx) ?: return@let
-                val parsedDate = parsedDates[idx]
+                val selectedPoint = plotPoints.getOrNull(idx) ?: return@let
+                val parsedDate = parsedPlotDates[idx]
                 val x = xForEpochDay(parsedDate.toEpochDay())
                 val yRaw = yForWeight(selectedPoint.weightKg)
                 val yTrend = yForWeight(selectedPoint.trendKg)
@@ -515,15 +609,48 @@ private fun ChartCanvasWithScrubber(
     }
 }
 
-private fun findClosestPointIndex(
+/**
+ * Computes candidate epoch days for drawing X-axis labels based on the range duration.
+ */
+private fun computeCandidateEpochDays(
+    startEpochDay: Long,
+    endEpochDay: Long,
+    range: WeightRange,
+): List<Long> {
+    val totalDays = (endEpochDay - startEpochDay).coerceAtLeast(1)
+    if (totalDays <= 2) {
+        return listOf(startEpochDay, endEpochDay)
+    }
+
+    val numSegments = when (range) {
+        WeightRange.LAST_7_DAYS -> 2 // start, mid, end (3 labels)
+        WeightRange.LAST_15_DAYS -> 3 // 4 labels
+        WeightRange.LAST_1_MONTH -> 3 // 4 labels
+        WeightRange.LAST_6_MONTHS -> 5 // 6 labels
+        WeightRange.LAST_1_YEAR -> 5 // 6 labels
+        WeightRange.ALL -> 5 // 6 labels
+    }
+
+    val step = totalDays.toDouble() / numSegments.toDouble()
+    val candidates = ArrayList<Long>(numSegments + 1)
+    for (i in 0..numSegments) {
+        val epochDay = (startEpochDay + (i * step)).toLong().coerceAtMost(endEpochDay)
+        if (candidates.isEmpty() || epochDay > candidates.last()) {
+            candidates.add(epochDay)
+        }
+    }
+    return candidates
+}
+
+private fun findClosestPlotPointIndex(
     touchX: Float,
     canvasWidth: Float,
     paddingLeft: Float,
     paddingRight: Float,
-    points: List<WeightTrendPoint>,
+    plotPoints: List<WeightPlotPoint>,
     parsedDates: List<LocalDate>,
 ): Int {
-    if (points.isEmpty()) return 0
+    if (plotPoints.isEmpty()) return 0
     val startDay = parsedDates.first().toEpochDay()
     val endDay = parsedDates.last().toEpochDay()
     val totalDays = (endDay - startDay).coerceAtLeast(1)
@@ -533,7 +660,7 @@ private fun findClosestPointIndex(
     var closestIndex = 0
     var minDiff = Float.MAX_VALUE
 
-    for (i in points.indices) {
+    for (i in plotPoints.indices) {
         val day = parsedDates[i].toEpochDay()
         val x = paddingLeft + ((day - startDay).toFloat() / totalDays.toFloat()) * chartWidth
         val diff = abs(touchX - x)

@@ -1,7 +1,10 @@
 package com.controlcal.app.ui.weight
 
 import com.controlcal.core.model.WeightEntry
+import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.repo.UserSettingsRepository
 import com.controlcal.core.repo.WeightEntryRepository
+import com.controlcal.core.weight.WeightRange
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,12 +27,14 @@ class WeightViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakeRepository: FakeWeightEntryRepository
+    private lateinit var fakeUserSettingsRepository: FakeUserSettingsRepository
     private lateinit var viewModel: WeightViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeWeightEntryRepository()
+        fakeUserSettingsRepository = FakeUserSettingsRepository()
     }
 
     @After
@@ -44,7 +49,7 @@ class WeightViewModelTest {
         fakeRepository.upsert(WeightEntry(date = yesterday, weightKg = 80.0))
         fakeRepository.upsert(WeightEntry(date = today, weightKg = 81.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -67,7 +72,7 @@ class WeightViewModelTest {
 
     @Test
     fun onQuickAddDeltaModifiesInputText() = runTest {
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         viewModel.onTodayInputChanged("78,0")
@@ -82,7 +87,7 @@ class WeightViewModelTest {
     @Test
     fun onSaveTodayWeightUpsertsAndUpdatesState() = runTest {
         val today = LocalDate.now().toString()
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         viewModel.onTodayInputChanged("79,2")
@@ -98,7 +103,7 @@ class WeightViewModelTest {
 
     @Test
     fun onSaveTodayWeightInvalidInputSetsError() = runTest {
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         viewModel.onTodayInputChanged("abc")
@@ -110,31 +115,48 @@ class WeightViewModelTest {
     }
 
     @Test
-    fun onFilterSelectedFiltersChartPointsCorrectly() = runTest {
+    fun onRangeSelectedUpdatesSelectedRangeAndChartPoints() = runTest {
         val today = LocalDate.now()
-        val d10 = today.minusDays(10).toString()
-        val d40 = today.minusDays(40).toString()
+        val d5 = today.minusDays(5).toString()
+        val d12 = today.minusDays(12).toString()
+        val d25 = today.minusDays(25).toString()
         val d100 = today.minusDays(100).toString()
 
         fakeRepository.upsert(WeightEntry(date = d100, weightKg = 85.0))
-        fakeRepository.upsert(WeightEntry(date = d40, weightKg = 83.0))
-        fakeRepository.upsert(WeightEntry(date = d10, weightKg = 80.0))
+        fakeRepository.upsert(WeightEntry(date = d25, weightKg = 83.0))
+        fakeRepository.upsert(WeightEntry(date = d12, weightKg = 81.0))
+        fakeRepository.upsert(WeightEntry(date = d5, weightKg = 80.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
-        // Default 30 days
-        viewModel.onFilterSelected(WeightChartFilter.DAYS_30)
-        assertEquals(1, viewModel.uiState.value.chartPoints.size)
-        assertEquals(d10, viewModel.uiState.value.chartPoints[0].date)
+        // Default range is 1M (LAST_1_MONTH)
+        assertEquals(WeightRange.LAST_1_MONTH, viewModel.uiState.value.selectedRange)
+        // In 1M: d25, d12, d5 are included (3 points)
+        assertEquals(3, viewModel.uiState.value.chartPoints.size)
+        assertNotNull(viewModel.uiState.value.periodSummary)
+        assertTrue(viewModel.uiState.value.periodSummary!!.hasSufficientData)
 
-        // 90 days
-        viewModel.onFilterSelected(WeightChartFilter.DAYS_90)
+        // Select 7D
+        viewModel.onRangeSelected(WeightRange.LAST_7_DAYS)
+        advanceUntilIdle()
+        assertEquals(WeightRange.LAST_7_DAYS, viewModel.uiState.value.selectedRange)
+        assertEquals(1, viewModel.uiState.value.chartPoints.size)
+        assertEquals(d5, viewModel.uiState.value.chartPoints[0].date)
+        assertEquals(WeightRange.LAST_7_DAYS, fakeUserSettingsRepository.getWeightChartRange())
+
+        // Select 15D
+        viewModel.onRangeSelected(WeightRange.LAST_15_DAYS)
+        advanceUntilIdle()
+        assertEquals(WeightRange.LAST_15_DAYS, viewModel.uiState.value.selectedRange)
         assertEquals(2, viewModel.uiState.value.chartPoints.size)
 
-        // All
-        viewModel.onFilterSelected(WeightChartFilter.ALL)
-        assertEquals(3, viewModel.uiState.value.chartPoints.size)
+        // Select ALL
+        viewModel.onRangeSelected(WeightRange.ALL)
+        advanceUntilIdle()
+        assertEquals(WeightRange.ALL, viewModel.uiState.value.selectedRange)
+        assertEquals(4, viewModel.uiState.value.chartPoints.size)
+        assertEquals(WeightRange.ALL, fakeUserSettingsRepository.getWeightChartRange())
     }
 
     @Test
@@ -142,7 +164,7 @@ class WeightViewModelTest {
         val originalDate = "2026-10-01"
         fakeRepository.upsert(WeightEntry(date = originalDate, weightKg = 80.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         val entry = fakeRepository.getByDate(originalDate)!!
@@ -164,7 +186,7 @@ class WeightViewModelTest {
         val date = "2026-10-01"
         fakeRepository.upsert(WeightEntry(date = date, weightKg = 80.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         val entry = fakeRepository.getByDate(date)!!
@@ -179,7 +201,7 @@ class WeightViewModelTest {
 
     @Test
     fun onSavePastEntryAddsHistoricalMeasurement() = runTest {
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         viewModel.onStartAddPastEntry()
@@ -199,7 +221,7 @@ class WeightViewModelTest {
         fakeRepository.upsert(WeightEntry(date = "2026-10-01", weightKg = 80.0))
         fakeRepository.upsert(WeightEntry(date = "2026-10-02", weightKg = 75.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         val entry = fakeRepository.getByDate("2026-10-01")!!
@@ -233,7 +255,7 @@ class WeightViewModelTest {
         fakeRepository.upsert(WeightEntry(date = "2026-10-01", weightKg = 80.0))
         fakeRepository.upsert(WeightEntry(date = "2026-10-02", weightKg = 75.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         val entry = fakeRepository.getByDate("2026-10-01")!!
@@ -256,7 +278,7 @@ class WeightViewModelTest {
     fun onSavePastEntry_whenTargetDateHasExistingEntry_triggersConflictConfirmation() = runTest {
         fakeRepository.upsert(WeightEntry(date = "2026-10-05", weightKg = 78.0))
 
-        viewModel = WeightViewModel(fakeRepository)
+        viewModel = WeightViewModel(fakeRepository, fakeUserSettingsRepository)
         advanceUntilIdle()
 
         viewModel.onStartAddPastEntry()
@@ -307,5 +329,26 @@ private class FakeWeightEntryRepository : WeightEntryRepository {
             entries.remove(oldDate)
         }
         entries[newEntry.date] = newEntry
+    }
+}
+
+private class FakeUserSettingsRepository : UserSettingsRepository {
+    private var range: WeightRange = WeightRange.LAST_1_MONTH
+    private var pattern: WeeklyDayPattern = WeeklyDayPattern()
+
+    override suspend fun getWeeklyPattern(): WeeklyDayPattern = pattern
+    override suspend fun setWeeklyPattern(pattern: WeeklyDayPattern) {
+        this.pattern = pattern
+    }
+
+    override suspend fun getMinKcalLimit(): Double = 1200.0
+    override suspend fun setMinKcalLimit(minKcal: Double) {}
+
+    override suspend fun getLastTdeeProposalReviewedDate(): String? = null
+    override suspend fun setLastTdeeProposalReviewedDate(date: String) {}
+
+    override suspend fun getWeightChartRange(): WeightRange = range
+    override suspend fun setWeightChartRange(range: WeightRange) {
+        this.range = range
     }
 }

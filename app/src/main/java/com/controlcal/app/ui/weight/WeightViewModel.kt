@@ -5,9 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.controlcal.core.date.DateHelper
 import com.controlcal.core.model.WeightEntry
 import com.controlcal.core.nutrition.NumberFormatHelper
+import com.controlcal.core.repo.UserSettingsRepository
 import com.controlcal.core.repo.WeightEntryRepository
 import com.controlcal.core.tdee.WeightTrend
 import com.controlcal.core.tdee.WeightTrendPoint
+import com.controlcal.core.weight.WeightRange
+import com.controlcal.core.weight.WeightRangeSelector
 import com.controlcal.app.R
 import com.controlcal.app.ui.feedback.UiFeedbackEvent
 import com.controlcal.app.ui.feedback.UiText
@@ -31,6 +34,7 @@ import kotlin.math.roundToLong
 @HiltViewModel
 class WeightViewModel @Inject constructor(
     private val weightRepository: WeightEntryRepository,
+    private val userSettingsRepository: UserSettingsRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
 
@@ -40,6 +44,8 @@ class WeightViewModel @Inject constructor(
     private val _feedbackEvents = Channel<UiFeedbackEvent>(Channel.BUFFERED)
     val feedbackEvents: Flow<UiFeedbackEvent> = _feedbackEvents.receiveAsFlow()
 
+    private var isRangeInitialized = false
+
     init {
         loadEntries()
     }
@@ -47,10 +53,11 @@ class WeightViewModel @Inject constructor(
     fun loadEntries(preserveEmptyInput: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val today = DateHelper.getToday(clock).toString()
+            val todayDate = DateHelper.getToday(clock)
+            val today = todayDate.toString()
             val allAsc = weightRepository.getAll()
             val allDesc = allAsc.reversed()
-            val trend = WeightTrend.calculateTrend(allAsc)
+            val fullTrend = WeightTrend.calculateTrend(allAsc)
 
             val todayEntry = allAsc.find { it.date == today }
             val currentInput = _uiState.value.todayInputText
@@ -66,8 +73,22 @@ class WeightViewModel @Inject constructor(
                 ""
             }
 
-            val currentFilter = _uiState.value.selectedFilter
-            val filtered = filterChartPoints(trend, currentFilter, today)
+            val rangeToUse = if (isRangeInitialized) {
+                _uiState.value.selectedRange
+            } else {
+                isRangeInitialized = true
+                try {
+                    userSettingsRepository.getWeightChartRange()
+                } catch (_: Exception) {
+                    WeightRange.LAST_1_MONTH
+                }
+            }
+
+            val chartData = WeightRangeSelector.selectChartData(
+                allEntries = allAsc,
+                range = rangeToUse,
+                referenceDate = todayDate,
+            )
 
             _uiState.update {
                 it.copy(
@@ -77,8 +98,12 @@ class WeightViewModel @Inject constructor(
                     todayInputText = newInputText,
                     todayInputError = null,
                     entries = allDesc,
-                    trendPoints = trend,
-                    chartPoints = filtered,
+                    trendPoints = fullTrend,
+                    selectedRange = rangeToUse,
+                    chartPoints = chartData.trendPoints,
+                    plotPoints = chartData.plotPoints,
+                    periodSummary = chartData.periodSummary,
+                    isWeeklyAggregated = chartData.isWeeklyAggregated,
                 )
             }
         }
@@ -151,15 +176,27 @@ class WeightViewModel @Inject constructor(
         }
     }
 
-    fun onFilterSelected(filter: WeightChartFilter) {
-        val trend = _uiState.value.trendPoints
-        val today = _uiState.value.todayDate.ifBlank { LocalDate.now().toString() }
-        val filtered = filterChartPoints(trend, filter, today)
+    fun onRangeSelected(range: WeightRange) {
+        val todayDate = DateHelper.getToday(clock)
+        val allAsc = _uiState.value.entries.reversed()
+        val chartData = WeightRangeSelector.selectChartData(
+            allEntries = allAsc,
+            range = range,
+            referenceDate = todayDate,
+        )
         _uiState.update {
             it.copy(
-                selectedFilter = filter,
-                chartPoints = filtered,
+                selectedRange = range,
+                chartPoints = chartData.trendPoints,
+                plotPoints = chartData.plotPoints,
+                periodSummary = chartData.periodSummary,
+                isWeeklyAggregated = chartData.isWeeklyAggregated,
             )
+        }
+        viewModelScope.launch {
+            try {
+                userSettingsRepository.setWeightChartRange(range)
+            } catch (_: Exception) {}
         }
     }
 
@@ -419,26 +456,5 @@ class WeightViewModel @Inject constructor(
 
     fun onMessageConsumed() {
         _uiState.update { it.copy(message = null) }
-    }
-
-    private fun filterChartPoints(
-        points: List<WeightTrendPoint>,
-        filter: WeightChartFilter,
-        referenceDateString: String,
-    ): List<WeightTrendPoint> {
-        if (filter == WeightChartFilter.ALL) return points
-        val refDate = try {
-            LocalDate.parse(referenceDateString)
-        } catch (e: Exception) {
-            LocalDate.now()
-        }
-
-        val cutoffDate = when (filter) {
-            WeightChartFilter.DAYS_30 -> refDate.minusDays(30)
-            WeightChartFilter.DAYS_90 -> refDate.minusDays(90)
-            WeightChartFilter.ALL -> return points
-        }.toString()
-
-        return points.filter { it.date >= cutoffDate }
     }
 }

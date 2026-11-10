@@ -18,4 +18,6 @@ data class DailyLogEntity(
     @ColumnInfo(name = "water_ml")
     val waterMl: Int = 0,
     val notes: String? = null,
+    @ColumnInfo(name = "steps", defaultValue = "0")
+    val steps: Int = 0,
 )

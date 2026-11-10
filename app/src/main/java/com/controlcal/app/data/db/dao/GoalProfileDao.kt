@@ -12,6 +12,9 @@ interface GoalProfileDao {
     @Insert
     suspend fun insert(profile: GoalProfileEntity): Long
 
+    @Insert
+    suspend fun insertAll(profiles: List<GoalProfileEntity>): List<Long>
+
     /**
      * Goal in force for [date] and [dayType]: the latest profile whose
      * valid_from is not after [date] (section 5.1 of docs/PLAN.md).

@@ -9,4 +9,5 @@ data class DailyLog(
     val dayType: DayType = DayType.REST,
     val waterMl: Int = 0,
     val notes: String? = null,
+    val steps: Int = 0,
 )

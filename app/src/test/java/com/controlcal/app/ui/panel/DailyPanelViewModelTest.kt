@@ -806,6 +806,114 @@ class DailyPanelViewModelTest {
         assertTrue(state.currentSlotMeal.isNotEmpty())
         assertTrue(state.currentSlotMealName.isNotEmpty())
     }
+
+    @Test
+    fun stepsSync_fetchesYesterdayStepsAndUpdatesUi() = runTest {
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        val fakeHc = object : com.controlcal.app.data.health.HealthConnectManager {
+            override fun isSupported(): Boolean = true
+            override suspend fun hasStepsPermission(): Boolean = true
+            override fun getPermissions(): Set<String> = setOf("android.permission.health.READ_STEPS")
+            override suspend fun readStepsForDate(date: LocalDate): Long? = if (date == yesterday) 9876L else null
+            override suspend fun readYesterdaySteps(): Long? = 9876L
+        }
+
+        fakeUserSettingsRepository.setHealthConnectStepsSyncEnabled(true)
+
+        val vm = DailyPanelViewModel(
+            mealEntryRepository = fakeMealEntryRepository,
+            productRepository = fakeProductRepository,
+            dailyLogRepository = fakeDailyLogRepository,
+            resolveDayTypeUseCase = ResolveDayTypeUseCase(fakeDailyLogRepository, fakeUserSettingsRepository),
+            getActiveGoalProfileUseCase = GetActiveGoalProfileUseCase(fakeGoalProfileRepository),
+            weightEntryRepository = fakeWeightEntryRepository,
+            userSettingsRepository = fakeUserSettingsRepository,
+            goalProfileRepository = fakeGoalProfileRepository,
+            mealConfigRepository = fakeMealConfigRepository,
+            healthConnectManager = fakeHc,
+        )
+        vm.loadDay(today)
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state.isStepsSyncEnabled)
+        assertEquals(9876, state.yesterdaySteps)
+        assertEquals(9876, fakeDailyLogRepository.getByDate(yesterday.toString())?.steps)
+    }
+
+    @Test
+    fun manualSteps_openDialogAndSaveUpdatesYesterdayStepsWhenOnToday() = runTest {
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        viewModel.onOpenManualStepsDialog()
+        assertTrue(viewModel.uiState.value.isEditingManualSteps)
+
+        viewModel.onManualStepsTextChanged("8000")
+        assertNull(viewModel.uiState.value.editingManualStepsError)
+
+        viewModel.onSaveManualSteps()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isEditingManualSteps)
+        assertEquals(8000, state.yesterdaySteps)
+        assertEquals(8000, fakeDailyLogRepository.getByDate(yesterday.toString())?.steps)
+    }
+
+    @Test
+    fun manualSteps_saveUpdatesSelectedDateStepsWhenOnPastDate() = runTest {
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+        viewModel.onPreviousDay()
+        advanceUntilIdle()
+
+        viewModel.onOpenManualStepsDialog()
+        assertTrue(viewModel.uiState.value.isEditingManualSteps)
+
+        viewModel.onManualStepsTextChanged("12500")
+        viewModel.onSaveManualSteps()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isEditingManualSteps)
+        assertEquals(12500, state.steps)
+        assertEquals(12500, fakeDailyLogRepository.getByDate(yesterday.toString())?.steps)
+    }
+
+    @Test
+    fun manualSteps_invalidInputSetsError() = runTest {
+        viewModel.onOpenManualStepsDialog()
+        viewModel.onManualStepsTextChanged("-100")
+        assertNotNull(viewModel.uiState.value.editingManualStepsError)
+
+        viewModel.onDismissManualStepsDialog()
+        assertFalse(viewModel.uiState.value.isEditingManualSteps)
+    }
+
+    @Test
+    fun backupNotice_detectsNeverDoneAndOverdueCorrectly() = runTest {
+        // Initial state: lastBackup == null
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isBackupOverdue)
+        assertTrue(viewModel.uiState.value.isBackupNeverDone)
+
+        // Recent backup (e.g. 2 days ago)
+        val twoDaysAgo = System.currentTimeMillis() - (2L * 24L * 60L * 60L * 1000L)
+        fakeUserSettingsRepository.lastBackup = twoDaysAgo
+        viewModel.onDateSelected(LocalDate.now())
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isBackupOverdue)
+        assertFalse(viewModel.uiState.value.isBackupNeverDone)
+
+        // Overdue backup (e.g. 20 days ago)
+        val twentyDaysAgo = System.currentTimeMillis() - (20L * 24L * 60L * 60L * 1000L)
+        fakeUserSettingsRepository.lastBackup = twentyDaysAgo
+        viewModel.onDateSelected(LocalDate.now())
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isBackupOverdue)
+        assertFalse(viewModel.uiState.value.isBackupNeverDone)
+    }
 }
 
 private class FakeDailyLogRepository : DailyLogRepository {
@@ -826,6 +934,14 @@ private class FakeDailyLogRepository : DailyLogRepository {
             logs[date] = existing.copy(waterMl = waterMl)
         } else {
             logs[date] = DailyLog(date = date, dayType = DayType.REST, waterMl = waterMl)
+        }
+    }
+    override suspend fun setSteps(date: String, steps: Int) {
+        val existing = logs[date]
+        if (existing != null) {
+            logs[date] = existing.copy(steps = steps)
+        } else {
+            logs[date] = DailyLog(date = date, dayType = DayType.REST, steps = steps)
         }
     }
     override suspend fun setNotes(date: String, notes: String?) {
@@ -854,6 +970,17 @@ private class FakeUserSettingsRepository : UserSettingsRepository {
     override suspend fun getLastTdeeProposalReviewedDate(): String? = lastReviewedDate
     override suspend fun setLastTdeeProposalReviewedDate(date: String) {
         this.lastReviewedDate = date
+    }
+    var stepsSync = false
+    override suspend fun isHealthConnectStepsSyncEnabled(): Boolean = stepsSync
+    override suspend fun setHealthConnectStepsSyncEnabled(enabled: Boolean) {
+        stepsSync = enabled
+    }
+
+    var lastBackup: Long? = null
+    override suspend fun getLastBackupTimestamp(): Long? = lastBackup
+    override suspend fun setLastBackupTimestamp(timestamp: Long) {
+        lastBackup = timestamp
     }
 }
 

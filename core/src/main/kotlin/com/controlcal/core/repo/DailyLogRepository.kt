@@ -9,6 +9,7 @@ interface DailyLogRepository {
     suspend fun insert(log: DailyLog)
     suspend fun setDayType(date: String, dayType: DayType)
     suspend fun setWaterMl(date: String, waterMl: Int)
+    suspend fun setSteps(date: String, steps: Int)
     suspend fun setNotes(date: String, notes: String?)
     suspend fun deleteAll() {}
 }

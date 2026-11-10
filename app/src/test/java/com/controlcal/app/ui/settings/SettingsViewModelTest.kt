@@ -300,6 +300,113 @@ class SettingsViewModelTest {
         assertFalse(updatedSnack.isActive)
     }
 
+    @Test
+    fun healthConnect_toggleOn_showsRationaleDialogWhenSupported() = runTest {
+        val fakeHc = object : com.controlcal.app.data.health.HealthConnectManager {
+            override fun isSupported(): Boolean = true
+            override suspend fun hasStepsPermission(): Boolean = false
+            override fun getPermissions(): Set<String> = setOf("android.permission.health.READ_STEPS")
+            override suspend fun readStepsForDate(date: LocalDate): Long? = null
+            override suspend fun readYesterdaySteps(): Long? = null
+        }
+        val vm = SettingsViewModel(
+            userSettingsRepository = fakeUserSettingsRepository,
+            goalProfileRepository = fakeGoalProfileRepository,
+            getActiveGoalProfileUseCase = GetActiveGoalProfileUseCase(fakeGoalProfileRepository),
+            mealConfigRepository = fakeMealConfigRepository,
+            mealEntryRepository = fakeMealEntryRepository,
+            healthConnectManager = fakeHc,
+        )
+        advanceUntilIdle()
+
+        vm.onToggleHealthConnectSteps(true)
+        assertTrue(vm.uiState.value.showHealthConnectRationaleDialog)
+
+        vm.onDismissHealthConnectRationale()
+        assertFalse(vm.uiState.value.showHealthConnectRationaleDialog)
+    }
+
+    @Test
+    fun healthConnect_permissionResultGranted_enablesSync() = runTest {
+        val fakeHc = object : com.controlcal.app.data.health.HealthConnectManager {
+            override fun isSupported(): Boolean = true
+            override suspend fun hasStepsPermission(): Boolean = true
+            override fun getPermissions(): Set<String> = setOf("android.permission.health.READ_STEPS")
+            override suspend fun readStepsForDate(date: LocalDate): Long? = 7500L
+            override suspend fun readYesterdaySteps(): Long? = 7500L
+        }
+        val vm = SettingsViewModel(
+            userSettingsRepository = fakeUserSettingsRepository,
+            goalProfileRepository = fakeGoalProfileRepository,
+            getActiveGoalProfileUseCase = GetActiveGoalProfileUseCase(fakeGoalProfileRepository),
+            mealConfigRepository = fakeMealConfigRepository,
+            mealEntryRepository = fakeMealEntryRepository,
+            healthConnectManager = fakeHc,
+        )
+        advanceUntilIdle()
+
+        vm.onHealthConnectPermissionsResult(true)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.isHealthConnectStepsSyncEnabled)
+        assertTrue(fakeUserSettingsRepository.isHealthConnectStepsSyncEnabled())
+
+        vm.onToggleHealthConnectSteps(false)
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.isHealthConnectStepsSyncEnabled)
+        assertFalse(fakeUserSettingsRepository.isHealthConnectStepsSyncEnabled())
+    }
+
+    @Test
+    fun onExportClicked_opensDialogAndClearsPasswords() = runTest {
+        viewModel.onExportClicked()
+        val state = viewModel.uiState.value
+        assertTrue(state.isExportPasswordDialogOpen)
+        assertEquals("", state.exportPasswordText)
+        assertEquals("", state.exportConfirmPasswordText)
+        assertNull(state.exportPasswordError)
+    }
+
+    @Test
+    fun onConfirmExportPassword_validatesMinimumLengthAndMatching() = runTest {
+        viewModel.onExportClicked()
+
+        // Too short
+        viewModel.onExportPasswordChanged("short")
+        viewModel.onExportConfirmPasswordChanged("short")
+        var callbackCalled = false
+        viewModel.onConfirmExportPassword { callbackCalled = true }
+        assertFalse(callbackCalled)
+        assertNotNull(viewModel.uiState.value.exportPasswordError)
+
+        // Mismatched
+        viewModel.onExportPasswordChanged("password123")
+        viewModel.onExportConfirmPasswordChanged("password456")
+        viewModel.onConfirmExportPassword { callbackCalled = true }
+        assertFalse(callbackCalled)
+        assertNotNull(viewModel.uiState.value.exportPasswordError)
+
+        // Valid
+        viewModel.onExportPasswordChanged("validPassword123")
+        viewModel.onExportConfirmPasswordChanged("validPassword123")
+        viewModel.onConfirmExportPassword { callbackCalled = true }
+        assertTrue(callbackCalled)
+        assertFalse(viewModel.uiState.value.isExportPasswordDialogOpen)
+        assertNull(viewModel.uiState.value.exportPasswordError)
+    }
+
+    @Test
+    fun onDismissBackupDialogs_resetsAllDialogStates() = runTest {
+        viewModel.onExportClicked()
+        assertTrue(viewModel.uiState.value.isExportPasswordDialogOpen)
+
+        viewModel.onDismissBackupDialogs()
+        assertFalse(viewModel.uiState.value.isExportPasswordDialogOpen)
+        assertFalse(viewModel.uiState.value.isImportPasswordDialogOpen)
+        assertFalse(viewModel.uiState.value.isRestoreConfirmDialogOpen)
+    }
+
     private class FakeMealConfigRepository(
         initialConfigs: List<ConfiguredMeal> = DefaultMeals.defaults()
     ) : MealConfigRepository {
@@ -351,6 +458,18 @@ class SettingsViewModelTest {
         override suspend fun getLastTdeeProposalReviewedDate(): String? = lastReviewedDate
         override suspend fun setLastTdeeProposalReviewedDate(date: String) {
             this.lastReviewedDate = date
+        }
+
+        var stepsSyncEnabled = false
+        override suspend fun isHealthConnectStepsSyncEnabled(): Boolean = stepsSyncEnabled
+        override suspend fun setHealthConnectStepsSyncEnabled(enabled: Boolean) {
+            stepsSyncEnabled = enabled
+        }
+
+        var lastBackup: Long? = null
+        override suspend fun getLastBackupTimestamp(): Long? = lastBackup
+        override suspend fun setLastBackupTimestamp(timestamp: Long) {
+            this.lastBackup = timestamp
         }
     }
 

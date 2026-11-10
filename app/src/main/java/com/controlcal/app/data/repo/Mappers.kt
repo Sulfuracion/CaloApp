@@ -101,6 +101,7 @@ fun DailyLogEntity.toDomain(): DailyLog =
         dayType = dayType,
         waterMl = waterMl,
         notes = notes,
+        steps = steps,
     )
 
 fun DailyLog.toEntity(): DailyLogEntity =
@@ -109,6 +110,7 @@ fun DailyLog.toEntity(): DailyLogEntity =
         dayType = dayType,
         waterMl = waterMl,
         notes = notes,
+        steps = steps,
     )
 
 fun GoalProfileEntity.toDomain(): GoalProfile =

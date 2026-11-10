@@ -14,6 +14,7 @@ import com.controlcal.core.tdee.TdeeGoalProposal
 import com.controlcal.core.model.ConfiguredMeal
 import java.time.LocalDate
 import java.time.LocalTime
+import com.controlcal.app.ui.feedback.UiText
 
 data class MealSectionUiModel(
     val mealId: String,
@@ -44,6 +45,12 @@ data class DailyPanelUiState(
     val portionPreviewFat: Double = 0.0,
     val dayType: DayType = DayType.REST,
     val waterMl: Int = 0,
+    val steps: Int = 0,
+    val yesterdaySteps: Int? = null,
+    val isStepsSyncEnabled: Boolean = false,
+    val isEditingManualSteps: Boolean = false,
+    val editingManualStepsText: String = "",
+    val editingManualStepsError: UiText? = null,
     val activeGoalProfile: GoalProfile? = null,
     val dayRemaining: DayRemaining? = null,
     val tdeeProposal: TdeeGoalProposal? = null,
@@ -53,6 +60,8 @@ data class DailyPanelUiState(
     val recentlyMergedPreviousEntry: MealEntry? = null,
     val isSaving: Boolean = false,
     val message: String? = null,
+    val isBackupOverdue: Boolean = false,
+    val isBackupNeverDone: Boolean = false,
 ) {
     val isToday: Boolean
         get() = selectedDate == today

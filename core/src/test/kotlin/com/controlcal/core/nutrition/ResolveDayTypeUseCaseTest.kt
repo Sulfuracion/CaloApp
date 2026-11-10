@@ -36,6 +36,7 @@ class ResolveDayTypeUseCaseTest {
             }
         }
         override suspend fun setWaterMl(date: String, waterMl: Int) {}
+        override suspend fun setSteps(date: String, steps: Int) {}
         override suspend fun setNotes(date: String, notes: String?) {}
     }
 

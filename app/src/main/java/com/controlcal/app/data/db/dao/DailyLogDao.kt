@@ -12,6 +12,9 @@ interface DailyLogDao {
     @Insert
     suspend fun insert(log: DailyLogEntity)
 
+    @Insert
+    suspend fun insertAll(logs: List<DailyLogEntity>)
+
     @Query("SELECT * FROM daily_logs WHERE date = :date")
     suspend fun getByDate(date: String): DailyLogEntity?
 
@@ -23,6 +26,9 @@ interface DailyLogDao {
 
     @Query("UPDATE daily_logs SET water_ml = :waterMl WHERE date = :date")
     suspend fun setWaterMl(date: String, waterMl: Int)
+
+    @Query("UPDATE daily_logs SET steps = :steps WHERE date = :date")
+    suspend fun setSteps(date: String, steps: Int)
 
     @Query("UPDATE daily_logs SET notes = :notes WHERE date = :date")
     suspend fun setNotes(date: String, notes: String?)

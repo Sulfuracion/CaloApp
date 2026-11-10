@@ -408,6 +408,10 @@ private class FakeDailyLogRepository : DailyLogRepository {
         logs[date] = existing?.copy(dayType = dayType) ?: DailyLog(date = date, dayType = dayType)
     }
     override suspend fun setNotes(date: String, notes: String?) {}
+    override suspend fun setSteps(date: String, steps: Int) {
+        val existing = logs[date]
+        logs[date] = existing?.copy(steps = steps) ?: DailyLog(date = date, steps = steps)
+    }
 }
 
 private class FakeUserSettingsRepository : UserSettingsRepository {
@@ -421,6 +425,8 @@ private class FakeUserSettingsRepository : UserSettingsRepository {
     override suspend fun setMinKcalLimit(minKcal: Double) { this.minKcal = minKcal }
     override suspend fun getLastTdeeProposalReviewedDate(): String? = lastProposalDate
     override suspend fun setLastTdeeProposalReviewedDate(date: String) { lastProposalDate = date }
+    override suspend fun isHealthConnectStepsSyncEnabled(): Boolean = false
+    override suspend fun setHealthConnectStepsSyncEnabled(enabled: Boolean) {}
 }
 
 private class FakeGoalProfileRepository : GoalProfileRepository {

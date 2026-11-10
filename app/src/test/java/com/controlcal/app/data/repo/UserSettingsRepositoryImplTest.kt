@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.controlcal.core.model.DayType
 import com.controlcal.core.model.WeeklyDayPattern
+import com.controlcal.core.weight.WeightRange
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -72,6 +73,40 @@ class UserSettingsRepositoryImplTest {
 
         repo.setLastTdeeProposalReviewedDate("2026-10-14")
         assertEquals("2026-10-14", repo.getLastTdeeProposalReviewedDate())
+    }
+
+    @Test
+    fun healthConnectStepsSyncSavesAndRetrieves() = runTest {
+        val repo = UserSettingsRepositoryImpl(dataStore)
+        assertEquals(false, repo.isHealthConnectStepsSyncEnabled())
+
+        repo.setHealthConnectStepsSyncEnabled(true)
+        assertEquals(true, repo.isHealthConnectStepsSyncEnabled())
+
+        repo.setHealthConnectStepsSyncEnabled(false)
+        assertEquals(false, repo.isHealthConnectStepsSyncEnabled())
+    }
+
+    @Test
+    fun lastBackupTimestampSavesAndRetrieves() = runTest {
+        val repo = UserSettingsRepositoryImpl(dataStore)
+        assertEquals(null, repo.getLastBackupTimestamp())
+
+        val now = 1770000000000L
+        repo.setLastBackupTimestamp(now)
+        assertEquals(now, repo.getLastBackupTimestamp())
+    }
+
+    @Test
+    fun weightChartRangeDefaultsTo1MAndSavesCorrectly() = runTest {
+        val repo = UserSettingsRepositoryImpl(dataStore)
+        assertEquals(WeightRange.LAST_1_MONTH, repo.getWeightChartRange())
+
+        repo.setWeightChartRange(WeightRange.LAST_6_MONTHS)
+        assertEquals(WeightRange.LAST_6_MONTHS, repo.getWeightChartRange())
+
+        repo.setWeightChartRange(WeightRange.ALL)
+        assertEquals(WeightRange.ALL, repo.getWeightChartRange())
     }
 
     companion object {

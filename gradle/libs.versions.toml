@@ -21,6 +21,7 @@ mlkitBarcode = "17.3.0"
 mlkitText = "16.0.1"
 okhttp = "4.12.0"
 kotlinxSerialization = "1.11.0"
+healthConnect = "1.1.0"
 
 [libraries]
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camera" }
@@ -52,6 +53,7 @@ mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning"
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+androidx-health-connect = { group = "androidx.health.connect", name = "connect-client", version.ref = "healthConnect" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

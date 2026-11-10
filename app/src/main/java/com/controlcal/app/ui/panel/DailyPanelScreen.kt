@@ -20,6 +20,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -129,6 +133,11 @@ fun DailyPanelRoute(
         onAcceptTdeeProposal = viewModel::onAcceptTdeeProposal,
         onRejectTdeeProposal = viewModel::onRejectTdeeProposal,
         onAddWater = viewModel::onAddWater,
+        onRefreshSteps = viewModel::refreshSteps,
+        onOpenManualStepsDialog = viewModel::onOpenManualStepsDialog,
+        onManualStepsTextChanged = viewModel::onManualStepsTextChanged,
+        onDismissManualStepsDialog = viewModel::onDismissManualStepsDialog,
+        onSaveManualSteps = viewModel::onSaveManualSteps,
         modifier = modifier,
     )
 }
@@ -160,6 +169,11 @@ fun DailyPanelScreen(
     onAcceptTdeeProposal: () -> Unit,
     onRejectTdeeProposal: () -> Unit,
     onAddWater: (Int) -> Unit = {},
+    onRefreshSteps: () -> Unit = {},
+    onOpenManualStepsDialog: () -> Unit = {},
+    onManualStepsTextChanged: (String) -> Unit = {},
+    onDismissManualStepsDialog: () -> Unit = {},
+    onSaveManualSteps: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -310,6 +324,15 @@ fun DailyPanelScreen(
                 }
             }
 
+            if (uiState.isBackupOverdue) {
+                item {
+                    BackupNoticeCard(
+                        isNeverDone = uiState.isBackupNeverDone,
+                        onNavigateToSettings = onNavigateToSettings,
+                    )
+                }
+            }
+
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 DailySummaryCard(
@@ -345,6 +368,16 @@ fun DailyPanelScreen(
             }
 
             item {
+                StepsCard(
+                    isToday = uiState.isToday,
+                    steps = if (uiState.isToday) (uiState.yesterdaySteps ?: 0) else uiState.steps,
+                    isSyncEnabled = uiState.isStepsSyncEnabled,
+                    onRefresh = onRefreshSteps,
+                    onEdit = onOpenManualStepsDialog,
+                )
+            }
+
+            item {
                 Spacer(modifier = Modifier.height(64.dp))
             }
         }
@@ -364,6 +397,17 @@ fun DailyPanelScreen(
             onGramsChanged = onEditingGramsChanged,
             onConfirm = onConfirmQuickLog,
             onDismiss = onDismissEditDialog,
+        )
+    }
+
+    if (uiState.isEditingManualSteps) {
+        ManualStepsDialog(
+            isToday = uiState.isToday,
+            stepsText = uiState.editingManualStepsText,
+            errorText = uiState.editingManualStepsError?.asString(),
+            onStepsChanged = onManualStepsTextChanged,
+            onConfirm = onSaveManualSteps,
+            onDismiss = onDismissManualStepsDialog,
         )
     }
 }
@@ -907,6 +951,162 @@ private fun WaterIntakeCard(
 }
 
 @Composable
+private fun StepsCard(
+    isToday: Boolean,
+    steps: Int,
+    isSyncEnabled: Boolean,
+    onRefresh: () -> Unit,
+    onEdit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_steps),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+
+                Column {
+                    Text(
+                        text = if (isToday) {
+                            stringResource(R.string.panel_steps_yesterday_title)
+                        } else {
+                            stringResource(R.string.panel_steps_title)
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (steps > 0) {
+                            stringResource(R.string.panel_steps_count, NumberFormatHelper.formatInteger(steps))
+                        } else {
+                            stringResource(R.string.panel_steps_no_data)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (steps > 0) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        fontWeight = if (steps > 0) FontWeight.SemiBold else FontWeight.Normal,
+                    )
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                IconButton(
+                    onClick = onEdit,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_edit),
+                        contentDescription = stringResource(R.string.panel_steps_manual_edit_action),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (isSyncEnabled) {
+                    IconButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_repeat),
+                            contentDescription = stringResource(R.string.panel_steps_sync_action),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ManualStepsDialog(
+    isToday: Boolean,
+    stepsText: String,
+    errorText: String?,
+    onStepsChanged: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = if (isToday) {
+                    stringResource(R.string.panel_steps_edit_dialog_yesterday_title)
+                } else {
+                    stringResource(R.string.panel_steps_edit_dialog_title)
+                }
+            )
+        },
+        text = {
+            Column(modifier = modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = stepsText,
+                    onValueChange = onStepsChanged,
+                    label = { Text(text = stringResource(R.string.panel_steps_edit_dialog_label)) },
+                    placeholder = { Text(text = stringResource(R.string.panel_steps_edit_dialog_placeholder)) },
+                    isError = errorText != null,
+                    supportingText = errorText?.let { { Text(text = it) } },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = stepsText.isNotBlank() && errorText == null,
+            ) {
+                Text(text = stringResource(R.string.panel_steps_edit_dialog_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.panel_steps_edit_dialog_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun WeeklyTdeeProposalCard(
     proposal: TdeeGoalProposal,
     onAcceptProposal: () -> Unit,
@@ -975,6 +1175,56 @@ private fun WeeklyTdeeProposalCard(
                 Button(onClick = onAcceptProposal) {
                     Text(stringResource(R.string.tdee_card_accept_action))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackupNoticeCard(
+    isNeverDone: Boolean,
+    onNavigateToSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_info),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.backup_notice_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(
+                        if (isNeverDone) R.string.backup_notice_never else R.string.backup_notice_overdue
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(
+                onClick = onNavigateToSettings,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text(text = stringResource(R.string.backup_notice_action))
             }
         }
     }
